@@ -28,18 +28,34 @@ public struct TokenSet: Sendable, Equatable {
     public let foregroundSecondary: ColorToken
     public let accent: ColorToken
 
+    // MARK: - Finance-specific accents (M5)
+    //
+    // The CockpitInstrument identity extends with three finance tokens so the
+    // ledger and money charts have a single source of truth for green/red and
+    // for the ledger row stripe. Default values are derived from the base
+    // identity so non-finance surfaces don't need to know about them.
+    public let gainAccent: ColorToken
+    public let lossAccent: ColorToken
+    public let ledgerStripe: ColorToken
+
     public init(
         background: ColorToken,
         surface: ColorToken,
         foregroundPrimary: ColorToken,
         foregroundSecondary: ColorToken,
-        accent: ColorToken
+        accent: ColorToken,
+        gainAccent: ColorToken? = nil,
+        lossAccent: ColorToken? = nil,
+        ledgerStripe: ColorToken? = nil
     ) {
         self.background = background
         self.surface = surface
         self.foregroundPrimary = foregroundPrimary
         self.foregroundSecondary = foregroundSecondary
         self.accent = accent
+        self.gainAccent = gainAccent ?? ColorToken(0.20, 0.78, 0.50)
+        self.lossAccent = lossAccent ?? ColorToken(0.92, 0.32, 0.32)
+        self.ledgerStripe = ledgerStripe ?? ColorToken(surface.red, surface.green, surface.blue, opacity: 0.55)
     }
 }
 
@@ -82,7 +98,14 @@ public enum Tokens {
         surface:            ColorToken(0.06, 0.06, 0.08),
         foregroundPrimary:  ColorToken(0.85, 0.92, 1.00),
         foregroundSecondary: ColorToken(0.55, 0.65, 0.78),
-        accent:             ColorToken(0.20, 0.85, 0.65)
+        accent:             ColorToken(0.20, 0.85, 0.65),
+        // Finance accents tuned to read on top of the dark instrument
+        // backplate. Green is shifted slightly cyan so it pairs with the
+        // accent without becoming the accent. Red is muted vs the typical
+        // SF Red so it does not overpower the panel.
+        gainAccent:         ColorToken(0.30, 0.86, 0.62),
+        lossAccent:         ColorToken(0.96, 0.42, 0.40),
+        ledgerStripe:       ColorToken(0.10, 0.11, 0.14, opacity: 0.55)
     )
 
     public static let cockpitInstrumentDark = cockpitInstrumentLight

@@ -170,4 +170,13 @@ extension JSONDecoder {
         }
         return dec
     }()
+
+    /// Decoder used for finance payloads (`/api/finance/*`). `Transaction`
+    /// owns its own per-field date handling because the route emits a
+    /// `YYYY-MM-DD` day string, and the per-account legacy shape emits
+    /// unix-seconds — neither matches an ISO-8601 timestamp. So the
+    /// finance decoder is plain JSON with no global date strategy.
+    public static let synnapseFinance: JSONDecoder = {
+        JSONDecoder()
+    }()
 }

@@ -1,0 +1,197 @@
+import SwiftUI
+import Models
+import DesignSystem
+
+/// Accounts surface. macOS gets a sectioned `Table` keyed by `AccountKind`
+/// so the user can sort by balance, mask, or institution. iOS gets a
+/// grouped `List` with the same section structure and `.searchable`.
+@MainActor
+public struct FinanceAccountsView: View {
+
+    @Environment(\.theme) private var theme
+    @Environment(\.colorScheme) private var scheme
+
+    @Bindable private var viewModel: FinanceAccountsViewModel
+
+    public init(viewModel: FinanceAccountsViewModel) {
+        self.viewModel = viewModel
+    }
+
+    public var body: some View {
+        content
+            .task {
+                if case .idle = viewModel.state { await viewModel.refresh() }
+            }
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        #if os(macOS)
+        macLayout
+        #else
+        iosLayout
+        #endif
+    }
+
+    // MARK: - macOS
+
+    #if os(macOS)
+    private var macLayout: some View {
+        let tokens = theme.tokens(for: scheme)
+        return Group {
+            switch viewModel.state {
+            case .idle, .loading:
+                ZStack {
+                    tokens.background.color
+                    ProgressView().tint(tokens.foregroundSecondary.color)
+                }
+            case .empty:
+                ZStack {
+                    tokens.background.color
+                    Text("No linked accounts")
+                        .font(.system(size: 14))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+            case .error(let message):
+                ZStack {
+                    tokens.background.color
+                    VStack(spacing: 6) {
+                        Text("Couldn't load accounts")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(tokens.foregroundPrimary.color)
+                        Text(message)
+                            .font(tokens.tickerFont(size: 11))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                    }
+                }
+            case .results(let accounts):
+                accountsTable(accounts)
+            }
+        }
+        .background(tokens.background.color)
+        .navigationTitle("Accounts")
+    }
+
+    private func accountsTable(_ accounts: [FinanceAccount]) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        // Group by kind for sectioned rendering.
+        let grouped = Dictionary(grouping: accounts, by: \.kind)
+        let kinds = AccountKind.allCases.filter { grouped[$0] != nil }
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 14) {
+                ForEach(kinds, id: \.self) { kind in
+                    if let rows = grouped[kind] {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text(kind.rawValue.uppercased())
+                                .font(tokens.tickerFont(size: 10, weight: .semibold))
+                                .foregroundStyle(tokens.foregroundSecondary.color)
+                                .padding(.horizontal, 12)
+                            VStack(spacing: 0) {
+                                ForEach(rows) { account in
+                                    accountTableRow(account)
+                                        .padding(.horizontal, 12)
+                                        .padding(.vertical, 8)
+                                        .background(tokens.surface.color)
+                                }
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+            }
+            .padding(20)
+        }
+    }
+    #endif
+
+    // MARK: - iOS
+
+    #if os(iOS)
+    private var iosLayout: some View {
+        let tokens = theme.tokens(for: scheme)
+        return Group {
+            switch viewModel.state {
+            case .idle, .loading:
+                ZStack { tokens.background.color; ProgressView() }
+            case .empty:
+                ZStack {
+                    tokens.background.color
+                    Text("No linked accounts")
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+            case .error(let message):
+                ZStack {
+                    tokens.background.color
+                    VStack(spacing: 6) {
+                        Text("Couldn't load")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(tokens.foregroundPrimary.color)
+                        Text(message)
+                            .font(tokens.tickerFont(size: 11))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                    }
+                }
+            case .results(let accounts):
+                accountsGroupedList(accounts)
+            }
+        }
+        .background(tokens.background.color)
+        .searchable(text: $viewModel.searchText, prompt: "Search accounts")
+        .refreshable { await viewModel.refresh() }
+        .navigationTitle("Accounts")
+    }
+
+    private func accountsGroupedList(_ accounts: [FinanceAccount]) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        let grouped = Dictionary(grouping: accounts, by: \.kind)
+        let kinds = AccountKind.allCases.filter { grouped[$0] != nil }
+        return List {
+            ForEach(kinds, id: \.self) { kind in
+                Section(kind.rawValue.capitalized) {
+                    ForEach(grouped[kind] ?? []) { account in
+                        accountTableRow(account)
+                            .listRowBackground(tokens.surface.color)
+                    }
+                }
+            }
+        }
+        .scrollContentBackground(.hidden)
+    }
+    #endif
+
+    // MARK: - Row
+
+    private func accountTableRow(_ account: FinanceAccount) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        return HStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(account.name)
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                HStack(spacing: 4) {
+                    if let inst = account.institutionName {
+                        Text(inst)
+                            .font(tokens.tickerFont(size: 10))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                    }
+                    if let mask = account.mask {
+                        Text("•• \(mask)")
+                            .font(tokens.tickerFont(size: 10))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                    }
+                }
+            }
+            Spacer()
+            Text(formatMoney(account.currentBalance, currency: account.currency))
+                .font(tokens.tickerFont(size: 12, weight: .medium))
+                .foregroundStyle(
+                    account.kind.isLiability ? tokens.lossAccent.color : tokens.foregroundPrimary.color
+                )
+        }
+    }
+
+    private func formatMoney(_ value: Decimal?, currency: String) -> String {
+        guard let value else { return "—" }
+        return value.formatted(.currency(code: currency))
+    }
+}

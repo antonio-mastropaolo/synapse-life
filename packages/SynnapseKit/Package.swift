@@ -13,6 +13,7 @@ let package = Package(
         .library(name: "Auth", targets: ["Auth"]),
         .library(name: "Persistence", targets: ["Persistence"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
+        .library(name: "Charts", targets: ["SynnapseCharts"]),
         .library(name: "Features", targets: ["Features"])
     ],
     dependencies: [
@@ -40,8 +41,13 @@ let package = Package(
         ),
         .target(name: "DesignSystem", path: "Sources/DesignSystem"),
         .target(
+            name: "SynnapseCharts",
+            dependencies: ["DesignSystem"],
+            path: "Sources/Charts"
+        ),
+        .target(
             name: "Features",
-            dependencies: ["Models", "Networking", "DesignSystem", "Auth"],
+            dependencies: ["Models", "Networking", "DesignSystem", "Auth", "SynnapseCharts"],
             path: "Sources/Features"
         ),
         .testTarget(

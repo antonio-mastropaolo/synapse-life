@@ -37,6 +37,34 @@ struct SynnapseMacApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+
+        WindowGroup("Finance", id: "finance") {
+            FinanceShellView(
+                personal: appModel.financePersonal,
+                accounts: appModel.financeAccounts,
+                transactions: appModel.financeTransactions,
+                investments: appModel.financeInvestments,
+                initialSurface: .personal
+            )
+            .frame(minWidth: 1100, minHeight: 640)
+            .identity(.cockpitInstrument)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Finance · Accounts", id: "finance-accounts") {
+            FinanceShellView(
+                personal: appModel.financePersonal,
+                accounts: appModel.financeAccounts,
+                transactions: appModel.financeTransactions,
+                investments: appModel.financeInvestments,
+                initialSurface: .accounts
+            )
+            .frame(minWidth: 1100, minHeight: 640)
+            .identity(.cockpitInstrument)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(after: .windowList) {
                 Button("Show Spotlight") { appModel.toggleSpotlight() }
@@ -47,6 +75,10 @@ struct SynnapseMacApp: App {
                     .keyboardShortcut("2", modifiers: [.command])
                 Button("Approvals Tree") { openWindow(id: "approvals-tree") }
                     .keyboardShortcut("2", modifiers: [.command, .shift])
+                Button("Finance") { openWindow(id: "finance") }
+                    .keyboardShortcut("3", modifiers: [.command])
+                Button("Accounts") { openWindow(id: "finance-accounts") }
+                    .keyboardShortcut("3", modifiers: [.command, .shift])
             }
         }
 
@@ -68,6 +100,11 @@ final class AppModel {
     private var spotlightController: SpotlightPanelController?
     private var hotkey: GlobalHotkeyMonitor?
 
+    private(set) var financePersonal: FinancePersonalViewModel
+    private(set) var financeAccounts: FinanceAccountsViewModel
+    private(set) var financeTransactions: FinanceTransactionsViewModel
+    private(set) var financeInvestments: FinanceInvestmentsViewModel
+
     init() {
         let baseURLString = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
             ?? "http://localhost:3000/"
@@ -88,6 +125,11 @@ final class AppModel {
         let approvalsAPI = LiveApprovalsAPI(client: client)
         self.approvals = ApprovalsViewModel(api: approvalsAPI)
         self.approvalsTree = ApprovalsTreeViewModel(api: approvalsAPI)
+        let financeAPI = LiveFinanceAPI(client: client)
+        self.financePersonal = FinancePersonalViewModel(api: financeAPI)
+        self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
+        self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
+        self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
     }
 
     func bootstrapIfNeeded() async {

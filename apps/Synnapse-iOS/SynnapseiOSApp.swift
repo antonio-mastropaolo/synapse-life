@@ -23,6 +23,10 @@ final class AppModel {
     private(set) var spotlight: SpotlightViewModel
     private(set) var approvals: ApprovalsViewModel
     private(set) var approvalsTree: ApprovalsTreeViewModel
+    private(set) var financePersonal: FinancePersonalViewModel
+    private(set) var financeAccounts: FinanceAccountsViewModel
+    private(set) var financeTransactions: FinanceTransactionsViewModel
+    private(set) var financeInvestments: FinanceInvestmentsViewModel
     private var bootstrapped = false
 
     init() {
@@ -45,6 +49,11 @@ final class AppModel {
         let approvalsAPI = LiveApprovalsAPI(client: client)
         self.approvals = ApprovalsViewModel(api: approvalsAPI)
         self.approvalsTree = ApprovalsTreeViewModel(api: approvalsAPI)
+        let financeAPI = LiveFinanceAPI(client: client)
+        self.financePersonal = FinancePersonalViewModel(api: financeAPI)
+        self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
+        self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
+        self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
     }
 
     func bootstrapIfNeeded() async {
@@ -64,6 +73,10 @@ private struct RootShell: View {
                 spotlight: appModel.spotlight,
                 approvals: appModel.approvals,
                 approvalsTree: appModel.approvalsTree,
+                financePersonal: appModel.financePersonal,
+                financeAccounts: appModel.financeAccounts,
+                financeTransactions: appModel.financeTransactions,
+                financeInvestments: appModel.financeInvestments,
                 auth: appModel.auth
             )
         case .signedOut, .error:
@@ -90,6 +103,10 @@ private struct RootTabView: View {
     let spotlight: SpotlightViewModel
     let approvals: ApprovalsViewModel
     let approvalsTree: ApprovalsTreeViewModel
+    let financePersonal: FinancePersonalViewModel
+    let financeAccounts: FinanceAccountsViewModel
+    let financeTransactions: FinanceTransactionsViewModel
+    let financeInvestments: FinanceInvestmentsViewModel
     let auth: AuthViewModel
 
     var body: some View {
@@ -98,8 +115,14 @@ private struct RootTabView: View {
                 .identity(.editorial)
                 .tabItem { Label("Spotlight", systemImage: "sparkles") }
 
-            PlaceholderTab(title: "Finance", system: "chart.line.uptrend.xyaxis")
-                .tabItem { Label("Finance", systemImage: "chart.line.uptrend.xyaxis") }
+            FinanceTab(
+                personal: financePersonal,
+                accounts: financeAccounts,
+                transactions: financeTransactions,
+                investments: financeInvestments
+            )
+            .identity(.cockpitInstrument)
+            .tabItem { Label("Finance", systemImage: "chart.line.uptrend.xyaxis") }
 
             PlaceholderTab(title: "Life", system: "circle.grid.2x2")
                 .tabItem { Label("Life", systemImage: "circle.grid.2x2") }
@@ -110,6 +133,46 @@ private struct RootTabView: View {
 
             MoreTab(auth: auth)
                 .tabItem { Label("More", systemImage: "ellipsis") }
+        }
+    }
+}
+
+/// iOS Finance tab: NavigationStack rooted at the Personal screen, with
+/// pushed navigation to Accounts / Transactions / Investments. Trading
+/// Desk (`/finance/work`) is deferred to M8.
+private struct FinanceTab: View {
+    let personal: FinancePersonalViewModel
+    let accounts: FinanceAccountsViewModel
+    let transactions: FinanceTransactionsViewModel
+    let investments: FinanceInvestmentsViewModel
+
+    private enum Route: Hashable {
+        case accounts, transactions, investments
+    }
+
+    var body: some View {
+        NavigationStack {
+            FinancePersonalView(viewModel: personal)
+                .toolbar {
+                    ToolbarItemGroup(placement: .topBarTrailing) {
+                        NavigationLink(value: Route.accounts) {
+                            Image(systemName: "list.bullet.rectangle")
+                        }
+                        NavigationLink(value: Route.transactions) {
+                            Image(systemName: "arrow.left.arrow.right")
+                        }
+                        NavigationLink(value: Route.investments) {
+                            Image(systemName: "chart.pie")
+                        }
+                    }
+                }
+                .navigationDestination(for: Route.self) { route in
+                    switch route {
+                    case .accounts: FinanceAccountsView(viewModel: accounts)
+                    case .transactions: FinanceTransactionsView(viewModel: transactions)
+                    case .investments: FinanceInvestmentsView(viewModel: investments)
+                    }
+                }
         }
     }
 }
