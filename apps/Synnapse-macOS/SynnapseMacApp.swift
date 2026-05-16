@@ -18,6 +18,19 @@ struct SynnapseMacApp: App {
             RootShell(appModel: appModel)
                 .frame(minWidth: 720, minHeight: 480)
                 .task { await appModel.bootstrapIfNeeded() }
+                .toolbar {
+                    // Cockpit shell toolbar: a single Spotlight palette
+                    // button. ⌘K toggles the panel, matching the M2 hotkey
+                    // (and complementing the existing ⌘⇧Space global hotkey).
+                    ToolbarItem(placement: .primaryAction) {
+                        Button {
+                            appModel.toggleSpotlight()
+                        } label: {
+                            Label("Spotlight", systemImage: "command")
+                        }
+                        .keyboardShortcut("k", modifiers: [.command])
+                    }
+                }
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
@@ -72,6 +85,54 @@ struct SynnapseMacApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+
+        WindowGroup("People", id: "people") {
+            PeopleView(viewModel: appModel.people)
+                .frame(minWidth: 1100, minHeight: 640)
+                .identity(.editorial)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Inbox", id: "inbox") {
+            InboxListView(viewModel: appModel.inbox)
+                .frame(minWidth: 1100, minHeight: 640)
+                .identity(.editorial)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Advisors", id: "advisors") {
+            AdvisorsView(viewModel: appModel.advisors)
+                .frame(minWidth: 1100, minHeight: 640)
+                .identity(.cockpitInstrument)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Octagon", id: "octagon") {
+            OctagonView(viewModel: appModel.octagon)
+                .frame(minWidth: 1100, minHeight: 640)
+                .identity(.cockpitInstrument)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Trading Desk", id: "trading-desk") {
+            TradingDeskView(viewModel: appModel.tradingDesk)
+                .frame(minWidth: 1100, minHeight: 640)
+                .identity(.cockpitInstrument)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Sequences", id: "sequences") {
+            SequencesView(viewModel: appModel.sequences)
+                .frame(minWidth: 960, minHeight: 600)
+                .identity(.editorial)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(after: .windowList) {
                 Button("Show Spotlight") { appModel.toggleSpotlight() }
@@ -88,12 +149,26 @@ struct SynnapseMacApp: App {
                     .keyboardShortcut("3", modifiers: [.command, .shift])
                 Button("Life") { openWindow(id: "life") }
                     .keyboardShortcut("4", modifiers: [.command])
+                Button("People") { openWindow(id: "people") }
+                    .keyboardShortcut("5", modifiers: [.command])
+                Button("Inbox") { openWindow(id: "inbox") }
+                    .keyboardShortcut("6", modifiers: [.command])
+                Button("Advisors") { openWindow(id: "advisors") }
+                    .keyboardShortcut("7", modifiers: [.command])
+                Button("Octagon") { openWindow(id: "octagon") }
+                    .keyboardShortcut("8", modifiers: [.command])
+                Button("Trading Desk") { openWindow(id: "trading-desk") }
+                    .keyboardShortcut("9", modifiers: [.command])
+                Button("Sequences") { openWindow(id: "sequences") }
+                    .keyboardShortcut("0", modifiers: [.command])
             }
         }
 
         Settings {
-            SettingsView(auth: appModel.auth)
-                .frame(width: 420, height: 280)
+            // M9 promoted Settings to the full `SettingsScene`. The
+            // standard macOS ⌘, gesture opens this scene for free; no
+            // explicit command is needed.
+            SettingsScene(settings: appModel.settings, auth: appModel.auth)
         }
     }
 }
@@ -118,6 +193,19 @@ final class AppModel {
     /// server has not implemented it yet so the live client returns an
     /// empty stream and the view renders the deterministic boot line.
     let lifeAPI: LifeAPI
+
+    // M7 — People + Inbox.
+    private(set) var people: PeopleViewModel
+    private(set) var inbox: InboxListViewModel
+
+    // M8 — Advisors + Octagon + Trading Desk.
+    private(set) var advisors: AdvisorsListViewModel
+    private(set) var octagon: OctagonViewModel
+    private(set) var tradingDesk: TradingDeskViewModel
+
+    // M9 — Sequences + Settings.
+    private(set) var sequences: SequencesViewModel
+    private(set) var settings: SettingsViewModel
 
     init() {
         let baseURLString = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
@@ -145,6 +233,23 @@ final class AppModel {
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
         self.lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+
+        // M7 wiring.
+        self.people = PeopleViewModel(api: LivePeopleAPI(client: client))
+        self.inbox = InboxListViewModel(api: LiveInboxAPI(client: client))
+
+        // M8 wiring. `membershipsContractLive: false` keeps Octagon's
+        // memberships pane in its forward-compat empty state until the
+        // server contract lands. See M8 manifest.
+        self.advisors = AdvisorsListViewModel(api: LiveAdvisorsAPI(client: client))
+        self.octagon = OctagonViewModel(api: LiveOctagonAPI(
+            client: client, membershipsContractLive: false
+        ))
+        self.tradingDesk = TradingDeskViewModel(api: financeAPI)
+
+        // M9 wiring.
+        self.sequences = SequencesViewModel(api: LiveSequencesAPI(client: client))
+        self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
     }
 
     func bootstrapIfNeeded() async {
@@ -161,6 +266,22 @@ final class AppModel {
         }
         monitor.start()
         hotkey = monitor
+
+        // M9 settings <-> M5 finance bridge. When the conceal-balances
+        // preference is on, forward an inactive scene-phase signal to the
+        // finance personal VM so the home screen masks balances even
+        // while the app is active. See [[SettingsFinanceBridgeTests]].
+        applyConcealBalancesBridge()
+    }
+
+    /// Mirror `settings.concealBalances` into `financePersonal` by reusing
+    /// the existing scene-phase path the M5 VM already exposes. The bridge
+    /// lives in the app shell because M9 deliberately did not add a public
+    /// setter to FinancePersonalViewModel.
+    func applyConcealBalancesBridge() {
+        if settings.concealBalances {
+            financePersonal.scenePhaseDidChange(.inactive)
+        }
     }
 
     func toggleSpotlight() {
@@ -197,29 +318,5 @@ private struct RootShell: View {
                 .frame(minWidth: 480, minHeight: 360)
                 .interactiveDismissDisabled(true)
             }
-    }
-}
-
-private struct SettingsView: View {
-    let auth: AuthViewModel
-
-    var body: some View {
-        Form {
-            Section("Account") {
-                switch auth.state {
-                case .signedIn(let session):
-                    LabeledContent("User", value: session.userId)
-                    Button("Sign out", role: .destructive) {
-                        Task { await auth.signOut() }
-                    }
-                case .signedOut, .error:
-                    Text("Not signed in.")
-                        .foregroundStyle(.secondary)
-                case .signingIn:
-                    ProgressView()
-                }
-            }
-        }
-        .padding()
     }
 }

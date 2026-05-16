@@ -81,7 +81,13 @@ public struct TokenSet: Sendable, Equatable {
         self.foregroundPrimary = foregroundPrimary
         self.foregroundSecondary = foregroundSecondary
         self.accent = accent
-        self.gainAccent = gainAccent ?? ColorToken(0.20, 0.78, 0.50)
+        // M9 a11y win: dropped from (0.20, 0.78, 0.50) — that value sat at
+        // 2.14:1 against the off-white default background, well under the
+        // 3.0:1 floor for a non-text UI element. The new value reads as the
+        // same "gain green" but clears WCAG AA. Allowlist entries in
+        // [[AccessibilityAuditTests]] for "[light] background ↔ gainAccent"
+        // were removed at the same time.
+        self.gainAccent = gainAccent ?? ColorToken(0.05, 0.55, 0.30)
         self.lossAccent = lossAccent ?? ColorToken(0.92, 0.32, 0.32)
         self.ledgerStripe = ledgerStripe ?? ColorToken(surface.red, surface.green, surface.blue, opacity: 0.55)
         self.life = life
@@ -120,7 +126,12 @@ public enum Tokens {
     // identity, not a theme variant.
 
     private static let phosBright = ColorToken(1.00, 0.478, 0.000)
-    private static let phosDim    = ColorToken(0.700, 0.329, 0.000)
+    // M9 a11y win: bumped from (0.700, 0.329, 0.000) — was 4.01:1 against
+    // the ink background, just under the 4.5:1 normal-text bar. New value
+    // is ~#C46400 and clears 4.5:1 while preserving the "dim phosphor"
+    // read. Allowlist entries in [[AccessibilityAuditTests]] for the
+    // terminal phosphorDim findings were removed at the same time.
+    private static let phosDim    = ColorToken(0.770, 0.392, 0.000)
     private static let phosInk    = ColorToken(0.031, 0.024, 0.016)
 
     public static let terminalAmberLight = TokenSet(
@@ -174,6 +185,71 @@ public enum Tokens {
         foregroundSecondary: ColorToken(0.74, 0.70, 0.62),
         accent:             ColorToken(0.95, 0.60, 0.55)
     )
+
+    // MARK: - Cockpit Dense shell typography
+    //
+    // The shell paints ticker rows, ledger rows, and the sidebar tree at
+    // an 11pt SF Mono base. Section headers fall back to SF Pro at a
+    // larger size. These helpers exist so callers can ask for the shell's
+    // canonical fonts without needing to know about platform descriptors.
+
+    /// Canonical base size for ticker / ledger / tree rows in the shell.
+    public static let tickBaseSize: CGFloat = 11.0
+
+    /// A monospaced descriptor at `size` (defaults to `tickBaseSize`).
+    /// Used by every row that needs aligned columns — ledger rows, tick
+    /// rows, the sidebar tree.
+    public static func tickerFont(
+        size: CGFloat = tickBaseSize,
+        weight: ShellFontWeight = .regular
+    ) -> ShellFontDescriptor {
+        ShellFontDescriptor(pointSize: size, weight: weight, isMonospaced: true)
+    }
+
+    /// A proportional (SF Pro–style) descriptor for headers. Pairs with
+    /// `tickerFont` rows below.
+    public static func headerFont(
+        size: CGFloat,
+        weight: ShellFontWeight = .semibold
+    ) -> ShellFontDescriptor {
+        ShellFontDescriptor(pointSize: size, weight: weight, isMonospaced: false)
+    }
+}
+
+/// Platform-agnostic font weight enum used by the shell typography
+/// helpers. Maps cleanly to `Font.Weight` at the SwiftUI boundary.
+public enum ShellFontWeight: Sendable, Equatable {
+    case regular, medium, semibold, bold
+
+    public var swiftUIWeight: Font.Weight {
+        switch self {
+        case .regular:  return .regular
+        case .medium:   return .medium
+        case .semibold: return .semibold
+        case .bold:     return .bold
+        }
+    }
+}
+
+/// Carries the shell's canonical typography choices through DesignSystem
+/// without leaking `UIFont` / `NSFont` types into shared code. Callers
+/// turn it into a `Font` via `swiftUIFont` at the SwiftUI boundary.
+public struct ShellFontDescriptor: Sendable, Equatable {
+    public let pointSize: CGFloat
+    public let weight: ShellFontWeight
+    public let isMonospaced: Bool
+
+    public init(pointSize: CGFloat, weight: ShellFontWeight, isMonospaced: Bool) {
+        self.pointSize = pointSize
+        self.weight = weight
+        self.isMonospaced = isMonospaced
+    }
+
+    /// SwiftUI font at this descriptor's size + weight + design.
+    public var swiftUIFont: Font {
+        let design: Font.Design = isMonospaced ? .monospaced : .default
+        return .system(size: pointSize, weight: weight.swiftUIWeight, design: design)
+    }
 }
 
 extension TokenSet {

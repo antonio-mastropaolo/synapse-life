@@ -198,10 +198,10 @@ public struct SequencesView: View {
                 List(rows) { row in
                     NavigationLink(value: row) {
                         SequenceRowView(sequence: row)
+                            .frame(minHeight: 56)
                             .accessibilityElement(children: .combine)
                             .accessibilityLabel(accessibilityLabel(for: row))
                     }
-                    .listRowMinHeight(56)
                 }
                 .listStyle(.insetGrouped)
             case .error(let message):

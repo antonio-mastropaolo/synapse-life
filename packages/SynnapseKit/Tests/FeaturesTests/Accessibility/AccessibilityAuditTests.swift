@@ -71,62 +71,44 @@ struct AccessibilityAuditTests {
     // directly per the M9 boundaries.
 
     @Test
-    func defaultIdentityContrastIsAAExceptKnownPending() {
+    func defaultIdentityContrastIsAA() {
+        // Integration pass applied the M9 gainAccent diff (0.20, 0.78, 0.50)
+        // -> (0.05, 0.55, 0.30); the audit allowlist entry that previously
+        // documented the sub-AA finding has been removed.
         let result = AccessibilityAudit.auditContrast(
             theme: .make(.default), surface: "Default"
         )
-        // Known-pending (light): gainAccent on background is below 3.0:1.
-        // The manifest proposes darkening gainAccent from (0.20, 0.78, 0.50)
-        // to ~(0.05, 0.55, 0.30).
-        let allowed: Set<String> = [
-            "[light] background ↔ gainAccent ratio=2.14 < 3.0"
-        ]
-        let unexpected = result.findings
-            .map(\.detail)
-            .filter { !allowed.contains($0) }
-        for detail in unexpected { Issue.record("contrast (unexpected): \(detail)") }
-        #expect(unexpected.isEmpty)
+        if !result.passed {
+            for finding in result.findings { Issue.record("contrast: \(finding.detail)") }
+        }
+        #expect(result.passed)
     }
 
     @Test
-    func editorialIdentityContrastIsAAExceptKnownPending() {
+    func editorialIdentityContrastIsAA() {
+        // Editorial inherits the default green via TokenSet.init's fallback
+        // and is resolved by the same M9 diff.
         let result = AccessibilityAudit.auditContrast(
             theme: .make(.editorial), surface: "Editorial"
         )
-        // Known-pending (light): editorial gainAccent default reuses the
-        // default identity's green. Same diff resolves it.
-        let allowed: Set<String> = [
-            "[light] background ↔ gainAccent ratio=2.05 < 3.0"
-        ]
-        let unexpected = result.findings
-            .map(\.detail)
-            .filter { !allowed.contains($0) }
-        for detail in unexpected { Issue.record("contrast (unexpected): \(detail)") }
-        #expect(unexpected.isEmpty)
+        if !result.passed {
+            for finding in result.findings { Issue.record("contrast: \(finding.detail)") }
+        }
+        #expect(result.passed)
     }
 
     @Test
-    func terminalAmberContrastIsAAExceptKnownPending() {
+    func terminalAmberContrastIsAA() {
+        // Integration pass applied the M9 phosphorDim diff
+        // (0.700, 0.329, 0.000) -> (0.770, 0.392, 0.000). The terminal
+        // identity uses the same trio on light and dark on purpose.
         let result = AccessibilityAudit.auditContrast(
             theme: .make(.terminalAmber), surface: "Terminal"
         )
-        // Known-pending: the strict 3-color amber-phosphor palette puts
-        // `phosphorDim` (foregroundSecondary) at 4.01:1 against the ink
-        // background, just under the 4.5 normal-text threshold. The
-        // manifest proposes lifting phosphorDim from #B35400 to ~#C46400.
-        // The terminal identity *deliberately* uses the same trio on light
-        // and dark schemes — both modes get the same finding.
-        let allowed: Set<String> = [
-            "[light] background ↔ foregroundSecondary ratio=4.01 < 4.5",
-            "[light] surface ↔ foregroundSecondary ratio=4.01 < 4.5",
-            "[dark] background ↔ foregroundSecondary ratio=4.01 < 4.5",
-            "[dark] surface ↔ foregroundSecondary ratio=4.01 < 4.5"
-        ]
-        let unexpected = result.findings
-            .map(\.detail)
-            .filter { !allowed.contains($0) }
-        for detail in unexpected { Issue.record("contrast (unexpected): \(detail)") }
-        #expect(unexpected.isEmpty)
+        if !result.passed {
+            for finding in result.findings { Issue.record("contrast: \(finding.detail)") }
+        }
+        #expect(result.passed)
     }
 
     @Test

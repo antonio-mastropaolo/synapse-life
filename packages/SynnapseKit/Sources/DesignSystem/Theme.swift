@@ -48,7 +48,12 @@ public struct Theme: Sendable, Equatable {
 }
 
 private struct ThemeKey: EnvironmentKey {
-    static let defaultValue: Theme = .make(.default)
+    // App-wide shell: an unidentified subtree resolves to the Cockpit
+    // Dense identity. The `.default` enum case still exists and still
+    // resolves to the legacy `Tokens.defaultLight` / `Tokens.defaultDark`
+    // for callers that apply `.identity(.default)` explicitly (covered by
+    // [[backCompatDefaultEnumStable]]).
+    static let defaultValue: Theme = .make(.cockpitInstrument)
 }
 
 extension EnvironmentValues {

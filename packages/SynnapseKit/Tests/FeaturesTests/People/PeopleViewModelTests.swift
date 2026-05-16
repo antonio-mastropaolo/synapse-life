@@ -103,15 +103,24 @@ struct PeopleViewModelTests {
         // in the visible filter.
         let mock = MockPeopleAPI()
         await mock.setNextPeople(samplePeople())
-        let vm = PeopleViewModel(api: mock, debounce: .milliseconds(20))
+        // The production default is ~120ms; we use a small window here and
+        // poll the result, which makes the test robust to host load when
+        // the full suite runs in parallel.
+        let vm = PeopleViewModel(api: mock, debounce: .milliseconds(50))
         await vm.refresh()
 
         // Push a burst of queries; only the last should "land".
         vm.queueSearch("antoni")
         vm.queueSearch("antoni")
         vm.queueSearch("mastropaolo")
-        // Wait past the debounce window.
-        try? await Task.sleep(for: .milliseconds(80))
+
+        // Poll until the debounce task fires (visible count drops from 2
+        // to 1), with a generous ceiling. If we still see 2 after 5s the
+        // debounce is genuinely broken.
+        let deadline = ContinuousClock().now.advanced(by: .seconds(5))
+        while vm.visiblePeople.count != 1, ContinuousClock().now < deadline {
+            try? await Task.sleep(for: .milliseconds(20))
+        }
         let visible = vm.visiblePeople
         #expect(visible.count == 1)
         #expect(visible.first?.identity == "amastropaolo@wm.edu")

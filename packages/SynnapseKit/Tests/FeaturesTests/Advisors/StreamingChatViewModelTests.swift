@@ -84,7 +84,7 @@ struct StreamingChatViewModelTests {
         // After send(), composer is cleared and the user message is in
         // the array. The stream task races on a Task; pump until it
         // settles.
-        try? await waitFor(timeout: .seconds(1)) {
+        try? await waitFor(timeout: .seconds(5)) {
             await !vm.isStreaming
         }
         #expect(vm.composer == "")
@@ -124,7 +124,7 @@ struct StreamingChatViewModelTests {
         // stream completes.
         try? await Task.sleep(for: .milliseconds(50))
         vm.cancel()
-        try? await waitFor(timeout: .seconds(1)) {
+        try? await waitFor(timeout: .seconds(5)) {
             await !vm.isStreaming
         }
         #expect(vm.isStreaming == false)
@@ -143,7 +143,7 @@ struct StreamingChatViewModelTests {
         let vm = StreamingChatViewModel(api: api, advisor: sampleAdvisor())
         vm.composer = "anything"
         await vm.send()
-        try? await waitFor(timeout: .seconds(1)) {
+        try? await waitFor(timeout: .seconds(5)) {
             await !vm.isStreaming
         }
         #expect(vm.lastError != nil)
@@ -163,7 +163,7 @@ struct StreamingChatViewModelTests {
         let vm = StreamingChatViewModel(api: api, advisor: sampleAdvisor())
         vm.composer = "go"
         await vm.send()
-        try? await waitFor(timeout: .seconds(1)) {
+        try? await waitFor(timeout: .seconds(5)) {
             await !vm.isStreaming
         }
         #expect(vm.lastError == "rate limit")

@@ -1,26 +1,23 @@
 import SwiftUI
 import DesignSystem
 
+/// Shared cross-platform shell entry point.
+///
+/// The shell is Cockpit Dense — SF Mono at the 11pt base, ledger-stripe
+/// rows, signed gain/loss deltas, and a tree-style sidebar. We host the
+/// rendering inside `DesignSystem.CockpitShellPreview` so the SnapshotTests
+/// target (which does not depend on apps/*) can lock the same chrome.
+///
+/// Per-surface identities still apply inside their windows (LIFE uses
+/// `.identity(.terminalAmber)`, Spotlight / Approvals / People / Inbox
+/// use `.identity(.editorial)`). The shell is what an unidentified
+/// subtree inherits.
 @MainActor
 public struct RootView: View {
-
-    @Environment(\.theme) private var theme
-    @Environment(\.colorScheme) private var scheme
 
     public init() {}
 
     public var body: some View {
-        let tokens = theme.tokens(for: scheme)
-        ZStack {
-            tokens.background.color.ignoresSafeArea()
-            VStack(spacing: 12) {
-                Text("Synnapse")
-                    .font(.system(size: 32, weight: .medium, design: .default))
-                    .foregroundStyle(tokens.foregroundPrimary.color)
-                Text(theme.identity.rawValue)
-                    .font(.system(size: 13, weight: .regular, design: .monospaced))
-                    .foregroundStyle(tokens.foregroundSecondary.color)
-            }
-        }
+        CockpitShellPreview()
     }
 }
