@@ -65,6 +65,13 @@ struct SynnapseMacApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+
+        WindowGroup("Life", id: "life") {
+            LifeTerminalScene(api: appModel.lifeAPI)
+                .frame(minWidth: 720, minHeight: 480)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(after: .windowList) {
                 Button("Show Spotlight") { appModel.toggleSpotlight() }
@@ -79,6 +86,8 @@ struct SynnapseMacApp: App {
                     .keyboardShortcut("3", modifiers: [.command])
                 Button("Accounts") { openWindow(id: "finance-accounts") }
                     .keyboardShortcut("3", modifiers: [.command, .shift])
+                Button("Life") { openWindow(id: "life") }
+                    .keyboardShortcut("4", modifiers: [.command])
             }
         }
 
@@ -105,6 +114,11 @@ final class AppModel {
     private(set) var financeTransactions: FinanceTransactionsViewModel
     private(set) var financeInvestments: FinanceInvestmentsViewModel
 
+    /// LIFE terminal API. Forward-compat against `/api/life/entries`; the
+    /// server has not implemented it yet so the live client returns an
+    /// empty stream and the view renders the deterministic boot line.
+    let lifeAPI: LifeAPI
+
     init() {
         let baseURLString = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
             ?? "http://localhost:3000/"
@@ -130,6 +144,7 @@ final class AppModel {
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
+        self.lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
     }
 
     func bootstrapIfNeeded() async {

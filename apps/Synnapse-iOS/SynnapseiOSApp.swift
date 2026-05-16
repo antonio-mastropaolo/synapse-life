@@ -27,6 +27,9 @@ final class AppModel {
     private(set) var financeAccounts: FinanceAccountsViewModel
     private(set) var financeTransactions: FinanceTransactionsViewModel
     private(set) var financeInvestments: FinanceInvestmentsViewModel
+    /// LIFE terminal view model. Single instance owned by the app shell
+    /// so the iOS tab and any future deep links share scrollback state.
+    let life: LifeViewModel
     private var bootstrapped = false
 
     init() {
@@ -54,6 +57,7 @@ final class AppModel {
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
+        self.life = LifeViewModel(api: LiveLifeAPI(client: client, serverContractLive: false))
     }
 
     func bootstrapIfNeeded() async {
@@ -77,6 +81,7 @@ private struct RootShell: View {
                 financeAccounts: appModel.financeAccounts,
                 financeTransactions: appModel.financeTransactions,
                 financeInvestments: appModel.financeInvestments,
+                life: appModel.life,
                 auth: appModel.auth
             )
         case .signedOut, .error:
@@ -107,6 +112,7 @@ private struct RootTabView: View {
     let financeAccounts: FinanceAccountsViewModel
     let financeTransactions: FinanceTransactionsViewModel
     let financeInvestments: FinanceInvestmentsViewModel
+    let life: LifeViewModel
     let auth: AuthViewModel
 
     var body: some View {
@@ -124,8 +130,13 @@ private struct RootTabView: View {
             .identity(.cockpitInstrument)
             .tabItem { Label("Finance", systemImage: "chart.line.uptrend.xyaxis") }
 
-            PlaceholderTab(title: "Life", system: "circle.grid.2x2")
-                .tabItem { Label("Life", systemImage: "circle.grid.2x2") }
+            NavigationStack {
+                LifeTerminalView(viewModel: life)
+                    .navigationTitle("Life")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .identity(.terminalAmber)
+            .tabItem { Label("Life", systemImage: "terminal") }
 
             ApprovalsTab(flat: approvals, tree: approvalsTree)
                 .identity(.editorial)
