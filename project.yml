@@ -1,0 +1,69 @@
+name: Synnapse
+options:
+  bundleIdPrefix: tech.synnapse
+  createIntermediateGroups: true
+  developmentLanguage: en
+  deploymentTarget:
+    iOS: "17.0"
+    macOS: "14.0"
+
+packages:
+  SynnapseKit:
+    path: packages/SynnapseKit
+
+targets:
+  SynnapseMac:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - apps/Synnapse-macOS
+      - apps/Shared
+    dependencies:
+      - package: SynnapseKit
+        product: DesignSystem
+      - package: SynnapseKit
+        product: Networking
+      - package: SynnapseKit
+        product: Auth
+      - package: SynnapseKit
+        product: Models
+      - package: SynnapseKit
+        product: Persistence
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: tech.synnapse.mac
+        MACOSX_DEPLOYMENT_TARGET: "14.0"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_HARDENED_RUNTIME: YES
+
+  SynnapseiOS:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - apps/Synnapse-iOS
+      - apps/Shared
+    dependencies:
+      - package: SynnapseKit
+        product: DesignSystem
+      - package: SynnapseKit
+        product: Networking
+      - package: SynnapseKit
+        product: Auth
+      - package: SynnapseKit
+        product: Models
+      - package: SynnapseKit
+        product: Persistence
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: tech.synnapse.ios
+        IPHONEOS_DEPLOYMENT_TARGET: "17.0"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: YES
+        CODE_SIGN_STYLE: Automatic
+        TARGETED_DEVICE_FAMILY: "1,2"

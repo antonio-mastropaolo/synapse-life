@@ -1,0 +1,19 @@
+# Swift 6, Synnapse style.
+
+--swiftversion 6.0
+
+--indent 4
+--maxwidth 110
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+--closingparen balanced
+
+--self remove
+--patternlet inline
+--stripunusedargs closure-only
+
+--disable redundantReturn
+--disable wrapMultilineStatementBraces
+
+--exclude .build,DerivedData,Packages,*.xcodeproj
