@@ -11,6 +11,8 @@ struct SynnapseMacApp: App {
 
     @State private var appModel = AppModel()
 
+    @Environment(\.openWindow) private var openWindow
+
     var body: some Scene {
         WindowGroup("Synnapse") {
             RootShell(appModel: appModel)
@@ -19,10 +21,32 @@ struct SynnapseMacApp: App {
         }
         .windowStyle(.titleBar)
         .windowToolbarStyle(.unified)
+
+        WindowGroup("Approvals", id: "approvals") {
+            ApprovalsFlatView(viewModel: appModel.approvals)
+                .frame(minWidth: 960, minHeight: 600)
+                .identity(.editorial)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
+
+        WindowGroup("Approvals · Tree", id: "approvals-tree") {
+            ApprovalsTreeView(viewModel: appModel.approvalsTree)
+                .frame(minWidth: 960, minHeight: 600)
+                .identity(.editorial)
+        }
+        .windowStyle(.titleBar)
+        .windowToolbarStyle(.unified)
         .commands {
             CommandGroup(after: .windowList) {
                 Button("Show Spotlight") { appModel.toggleSpotlight() }
                     .keyboardShortcut(.space, modifiers: [.command, .shift])
+            }
+            CommandGroup(after: .toolbar) {
+                Button("Approvals") { openWindow(id: "approvals") }
+                    .keyboardShortcut("2", modifiers: [.command])
+                Button("Approvals Tree") { openWindow(id: "approvals-tree") }
+                    .keyboardShortcut("2", modifiers: [.command, .shift])
             }
         }
 
@@ -38,6 +62,8 @@ struct SynnapseMacApp: App {
 final class AppModel {
     private(set) var auth: AuthViewModel
     private(set) var spotlight: SpotlightViewModel
+    private(set) var approvals: ApprovalsViewModel
+    private(set) var approvalsTree: ApprovalsTreeViewModel
     private var bootstrapped = false
     private var spotlightController: SpotlightPanelController?
     private var hotkey: GlobalHotkeyMonitor?
@@ -59,6 +85,9 @@ final class AppModel {
             defaultHeaders: ["Accept": "application/json"]
         )
         self.spotlight = SpotlightViewModel(api: LiveSpotlightAPI(client: client))
+        let approvalsAPI = LiveApprovalsAPI(client: client)
+        self.approvals = ApprovalsViewModel(api: approvalsAPI)
+        self.approvalsTree = ApprovalsTreeViewModel(api: approvalsAPI)
     }
 
     func bootstrapIfNeeded() async {

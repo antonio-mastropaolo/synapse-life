@@ -21,6 +21,8 @@ struct SynnapseiOSApp: App {
 final class AppModel {
     var auth: AuthViewModel
     private(set) var spotlight: SpotlightViewModel
+    private(set) var approvals: ApprovalsViewModel
+    private(set) var approvalsTree: ApprovalsTreeViewModel
     private var bootstrapped = false
 
     init() {
@@ -40,6 +42,9 @@ final class AppModel {
             defaultHeaders: ["Accept": "application/json"]
         )
         self.spotlight = SpotlightViewModel(api: LiveSpotlightAPI(client: client))
+        let approvalsAPI = LiveApprovalsAPI(client: client)
+        self.approvals = ApprovalsViewModel(api: approvalsAPI)
+        self.approvalsTree = ApprovalsTreeViewModel(api: approvalsAPI)
     }
 
     func bootstrapIfNeeded() async {
@@ -55,7 +60,12 @@ private struct RootShell: View {
     var body: some View {
         switch appModel.auth.state {
         case .signedIn:
-            RootTabView(spotlight: appModel.spotlight, auth: appModel.auth)
+            RootTabView(
+                spotlight: appModel.spotlight,
+                approvals: appModel.approvals,
+                approvalsTree: appModel.approvalsTree,
+                auth: appModel.auth
+            )
         case .signedOut, .error:
             SignInView(
                 onComplete: { result in
@@ -78,6 +88,8 @@ private struct RootShell: View {
 
 private struct RootTabView: View {
     let spotlight: SpotlightViewModel
+    let approvals: ApprovalsViewModel
+    let approvalsTree: ApprovalsTreeViewModel
     let auth: AuthViewModel
 
     var body: some View {
@@ -92,11 +104,40 @@ private struct RootTabView: View {
             PlaceholderTab(title: "Life", system: "circle.grid.2x2")
                 .tabItem { Label("Life", systemImage: "circle.grid.2x2") }
 
-            PlaceholderTab(title: "Approvals", system: "checkmark.seal")
+            ApprovalsTab(flat: approvals, tree: approvalsTree)
+                .identity(.editorial)
                 .tabItem { Label("Approvals", systemImage: "checkmark.seal") }
 
             MoreTab(auth: auth)
                 .tabItem { Label("More", systemImage: "ellipsis") }
+        }
+    }
+}
+
+/// Flat vs Tree is a top-of-screen segmented control. Both bind to the
+/// shared view models on `AppModel` so switching back and forth doesn't
+/// re-fetch or lose expansion / selection state.
+private struct ApprovalsTab: View {
+    let flat: ApprovalsViewModel
+    let tree: ApprovalsTreeViewModel
+
+    private enum Surface: Hashable { case flat, tree }
+    @State private var surface: Surface = .flat
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Picker("Approvals surface", selection: $surface) {
+                Text("Flat").tag(Surface.flat)
+                Text("Tree").tag(Surface.tree)
+            }
+            .pickerStyle(.segmented)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+
+            switch surface {
+            case .flat: ApprovalsFlatView(viewModel: flat)
+            case .tree: ApprovalsTreeView(viewModel: tree)
+            }
         }
     }
 }
