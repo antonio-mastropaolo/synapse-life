@@ -12,7 +12,14 @@ let package = Package(
         .library(name: "Networking", targets: ["Networking"]),
         .library(name: "Auth", targets: ["Auth"]),
         .library(name: "Persistence", targets: ["Persistence"]),
-        .library(name: "DesignSystem", targets: ["DesignSystem"])
+        .library(name: "DesignSystem", targets: ["DesignSystem"]),
+        .library(name: "Features", targets: ["Features"])
+    ],
+    dependencies: [
+        .package(
+            url: "https://github.com/pointfreeco/swift-snapshot-testing",
+            exact: "1.17.4"
+        )
     ],
     targets: [
         .target(name: "Models", path: "Sources/Models"),
@@ -32,9 +39,19 @@ let package = Package(
             path: "Sources/Persistence"
         ),
         .target(name: "DesignSystem", path: "Sources/DesignSystem"),
+        .target(
+            name: "Features",
+            dependencies: ["Models", "Networking", "DesignSystem"],
+            path: "Sources/Features"
+        ),
+        .testTarget(
+            name: "ModelsTests",
+            dependencies: ["Models"],
+            path: "Tests/ModelsTests"
+        ),
         .testTarget(
             name: "NetworkingTests",
-            dependencies: ["Networking", "Models"],
+            dependencies: ["Networking", "Models", "Features"],
             path: "Tests/NetworkingTests"
         ),
         .testTarget(
@@ -46,6 +63,22 @@ let package = Package(
             name: "DesignSystemTests",
             dependencies: ["DesignSystem"],
             path: "Tests/DesignSystemTests"
+        ),
+        .testTarget(
+            name: "FeaturesTests",
+            dependencies: ["Features", "Models", "Networking"],
+            path: "Tests/FeaturesTests"
+        ),
+        .testTarget(
+            name: "SnapshotTests",
+            dependencies: [
+                "Features",
+                "Models",
+                "DesignSystem",
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing")
+            ],
+            path: "Tests/SnapshotTests",
+            exclude: ["__Snapshots__/README.md"]
         )
     ],
     swiftLanguageModes: [.v6]

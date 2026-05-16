@@ -7,12 +7,15 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0F8238C32E5D4522B12A5A63 /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = 343FF56D1BB189812BCE6570 /* Features */; };
 		24390C40CB1295808B46D3E1 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = 99ACCA75E0D9F3EF3BEE3FE3 /* Persistence */; };
 		29E858C84E7AEE6E43A4EDE5 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = F0A6E6DBC7123167E6DB1839 /* DesignSystem */; };
 		2B15D4D6B335AE12AD30304E /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = C51E21B9EC2D095EA6F051F4 /* Networking */; };
 		35ED29AEFF58E024E574B5E8 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 48324105834888F6612D76C9 /* Auth */; };
+		3B0E05CD5580ACE664D584CF /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = FDFB0E9C09FBD7AD0864BB18 /* Features */; };
 		45F4DF14CB4B088941C2ADC6 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = D0E9269EA55640ACE5A0B707 /* Networking */; };
 		497B600CC67B93D532BA8E9E /* SynnapseiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084AB5A5C770B02798D903A3 /* SynnapseiOSApp.swift */; };
+		6DEC4AF33AA0687B8C5F57A9 /* SpotlightPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */; };
 		7AB75C160144E6C5B8F51FF3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C66AC7FFF36359433613719 /* RootView.swift */; };
 		800156F2ECEF90143B339967 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = D63ADC8599C9925F115635D3 /* Auth */; };
 		8071B12BDECB860F9DDA5596 /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 8344322764BA889BBAFC6EB0 /* Models */; };
@@ -21,14 +24,17 @@
 		ADC29F5DA2E88B8734BE992A /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 93937D43A0DE861B9979ED99 /* Models */; };
 		C32ECF3D63E4E0EB3DB9586A /* SynnapseMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */; };
 		CEC869AE47EE3F213990C361 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 60A84DD6EADA5FBDC5411AD1 /* DesignSystem */; };
+		E65C6E36736C65F9D0EF96DB /* GlobalHotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		084AB5A5C770B02798D903A3 /* SynnapseiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynnapseiOSApp.swift; sourceTree = "<group>"; };
 		1E24156155FA9F2803999B8F /* SynnapseiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SynnapseiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynnapseMacApp.swift; sourceTree = "<group>"; };
+		56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyMonitor.swift; sourceTree = "<group>"; };
 		6C66AC7FFF36359433613719 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		6F2A45A32A29942F0FFFD9F2 /* SynnapseKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynnapseKit; path = packages/SynnapseKit; sourceTree = SOURCE_ROOT; };
+		E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightPanelController.swift; sourceTree = "<group>"; };
 		E579C4776B7EFC22D327B488 /* SynnapseMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynnapseMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -42,6 +48,7 @@
 				35ED29AEFF58E024E574B5E8 /* Auth in Frameworks */,
 				8071B12BDECB860F9DDA5596 /* Models in Frameworks */,
 				24390C40CB1295808B46D3E1 /* Persistence in Frameworks */,
+				0F8238C32E5D4522B12A5A63 /* Features in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -54,6 +61,7 @@
 				800156F2ECEF90143B339967 /* Auth in Frameworks */,
 				ADC29F5DA2E88B8734BE992A /* Models in Frameworks */,
 				AC673CEFF1BB0FB9043B25C8 /* Persistence in Frameworks */,
+				3B0E05CD5580ACE664D584CF /* Features in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -90,6 +98,8 @@
 		6F156086104B2277403D48BC /* Synnapse-macOS */ = {
 			isa = PBXGroup;
 			children = (
+				56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */,
+				E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */,
 				3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */,
 			);
 			path = "Synnapse-macOS";
@@ -141,6 +151,7 @@
 				48324105834888F6612D76C9 /* Auth */,
 				8344322764BA889BBAFC6EB0 /* Models */,
 				99ACCA75E0D9F3EF3BEE3FE3 /* Persistence */,
+				343FF56D1BB189812BCE6570 /* Features */,
 			);
 			productName = SynnapseMac;
 			productReference = E579C4776B7EFC22D327B488 /* SynnapseMac.app */;
@@ -164,6 +175,7 @@
 				D63ADC8599C9925F115635D3 /* Auth */,
 				93937D43A0DE861B9979ED99 /* Models */,
 				9E868C2E613FBCA741EF4327 /* Persistence */,
+				FDFB0E9C09FBD7AD0864BB18 /* Features */,
 			);
 			productName = SynnapseiOS;
 			productReference = 1E24156155FA9F2803999B8F /* SynnapseiOS.app */;
@@ -214,7 +226,9 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E65C6E36736C65F9D0EF96DB /* GlobalHotkeyMonitor.swift in Sources */,
 				A8C479987B6ADC15773B0B59 /* RootView.swift in Sources */,
+				6DEC4AF33AA0687B8C5F57A9 /* SpotlightPanelController.swift in Sources */,
 				C32ECF3D63E4E0EB3DB9586A /* SynnapseMacApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -470,6 +484,10 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		343FF56D1BB189812BCE6570 /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
+		};
 		48324105834888F6612D76C9 /* Auth */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Auth;
@@ -509,6 +527,10 @@
 		F0A6E6DBC7123167E6DB1839 /* DesignSystem */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = DesignSystem;
+		};
+		FDFB0E9C09FBD7AD0864BB18 /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

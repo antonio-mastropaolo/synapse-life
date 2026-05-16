@@ -30,6 +30,8 @@ targets:
         product: Models
       - package: SynnapseKit
         product: Persistence
+      - package: SynnapseKit
+        product: Features
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: tech.synnapse.mac
@@ -58,6 +60,8 @@ targets:
         product: Models
       - package: SynnapseKit
         product: Persistence
+      - package: SynnapseKit
+        product: Features
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: tech.synnapse.ios

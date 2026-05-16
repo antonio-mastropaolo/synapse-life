@@ -36,6 +36,13 @@ public actor APIClient {
     private let retry: RetryPolicy
     private let decoder: JSONDecoder
 
+    // The Spotlight client needs raw HTTP access (304 / ETag handling) that
+    // the typed send() can't model. Expose the configured base URL and
+    // session as nonisolated reads — both are immutable for the actor's
+    // lifetime and `URLSession` is already `Sendable`.
+    public nonisolated var baseURLForExternalUse: URL { baseURL }
+    public nonisolated var sessionForExternalUse: URLSession { session }
+
     public init(
         baseURL: URL,
         session: URLSession = .shared,
