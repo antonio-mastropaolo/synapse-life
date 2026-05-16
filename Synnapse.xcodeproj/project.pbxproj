@@ -32,8 +32,10 @@
 		1E24156155FA9F2803999B8F /* SynnapseiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SynnapseiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynnapseMacApp.swift; sourceTree = "<group>"; };
 		56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyMonitor.swift; sourceTree = "<group>"; };
+		660C10623B8263E3B14A24B0 /* Synnapse-macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synnapse-macOS.entitlements"; sourceTree = "<group>"; };
 		6C66AC7FFF36359433613719 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		6F2A45A32A29942F0FFFD9F2 /* SynnapseKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynnapseKit; path = packages/SynnapseKit; sourceTree = SOURCE_ROOT; };
+		CB9EF5D27AA78C9B713BA1A2 /* Synnapse-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synnapse-iOS.entitlements"; sourceTree = "<group>"; };
 		E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightPanelController.swift; sourceTree = "<group>"; };
 		E579C4776B7EFC22D327B488 /* SynnapseMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynnapseMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -100,6 +102,7 @@
 			children = (
 				56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */,
 				E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */,
+				660C10623B8263E3B14A24B0 /* Synnapse-macOS.entitlements */,
 				3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */,
 			);
 			path = "Synnapse-macOS";
@@ -125,6 +128,7 @@
 		F894EA949EE70BCFECC279A2 /* Synnapse-iOS */ = {
 			isa = PBXGroup;
 			children = (
+				CB9EF5D27AA78C9B713BA1A2 /* Synnapse-iOS.entitlements */,
 				084AB5A5C770B02798D903A3 /* SynnapseiOSApp.swift */,
 			);
 			path = "Synnapse-iOS";
@@ -249,6 +253,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synnapse-macOS/Synnapse-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -269,6 +274,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synnapse-iOS/Synnapse-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -289,6 +295,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synnapse-macOS/Synnapse-macOS.entitlements";
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -365,6 +372,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synnapse-iOS/Synnapse-iOS.entitlements";
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				GENERATE_INFOPLIST_FILE = YES;

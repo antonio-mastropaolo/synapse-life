@@ -3,6 +3,18 @@ import Security
 import Testing
 @testable import Auth
 
+/// On the iOS Simulator the data-protection keychain refuses `SecItem*` from
+/// XCTest because the test runner is not signed with the host app's
+/// `keychain-access-groups` entitlement (`errSecMissingEntitlement` / -34018).
+/// On macOS (unsigned `swift test`) the legacy keychain accepts the call. We
+/// therefore gate the round-trip tests so they only run where the keychain
+/// actually answers; iOS device runs and macOS test runs both qualify.
+#if targetEnvironment(simulator) && os(iOS)
+private let keychainAvailable = false
+#else
+private let keychainAvailable = true
+#endif
+
 @Suite("KeychainStore")
 struct KeychainStoreTests {
 
@@ -10,7 +22,7 @@ struct KeychainStoreTests {
         "tech.synnapse.keychain.tests.\(UUID().uuidString)"
     }
 
-    @Test
+    @Test(.enabled(if: keychainAvailable))
     func roundTripsValue() throws {
         let store = KeychainStore(service: uniqueService())
         let account = "refresh-token"
@@ -21,7 +33,7 @@ struct KeychainStoreTests {
         #expect(read == "token-abc")
     }
 
-    @Test
+    @Test(.enabled(if: keychainAvailable))
     func overwritesExistingValue() throws {
         let store = KeychainStore(service: uniqueService())
         let account = "refresh-token"
@@ -33,7 +45,7 @@ struct KeychainStoreTests {
         #expect(read == "second")
     }
 
-    @Test
+    @Test(.enabled(if: keychainAvailable))
     func deleteIsNoOpWhenAbsent() throws {
         let store = KeychainStore(service: uniqueService())
         // Must not throw.
@@ -50,7 +62,7 @@ struct KeychainStoreTests {
     }
 
     #if os(iOS)
-    @Test
+    @Test(.enabled(if: keychainAvailable))
     func roundTripsAccessibilityAttributeOnIOS() throws {
         let store = KeychainStore(service: uniqueService())
         let account = "refresh-token"

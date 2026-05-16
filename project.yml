@@ -40,6 +40,11 @@ targets:
         SWIFT_STRICT_CONCURRENCY: complete
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: apps/Synnapse-macOS/Synnapse-macOS.entitlements
+        # Sign in with Apple ships as the "Default" entitlement — no
+        # team-identifier baked into the repo. CI / local builds inherit the
+        # signing team from Xcode; unsigned local xcodebuild runs still
+        # produce a binary, just without the entitlement attached.
         ENABLE_HARDENED_RUNTIME: YES
 
   SynnapseiOS:
@@ -70,4 +75,5 @@ targets:
         SWIFT_STRICT_CONCURRENCY: complete
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
+        CODE_SIGN_ENTITLEMENTS: apps/Synnapse-iOS/Synnapse-iOS.entitlements
         TARGETED_DEVICE_FAMILY: "1,2"

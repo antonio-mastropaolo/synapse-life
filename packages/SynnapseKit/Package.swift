@@ -30,7 +30,7 @@ let package = Package(
         ),
         .target(
             name: "Auth",
-            dependencies: ["Models"],
+            dependencies: ["Models", "Networking"],
             path: "Sources/Auth"
         ),
         .target(
@@ -41,7 +41,7 @@ let package = Package(
         .target(name: "DesignSystem", path: "Sources/DesignSystem"),
         .target(
             name: "Features",
-            dependencies: ["Models", "Networking", "DesignSystem"],
+            dependencies: ["Models", "Networking", "DesignSystem", "Auth"],
             path: "Sources/Features"
         ),
         .testTarget(
@@ -56,7 +56,7 @@ let package = Package(
         ),
         .testTarget(
             name: "AuthTests",
-            dependencies: ["Auth"],
+            dependencies: ["Auth", "Networking", "Models"],
             path: "Tests/AuthTests"
         ),
         .testTarget(
@@ -66,7 +66,7 @@ let package = Package(
         ),
         .testTarget(
             name: "FeaturesTests",
-            dependencies: ["Features", "Models", "Networking"],
+            dependencies: ["Features", "Models", "Networking", "Auth"],
             path: "Tests/FeaturesTests"
         ),
         .testTarget(

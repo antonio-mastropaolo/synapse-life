@@ -55,6 +55,13 @@ public final class SpotlightViewModel {
         selected = nil
     }
 
+    /// Test-only seam used by snapshot tests to force a deterministic state
+    /// without round-tripping a `MockSpotlightAPI`. Production code should
+    /// never call this — the view model owns its state transitions.
+    public func injectStateForSnapshots(_ state: SpotlightState) {
+        self.state = state
+    }
+
     private func runFetch() async {
         state = .loading
         do {

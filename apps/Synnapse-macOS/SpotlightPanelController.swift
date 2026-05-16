@@ -11,9 +11,11 @@ final class SpotlightPanelController {
 
     private var panel: NSPanel?
     private let viewModel: SpotlightViewModel
+    private let auth: AuthViewModel
 
-    init(viewModel: SpotlightViewModel) {
+    init(viewModel: SpotlightViewModel, auth: AuthViewModel) {
         self.viewModel = viewModel
+        self.auth = auth
     }
 
     func toggle() {
@@ -44,7 +46,7 @@ final class SpotlightPanelController {
     }
 
     private func makePanel() -> NSPanel {
-        let root = SpotlightPanelHost(viewModel: viewModel)
+        let root = SpotlightPanelHost(viewModel: viewModel, auth: auth)
             .identity(.editorial)
             .frame(minWidth: 720, minHeight: 480)
         let hosting = NSHostingView(rootView: root)
@@ -65,17 +67,44 @@ final class SpotlightPanelController {
 }
 
 private struct SpotlightPanelHost: View {
-    let viewModel: SpotlightViewModel
+    @Bindable var viewModel: SpotlightViewModel
+    @Bindable var auth: AuthViewModel
 
     var body: some View {
-        SpotlightPanelView(
-            state: viewModel.state,
-            selected: viewModel.selected,
-            query: viewModel.query,
-            onQueryChange: { viewModel.setQuery($0) },
-            onSelect: { viewModel.select($0) }
-        )
-        .task { await viewModel.refresh() }
+        Group {
+            if case .signedIn = auth.state {
+                SpotlightPanelView(
+                    state: viewModel.state,
+                    selected: viewModel.selected,
+                    query: viewModel.query,
+                    onQueryChange: { viewModel.setQuery($0) },
+                    onSelect: { viewModel.select($0) }
+                )
+                .task { await viewModel.refresh() }
+            } else {
+                SignedOutPanel()
+            }
+        }
+    }
+}
+
+private struct SignedOutPanel: View {
+    @Environment(\.theme) private var theme
+    @Environment(\.colorScheme) private var scheme
+
+    var body: some View {
+        let tokens = theme.tokens(for: scheme)
+        ZStack {
+            tokens.background.color
+            VStack(spacing: 8) {
+                Text("Sign in to use Spotlight")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text("Open Synnapse → Settings to sign in with Apple.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+            }
+        }
     }
 }
 #endif
