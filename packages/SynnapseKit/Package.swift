@@ -14,7 +14,9 @@ let package = Package(
         .library(name: "Persistence", targets: ["Persistence"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "Charts", targets: ["SynnapseCharts"]),
-        .library(name: "Features", targets: ["Features"])
+        .library(name: "Features", targets: ["Features"]),
+        .library(name: "AppLifecycle", targets: ["AppLifecycle"]),
+        .library(name: "Tools", targets: ["Tools"])
     ],
     dependencies: [
         .package(
@@ -61,6 +63,20 @@ let package = Package(
                 // `pipelineFailed` paths surface any toolchain breakage.
                 .copy("Life/Shaders")
             ]
+        ),
+        .target(
+            name: "Tools",
+            path: "Sources/Tools"
+        ),
+        .target(
+            name: "AppLifecycle",
+            dependencies: ["Models", "Networking", "Auth", "DesignSystem", "Features"],
+            path: "Sources/AppLifecycle"
+        ),
+        .testTarget(
+            name: "AppLifecycleTests",
+            dependencies: ["AppLifecycle", "Models", "Networking", "Auth", "Features"],
+            path: "Tests/AppLifecycleTests"
         ),
         .testTarget(
             name: "ModelsTests",

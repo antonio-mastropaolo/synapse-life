@@ -5,6 +5,7 @@ import Features
 import Networking
 import Models
 import DesignSystem
+import AppLifecycle
 
 @main
 struct SynnapseMacApp: App {
@@ -18,6 +19,14 @@ struct SynnapseMacApp: App {
             RootShell(appModel: appModel)
                 .frame(minWidth: 720, minHeight: 480)
                 .task { await appModel.bootstrapIfNeeded() }
+                .onOpenURL { url in
+                    // Deep links are routed through `AppLifecycleService`.
+                    // The handler installed in `bootstrapIfNeeded`
+                    // dispatches each link to the matching surface via
+                    // `openWindow`. Links that don't parse are dropped
+                    // silently — `parse(url:)` returns nil.
+                    appModel.lifecycle.handle(url: url)
+                }
                 .toolbar {
                     // Cockpit shell toolbar: a single Spotlight palette
                     // button. ⌘K toggles the panel, matching the M2 hotkey
@@ -207,6 +216,9 @@ final class AppModel {
     private(set) var sequences: SequencesViewModel
     private(set) var settings: SettingsViewModel
 
+    // M10 — deep-link router + restoration.
+    let lifecycle: AppLifecycleService
+
     init() {
         let baseURLString = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
             ?? "http://localhost:3000/"
@@ -250,6 +262,11 @@ final class AppModel {
         // M9 wiring.
         self.sequences = SequencesViewModel(api: LiveSequencesAPI(client: client))
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
+
+        // M10 — lifecycle service. The route handler is installed in
+        // `bootstrapIfNeeded` so it can capture `openWindow` from the
+        // scene environment via a closure on the model.
+        self.lifecycle = AppLifecycleService()
     }
 
     func bootstrapIfNeeded() async {

@@ -3,6 +3,7 @@ name: ci
 on:
   push:
     branches: [main]
+    tags: ['v*.*.*']
   pull_request:
     branches: [main]
 
@@ -56,3 +57,73 @@ jobs:
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+  version-tag-format:
+    # Runs on every push/PR. When the push is a tag, the step also
+    # asserts the tag matches the `vMAJOR.MINOR.PATCH` shape so a typo
+    # like `v1.0` or `release-1` never silently triggers the release
+    # job downstream.
+    name: Version tag format check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert tag shape (tag push only)
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Tag $TAG does not match v<major>.<minor>.<patch>" >&2
+            exit 1
+          fi
+          echo "Tag $TAG matches release shape."
+
+  release:
+    # Tagged-release job. Runs only when a `v*.*.*` tag is pushed AND
+    # the upstream CI jobs succeed. The job itself never fails when
+    # signing secrets are missing; it logs a clear "skipped" line so
+    # the scaffolding is live the moment the user wires their account
+    # in.
+    name: Tagged release (macOS + iOS)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [package-tests, app-builds, version-tag-format]
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_16.app
+
+      - name: Install xcodegen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: macOS — Developer ID + notarise
+        env:
+          MACOS_SIGNING_PROFILE: ${{ secrets.MACOS_SIGNING_PROFILE }}
+        run: |
+          if [ -z "${MACOS_SIGNING_PROFILE:-}" ]; then
+            echo "release-macos: skipped (no signing profile configured)"
+            exit 0
+          fi
+          ./scripts/release-macos.sh
+
+      - name: iOS — App Store upload
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_API_ISSUER: ${{ secrets.ASC_API_ISSUER }}
+          ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        run: |
+          if [ -z "${ASC_API_KEY_ID:-}" ] || [ -z "${ASC_API_ISSUER:-}" ] || [ -z "${ASC_API_KEY_BASE64:-}" ]; then
+            echo "release-ios: skipped (App Store Connect secrets not configured)"
+            exit 0
+          fi
+          # Reconstitute the .p8 key from the base64 secret into the
+          # well-known location altool looks at.
+          mkdir -p "$HOME/private_keys"
+          echo "$ASC_API_KEY_BASE64" | base64 --decode \
+              > "$HOME/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_${ASC_API_KEY_ID}.p8"
+          ./scripts/release-ios.sh

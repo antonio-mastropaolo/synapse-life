@@ -3,6 +3,7 @@ import Auth
 import Features
 import Networking
 import Models
+import AppLifecycle
 
 @main
 struct SynnapseiOSApp: App {
@@ -12,6 +13,13 @@ struct SynnapseiOSApp: App {
         WindowGroup {
             RootShell(appModel: appModel)
                 .task { await appModel.bootstrapIfNeeded() }
+                .onOpenURL { url in
+                    // Deep links are routed through `AppLifecycleService`.
+                    // Unrecognised URLs return nil from `parse(url:)` and
+                    // are silently dropped — matches the macOS shell's
+                    // behaviour.
+                    appModel.lifecycle.handle(url: url)
+                }
         }
     }
 }
@@ -43,6 +51,9 @@ final class AppModel {
     // M9 — Sequences + Settings.
     private(set) var sequences: SequencesViewModel
     private(set) var settings: SettingsViewModel
+
+    // M10 — deep-link router + restoration.
+    let lifecycle: AppLifecycleService
 
     private var bootstrapped = false
 
@@ -86,6 +97,9 @@ final class AppModel {
         // M9 wiring.
         self.sequences = SequencesViewModel(api: LiveSequencesAPI(client: client))
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
+
+        // M10 — lifecycle service.
+        self.lifecycle = AppLifecycleService()
     }
 
     func bootstrapIfNeeded() async {
