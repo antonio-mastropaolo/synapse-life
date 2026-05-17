@@ -16,8 +16,8 @@ import AppKit
 /// The shell is rendered WITHOUT applying any `.identity(...)` modifier so we
 /// exercise the new environment default (Cockpit) rather than the legacy
 /// `.default` token set. The snapshot encodes:
-///   - sidebar with tree-style disclosure groups (SPOTLIGHT, FINANCE w/ three
-///     sub-rows, LIFE, APPROVALS, PEOPLE, INBOX, ADVISORS, SEQUENCES, OCTAGON),
+///   - sidebar with tree-style disclosure groups (FINANCE w/ three
+///     sub-rows, LIFE, ADVISORS),
 ///   - ledger-stripe content area with monospaced section labels,
 ///   - signed-delta accents (gain/loss) in the finance preview row.
 ///

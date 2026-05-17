@@ -109,13 +109,6 @@ public struct SettingsScene: View {
                        isOn: $settings.reduceMotionPreview)
                     .accessibilityHint("Forces the LIFE terminal to skip its scanline animation.")
             }
-            Section("Spotlight") {
-                LabeledContent("Hotkey", value: settings.spotlightHotkey)
-                Text("Hotkey rebinding ships in M10. Until then, this row is read-only.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .accessibilityLabel("Hotkey rebinding ships in M10.")
-            }
         }
         .formStyle(.grouped)
         .padding()
@@ -187,12 +180,6 @@ public struct SettingsForm: View {
                 Toggle("Preview Reduce Motion",
                        isOn: $settings.reduceMotionPreview)
                     .frame(minHeight: 44)
-            }
-            Section("Spotlight") {
-                LabeledContent("Hotkey", value: settings.spotlightHotkey)
-                Text("Hotkey rebinding ships in M10.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
             }
         }
         .navigationTitle("Settings")

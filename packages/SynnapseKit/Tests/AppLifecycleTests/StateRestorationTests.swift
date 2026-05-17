@@ -8,10 +8,9 @@ struct StateRestorationTests {
     @Test("payload round-trips through JSON identically")
     func roundTrip() throws {
         let payload = RestorationPayload(
-            sidebarSelection: "approvals",
+            sidebarSelection: "finance",
             macWindow: .init(width: 1280, height: 800),
             iosLastTab: "finance",
-            spotlightQuery: "llm judge",
             financeSurface: "personal"
         )
         let data = try JSONEncoder().encode(payload)
@@ -26,7 +25,6 @@ struct StateRestorationTests {
         #expect(decoded.sidebarSelection == nil)
         #expect(decoded.macWindow == nil)
         #expect(decoded.iosLastTab == nil)
-        #expect(decoded.spotlightQuery == nil)
         #expect(decoded.financeSurface == nil)
     }
 
@@ -41,7 +39,6 @@ struct StateRestorationTests {
           "sidebarSelection": "life",
           "macWindow": { "width": 1024, "height": 720 },
           "iosLastTab": null,
-          "spotlightQuery": null,
           "financeSurface": "accounts",
           "futureKnob": { "thing": true, "count": 7 },
           "anotherKnob": "stranger"
@@ -64,10 +61,9 @@ struct StateRestorationTests {
 
         let store = RestorationStore(suiteName: suiteName)
         let payload = RestorationPayload(
-            sidebarSelection: "spotlight",
+            sidebarSelection: "advisors",
             macWindow: .init(width: 1440, height: 900),
             iosLastTab: "life",
-            spotlightQuery: "vector db",
             financeSurface: "investments"
         )
         await store.save(payload)

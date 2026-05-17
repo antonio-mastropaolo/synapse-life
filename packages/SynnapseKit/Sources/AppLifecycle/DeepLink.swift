@@ -9,21 +9,20 @@ import Foundation
 /// scene-restoration path on macOS dispatches deep links from a
 /// background queue, and we don't want to bottleneck on the main
 /// actor for what is fundamentally string-shaping work.
+///
+/// Scope: Synnapse is a private-life client. The work-flavoured hosts
+/// (`spotlight`, `approvals`, `people`, `inbox`, `sequences`,
+/// `octagon`, and `finance/work`) intentionally do not exist here —
+/// those surfaces live in the synapse-v2 web app, not this client.
 public enum DeepLink: Equatable, Hashable, Sendable {
 
     public enum FinanceSurface: String, CaseIterable, Sendable, Equatable, Hashable {
-        case personal, accounts, transactions, investments, work
+        case personal, accounts, transactions, investments
     }
 
-    case spotlight(query: String?)
-    case approvals(id: String?)
     case finance(FinanceSurface)
     case life
-    case people(id: String?)
-    case inbox(messageId: String?)
     case advisors(id: String?)
-    case sequences(id: String?)
-    case octagon(vendor: String?)
     case settings
 
     // MARK: - Parsing
@@ -60,13 +59,6 @@ public enum DeepLink: Equatable, Hashable, Sendable {
         }()
 
         switch host {
-        case "spotlight":
-            let q = components.queryItems?.first { $0.name == "q" }?.value
-            return .spotlight(query: q?.isEmpty == true ? nil : q)
-
-        case "approvals":
-            return .approvals(id: firstSegment)
-
         case "finance":
             guard let raw = firstSegment, let surface = FinanceSurface(rawValue: raw) else {
                 return nil
@@ -76,20 +68,8 @@ public enum DeepLink: Equatable, Hashable, Sendable {
         case "life":
             return .life
 
-        case "people":
-            return .people(id: firstSegment)
-
-        case "inbox":
-            return .inbox(messageId: firstSegment)
-
         case "advisors":
             return .advisors(id: firstSegment)
-
-        case "sequences":
-            return .sequences(id: firstSegment)
-
-        case "octagon":
-            return .octagon(vendor: firstSegment)
 
         case "settings":
             return .settings
@@ -108,16 +88,6 @@ public enum DeepLink: Equatable, Hashable, Sendable {
         components.scheme = DeepLink.scheme
 
         switch self {
-        case .spotlight(let query):
-            components.host = "spotlight"
-            if let query, !query.isEmpty {
-                components.queryItems = [URLQueryItem(name: "q", value: query)]
-            }
-
-        case .approvals(let id):
-            components.host = "approvals"
-            if let id, !id.isEmpty { components.path = "/" + id }
-
         case .finance(let surface):
             components.host = "finance"
             components.path = "/" + surface.rawValue
@@ -125,25 +95,9 @@ public enum DeepLink: Equatable, Hashable, Sendable {
         case .life:
             components.host = "life"
 
-        case .people(let id):
-            components.host = "people"
-            if let id, !id.isEmpty { components.path = "/" + id }
-
-        case .inbox(let id):
-            components.host = "inbox"
-            if let id, !id.isEmpty { components.path = "/" + id }
-
         case .advisors(let id):
             components.host = "advisors"
             if let id, !id.isEmpty { components.path = "/" + id }
-
-        case .sequences(let id):
-            components.host = "sequences"
-            if let id, !id.isEmpty { components.path = "/" + id }
-
-        case .octagon(let vendor):
-            components.host = "octagon"
-            if let vendor, !vendor.isEmpty { components.path = "/" + vendor }
 
         case .settings:
             components.host = "settings"

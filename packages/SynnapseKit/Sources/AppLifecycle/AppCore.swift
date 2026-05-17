@@ -12,29 +12,22 @@ import Features
 /// package so the shells can be thin (just scenes + platform glue) and
 /// so the wiring itself is testable from `swift test`.
 ///
-/// Platform-only concerns (the macOS `SpotlightPanelController`, the
-/// `GlobalHotkeyMonitor`, the iOS `TabView` shell) deliberately remain
-/// in the app targets because they cannot run in a SwiftPM test
-/// process and the value of testing them in isolation is low.
+/// Scope: Synnapse is a private-life client. Work-flavoured surfaces
+/// from the synapse-v2 web app (Spotlight, Approvals, People, Inbox,
+/// Sequences, Octagon, Trading Desk) deliberately do not exist here.
+/// The shells host Finance, Life, Advisors, and Settings only.
 @MainActor
 @Observable
 public final class AppCore {
 
     public let baseURL: URL
     public let auth: AuthViewModel
-    public let spotlight: SpotlightViewModel
-    public let approvals: ApprovalsViewModel
-    public let approvalsTree: ApprovalsTreeViewModel
     public let financePersonal: FinancePersonalViewModel
     public let financeAccounts: FinanceAccountsViewModel
     public let financeTransactions: FinanceTransactionsViewModel
     public let financeInvestments: FinanceInvestmentsViewModel
     public let lifeAPI: LifeAPI
-    public let people: PeopleViewModel
-    public let inbox: InboxListViewModel
     public let advisors: AdvisorsListViewModel
-    public let octagon: OctagonViewModel
-    public let sequences: SequencesViewModel
     public let settings: SettingsViewModel
 
     /// Surfaced for [[CrashFreeLaunchTests]] — set to `true` only if a
@@ -79,12 +72,6 @@ public final class AppCore {
             defaultHeaders: ["Accept": "application/json"]
         )
 
-        self.spotlight = SpotlightViewModel(api: LiveSpotlightAPI(client: client))
-
-        let approvalsAPI = LiveApprovalsAPI(client: client)
-        self.approvals = ApprovalsViewModel(api: approvalsAPI)
-        self.approvalsTree = ApprovalsTreeViewModel(api: approvalsAPI)
-
         let financeAPI = LiveFinanceAPI(client: client)
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
@@ -93,22 +80,13 @@ public final class AppCore {
 
         self.lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
 
-        self.people = PeopleViewModel(api: LivePeopleAPI(client: client))
-        self.inbox = InboxListViewModel(api: LiveInboxAPI(client: client))
-
         self.advisors = AdvisorsListViewModel(api: LiveAdvisorsAPI(client: client))
-        self.octagon = OctagonViewModel(api: LiveOctagonAPI(
-            client: client, membershipsContractLive: false
-        ))
 
-        self.sequences = SequencesViewModel(api: LiveSequencesAPI(client: client))
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
     }
 
     /// Async bootstrap mirror of what the shell's `bootstrapIfNeeded`
-    /// would call. Currently restores the auth session from keychain;
-    /// the platform-only hotkey + Spotlight panel wiring remains in the
-    /// macOS shell because it depends on `NSPanel` / `NSEvent`.
+    /// would call. Currently restores the auth session from keychain.
     public func bootstrap() async {
         await auth.restoreFromStore()
     }

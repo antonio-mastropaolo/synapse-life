@@ -10,7 +10,6 @@ public enum SettingsKey: String, CaseIterable {
     case apiBaseURL = "synnapse.settings.apiBaseURL"
     case concealBalances = "synnapse.settings.concealBalances"
     case reduceMotionPreview = "synnapse.settings.reduceMotionPreview"
-    case spotlightHotkey = "synnapse.settings.spotlightHotkey"
 }
 
 /// Pure-value snapshot of every setting. Equatable so the test suite can
@@ -19,18 +18,15 @@ public struct SettingsSnapshot: Sendable, Equatable {
     public var apiBaseURL: String
     public var concealBalances: Bool
     public var reduceMotionPreview: Bool
-    public var spotlightHotkey: String
 
     public init(
         apiBaseURL: String = "",
         concealBalances: Bool = false,
-        reduceMotionPreview: Bool = false,
-        spotlightHotkey: String = "Cmd + Shift + Space"
+        reduceMotionPreview: Bool = false
     ) {
         self.apiBaseURL = apiBaseURL
         self.concealBalances = concealBalances
         self.reduceMotionPreview = reduceMotionPreview
-        self.spotlightHotkey = spotlightHotkey
     }
 }
 
@@ -59,9 +55,7 @@ public struct UserDefaultsSettingsStore: SettingsStore, @unchecked Sendable {
         SettingsSnapshot(
             apiBaseURL: defaults.string(forKey: SettingsKey.apiBaseURL.rawValue) ?? "",
             concealBalances: defaults.bool(forKey: SettingsKey.concealBalances.rawValue),
-            reduceMotionPreview: defaults.bool(forKey: SettingsKey.reduceMotionPreview.rawValue),
-            spotlightHotkey: defaults.string(forKey: SettingsKey.spotlightHotkey.rawValue)
-                ?? "Cmd + Shift + Space"
+            reduceMotionPreview: defaults.bool(forKey: SettingsKey.reduceMotionPreview.rawValue)
         )
     }
 
@@ -69,7 +63,6 @@ public struct UserDefaultsSettingsStore: SettingsStore, @unchecked Sendable {
         defaults.set(snapshot.apiBaseURL, forKey: SettingsKey.apiBaseURL.rawValue)
         defaults.set(snapshot.concealBalances, forKey: SettingsKey.concealBalances.rawValue)
         defaults.set(snapshot.reduceMotionPreview, forKey: SettingsKey.reduceMotionPreview.rawValue)
-        defaults.set(snapshot.spotlightHotkey, forKey: SettingsKey.spotlightHotkey.rawValue)
     }
 }
 

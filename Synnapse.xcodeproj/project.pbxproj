@@ -17,7 +17,6 @@
 		3B0E05CD5580ACE664D584CF /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = FDFB0E9C09FBD7AD0864BB18 /* Features */; };
 		45F4DF14CB4B088941C2ADC6 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = D0E9269EA55640ACE5A0B707 /* Networking */; };
 		497B600CC67B93D532BA8E9E /* SynnapseiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084AB5A5C770B02798D903A3 /* SynnapseiOSApp.swift */; };
-		6DEC4AF33AA0687B8C5F57A9 /* SpotlightPanelController.swift in Sources */ = {isa = PBXBuildFile; fileRef = E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */; };
 		7AB75C160144E6C5B8F51FF3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C66AC7FFF36359433613719 /* RootView.swift */; };
 		800156F2ECEF90143B339967 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = D63ADC8599C9925F115635D3 /* Auth */; };
 		8071B12BDECB860F9DDA5596 /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 8344322764BA889BBAFC6EB0 /* Models */; };
@@ -31,7 +30,6 @@
 		C955A1666AD07E21796B42DD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5085850B5103E8CD1A5D86C7 /* Assets.xcassets */; };
 		CEC869AE47EE3F213990C361 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 60A84DD6EADA5FBDC5411AD1 /* DesignSystem */; };
 		DB13E2F975DB6609DAF8C217 /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E3985CE8BFC656951EE0 /* AppLifecycle */; };
-		E65C6E36736C65F9D0EF96DB /* GlobalHotkeyMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -41,13 +39,11 @@
 		287CEBA7E3EBF7BBCB955218 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
 		3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynnapseMacApp.swift; sourceTree = "<group>"; };
 		5085850B5103E8CD1A5D86C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GlobalHotkeyMonitor.swift; sourceTree = "<group>"; };
 		660C10623B8263E3B14A24B0 /* Synnapse-macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synnapse-macOS.entitlements"; sourceTree = "<group>"; };
 		6C66AC7FFF36359433613719 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		6F2A45A32A29942F0FFFD9F2 /* SynnapseKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynnapseKit; path = packages/SynnapseKit; sourceTree = SOURCE_ROOT; };
 		7BE72D4E4B57B067026EDF50 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
 		CB9EF5D27AA78C9B713BA1A2 /* Synnapse-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synnapse-iOS.entitlements"; sourceTree = "<group>"; };
-		E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SpotlightPanelController.swift; sourceTree = "<group>"; };
 		E579C4776B7EFC22D327B488 /* SynnapseMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynnapseMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7F054B4B057295DD3C3E1C8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -117,8 +113,6 @@
 				5085850B5103E8CD1A5D86C7 /* Assets.xcassets */,
 				287CEBA7E3EBF7BBCB955218 /* ExportOptions.plist */,
 				264A38AA058647E25DCD0355 /* FinanceShellView.swift */,
-				56549663B354E8103C541E98 /* GlobalHotkeyMonitor.swift */,
-				E06CD5FBAFDC189B7701FDFF /* SpotlightPanelController.swift */,
 				660C10623B8263E3B14A24B0 /* Synnapse-macOS.entitlements */,
 				3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */,
 			);
@@ -277,9 +271,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				85A2E5413387A3E4BFE10C52 /* FinanceShellView.swift in Sources */,
-				E65C6E36736C65F9D0EF96DB /* GlobalHotkeyMonitor.swift in Sources */,
 				A8C479987B6ADC15773B0B59 /* RootView.swift in Sources */,
-				6DEC4AF33AA0687B8C5F57A9 /* SpotlightPanelController.swift in Sources */,
 				C32ECF3D63E4E0EB3DB9586A /* SynnapseMacApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

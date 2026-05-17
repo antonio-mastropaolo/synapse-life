@@ -6,55 +6,23 @@ import Testing
 @testable import DesignSystem
 @testable import Features
 
-/// Audit driver for every top-level Synnapse surface present in this
-/// worktree. M7 (People + Inbox), M8 (Advisors + Octagon + Trading Desk)
-/// land in sibling worktrees; their surfaces will be added to the audit
-/// list by the integrator once everything is merged.
+/// Audit driver for every top-level Synnapse surface. Scope is
+/// private-life only — Finance, Life, Advisors, Settings. The
+/// work-flavoured surfaces from the synapse-v2 web app (Spotlight,
+/// Approvals, People, Inbox, Sequences, Octagon, Trading Desk) are
+/// not part of this client and therefore not audited here.
 ///
 /// Each surface gets three audits:
 ///  1. Dynamic Type — render at the platform's smallest, medium, largest,
 ///     and an Accessibility size; flag empty renders.
 ///  2. Contrast — every (bg, fg) pair on the identity's theme must clear
 ///     WCAG AA in both modes.
-///  3. Hit targets — interactive elements must measure ≥ 44pt × 44pt.
+///  3. Hit targets — interactive elements must measure >= 44pt x 44pt.
 @Suite("Accessibility audit")
 @MainActor
 struct AccessibilityAuditTests {
 
     // MARK: - Helpers
-
-    private func sampleApprovalsVM() -> ApprovalsViewModel {
-        let mock = MockApprovalsAPI()
-        let vm = ApprovalsViewModel(api: mock)
-        let bundle = ApprovalsBundle(
-            approvals: [
-                Approval(
-                    id: "ap", title: "X", vendor: "V", approver: "P",
-                    approverRole: "r", category: "c",
-                    requestedAt: Date(timeIntervalSince1970: 0),
-                    validUntil: nil, status: .approved, workdayURL: nil,
-                    totalAmount: Decimal(1), currency: "USD"
-                )
-            ],
-            receipts: []
-        )
-        vm.injectForSnapshots(state: .results(bundle.approvals), bundle: bundle)
-        return vm
-    }
-
-    private func sampleSequencesVM() -> SequencesViewModel {
-        let mock = MockSequencesAPI()
-        let vm = SequencesViewModel(api: mock, autosaveDebounce: .milliseconds(10))
-        let row = ServerSequenceRow(
-            id: "s1", opportunity_id: "o1", lead_email: "a@b",
-            lead_display: "A", subject: "S", touch1_body: "B",
-            current_touch: 1, last_sent_at: nil, next_due_at: nil,
-            status: "active", last_log: nil, created_at: 0
-        )
-        let seq = Sequence.fromServerRow(row)
-        vm.injectForSnapshots(state: .results([seq]), selected: seq)
-        return vm
-    }
 
     private func sampleSettingsVM() -> SettingsViewModel {
         SettingsViewModel(store: InMemorySettingsStore())
@@ -65,10 +33,7 @@ struct AccessibilityAuditTests {
     // Each identity has a set of token pairs that must clear WCAG AA at
     // 4.5:1 (normal text) or 3.0:1 (non-text). When the M9 audit found
     // legitimate sub-AA pairs, we encode them here as a *known-pending*
-    // allowlist so the suite still gates against regressions. The
-    // manifest documents the proposed RGB diffs for the integrator to
-    // apply to `DesignSystem/Tokens.swift` — we must not edit that file
-    // directly per the M9 boundaries.
+    // allowlist so the suite still gates against regressions.
 
     @Test
     func defaultIdentityContrastIsAA() {
@@ -127,26 +92,6 @@ struct AccessibilityAuditTests {
     // MARK: - Hit targets
 
     @Test
-    func sequencesEditorHitTargetsMeetMinimum() {
-        // The stage editor uses .frame(minHeight: 44) on every input. We
-        // express the contract as a list of expected resolved frames and
-        // check them against the audit helper.
-        let elements: [(String, Double, Double)] = [
-            ("Stage subject field", 320, 44),
-            ("Stage body editor",   320, 180),
-            ("Stage picker segment", 56,  44)
-        ]
-        let result = AccessibilityAudit.auditHitTargets(
-            surface: "Sequences editor",
-            elements: elements
-        )
-        if !result.passed {
-            for finding in result.findings { Issue.record("hit target: \(finding.detail)") }
-        }
-        #expect(result.passed)
-    }
-
-    @Test
     func settingsFormHitTargetsMeetMinimum() {
         let elements: [(String, Double, Double)] = [
             ("Sign out button",            300, 44),
@@ -178,27 +123,6 @@ struct AccessibilityAuditTests {
     // MARK: - Dynamic Type
 
     @Test
-    func sequencesViewRendersAtAccessibilitySizes() {
-        #if canImport(SwiftUI)
-        let vm = sampleSequencesVM()
-        let view = AnyView(
-            SequencesView(viewModel: vm)
-                .frame(width: 1024, height: 768)
-                .identity(.editorial)
-        )
-        let result = AccessibilityAudit.auditDynamicType(
-            surface: "Sequences",
-            view: view,
-            sizes: [.medium, .xxxLarge]
-        )
-        if !result.passed {
-            for finding in result.findings { Issue.record("dynamic type: \(finding.detail)") }
-        }
-        #expect(result.passed)
-        #endif
-    }
-
-    @Test
     func settingsFormRendersAtAccessibilitySizes() {
         #if canImport(SwiftUI)
         // SettingsForm needs an auth view model. Use a minimal stub that
@@ -213,27 +137,6 @@ struct AccessibilityAuditTests {
         )
         let result = AccessibilityAudit.auditDynamicType(
             surface: "Settings",
-            view: view,
-            sizes: [.medium, .xxxLarge]
-        )
-        if !result.passed {
-            for finding in result.findings { Issue.record("dynamic type: \(finding.detail)") }
-        }
-        #expect(result.passed)
-        #endif
-    }
-
-    @Test
-    func approvalsViewRendersAtAccessibilitySizes() {
-        #if canImport(SwiftUI)
-        let vm = sampleApprovalsVM()
-        let view = AnyView(
-            ApprovalsFlatView(viewModel: vm)
-                .frame(width: 1024, height: 768)
-                .identity(.editorial)
-        )
-        let result = AccessibilityAudit.auditDynamicType(
-            surface: "ApprovalsFlat",
             view: view,
             sizes: [.medium, .xxxLarge]
         )

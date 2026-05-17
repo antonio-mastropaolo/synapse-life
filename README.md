@@ -1,26 +1,37 @@
 # Synnapse
 
-Native Apple-platform reframe of [synapse-v2](https://github.com/antonio-mastropaolo/synapse-v2).
-iOS and macOS today; iPadOS, visionOS, and watchOS deferred to later
-milestones. The client talks to a synapse-v2 server over HTTP; the
-Cockpit Dense identity (deep black + amber-phosphor cues) is the
-default visual language. Sign in with Apple is the only supported
-auth path.
+Native macOS and iOS personal-finance, life-log, and financial-advisors
+app. Private life only — work surfaces (research, approvals, work
+email, vendor intel) live in the [synapse-v2](https://github.com/antonio-mastropaolo/synapse-v2)
+web app and were intentionally cut from Synnapse on 2026-05-17.
+
+The client talks to the synapse-v2 server over HTTP; the Cockpit Dense
+identity (deep black + amber-phosphor cues) is the default visual
+language. Sign in with Apple is the only supported auth path.
+
+## Surface scope
+
+Four surviving surfaces:
+
+- **Finance** — Personal, Accounts, Transactions, Investments.
+- **Life** — Amber-Phosphor terminal log.
+- **Advisors** — financial advisors, streaming chat.
+- **Settings** — endpoint, conceal balances, reduce motion, sign-out.
 
 ## Layout
 
 - `packages/SynnapseKit/` — shared Swift package. Modules:
-  - `Models` — Sendable domain types and money primitives.
+  - `Models` — Sendable domain types, money primitives, shared JSON decoders.
   - `Networking` — `APIClient`, `Endpoint`, typed live API clients.
   - `Auth` — `KeychainStore`, `SessionStore`, Sign in with Apple bridge.
   - `Persistence` — local stores.
-  - `DesignSystem` — `Theme`, `Identity`, `Tokens`, `contrastRatio`.
-  - `SynnapseCharts` — chart primitives for the Finance and Octagon surfaces.
-  - `Features` — every view model + view (Spotlight, Approvals, Finance, Life, People, Inbox, Advisors, Octagon, Sequences, Settings).
+  - `DesignSystem` — `Theme`, `Identity`, `Tokens`, `contrastRatio`, `CockpitShellPreview`.
+  - `SynnapseCharts` — chart primitives for the Finance surfaces.
+  - `Features` — view models + views (Finance, Life, Advisors, Settings, Auth).
   - `AppLifecycle` — `AppCore` (cross-platform construction seam), `DeepLink`, `RestorationPayload`, `AppLifecycleService`.
-  - `Tools` — `IconRenderer` for the placeholder app icon (macOS-only target).
-- `apps/Synnapse-macOS/` — macOS app shell. Multi-window via SwiftUI `WindowGroup` + global `⌘⇧Space` Spotlight hotkey.
-- `apps/Synnapse-iOS/` — iOS app shell. Five-tab `TabView` with a `More` tab for surfaces that didn't earn a top-level slot.
+  - `Tools` — `IconRenderer` for the app icon (macOS-only target).
+- `apps/Synnapse-macOS/` — macOS app shell. Multi-window via SwiftUI `WindowGroup`.
+- `apps/Synnapse-iOS/` — iOS app shell. Four-tab `TabView` (Finance, Life, Advisors, More).
 - `apps/Shared/` — code shared between the two app targets.
 - `project.yml` — xcodegen spec. Regenerate the Xcode project with `xcodegen generate`.
 - `scripts/` — `make-icons.swift`, `release-macos.sh`, `release-ios.sh`. See `scripts/README.md`.
@@ -51,7 +62,7 @@ the first run on a new platform produces baseline images.
 ## Release
 
 The signing infrastructure is wired up; actual archival is left to
-the user because it requires Apple Developer credentials.
+the operator because it requires Apple Developer credentials.
 
 - `./scripts/release-macos.sh` — archives, exports, notarises, and
   staples the macOS app for Developer ID distribution.
@@ -68,15 +79,21 @@ the CI tagged-release workflow reads.
 ## Milestone state
 
 - M1 — Foundation (Networking, Auth, DesignSystem, app shells, CI). Done.
-- M2 — Spotlight on macOS (global hotkey, panel, search). Done.
 - M3 — Sign in with Apple end-to-end. Done.
-- M4 — Approvals (flat + tree). Done.
 - M5 — Finance (Personal, Accounts, Transactions, Investments). Done.
 - M6 — Life terminal (Metal shader + Canvas fallback). Done.
-- M7 — People + Inbox (read-only surfaces). Done.
-- M8 — Advisors + Octagon + Trading Desk. Done.
-- M9 — Sequences + Settings + accessibility polish. Done.
+- M8 — Advisors streaming chat. Done.
+- M9 — Settings + accessibility polish. Done.
 - M10 — Release engineering (icons, signing, scripts, tagged-release CI). Done.
+
+Cockpit Dense shell from the integration commit is the app-wide chrome.
+
+Milestones M2, M4, M7, and the Spotlight/Approvals/People/Inbox/
+Sequences/Octagon/Trading-Desk halves of M3/M8/M9 originally shipped
+in this repo (commits up to `e412731`) but were removed on
+2026-05-17 when Synnapse's scope was narrowed to private life only.
+Their git history is preserved; they are not visible to the user in
+the current build.
 
 ## Conventions
 

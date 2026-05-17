@@ -19,20 +19,17 @@ public struct RestorationPayload: Codable, Sendable, Equatable {
     public var sidebarSelection: String?
     public var macWindow: WindowSize?
     public var iosLastTab: String?
-    public var spotlightQuery: String?
     public var financeSurface: String?
 
     public init(
         sidebarSelection: String? = nil,
         macWindow: WindowSize? = nil,
         iosLastTab: String? = nil,
-        spotlightQuery: String? = nil,
         financeSurface: String? = nil
     ) {
         self.sidebarSelection = sidebarSelection
         self.macWindow = macWindow
         self.iosLastTab = iosLastTab
-        self.spotlightQuery = spotlightQuery
         self.financeSurface = financeSurface
     }
 
@@ -44,7 +41,6 @@ public struct RestorationPayload: Codable, Sendable, Equatable {
         case sidebarSelection
         case macWindow
         case iosLastTab
-        case spotlightQuery
         case financeSurface
     }
 }

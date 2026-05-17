@@ -14,10 +14,9 @@ struct SynnapseiOSApp: App {
             RootShell(appModel: appModel)
                 .task { await appModel.bootstrapIfNeeded() }
                 .onOpenURL { url in
-                    // Deep links are routed through `AppLifecycleService`.
+                    // Deep links route through `AppLifecycleService`.
                     // Unrecognised URLs return nil from `parse(url:)` and
-                    // are silently dropped — matches the macOS shell's
-                    // behaviour.
+                    // are silently dropped — matches the macOS shell.
                     appModel.lifecycle.handle(url: url)
                 }
         }
@@ -28,9 +27,6 @@ struct SynnapseiOSApp: App {
 @Observable
 final class AppModel {
     var auth: AuthViewModel
-    private(set) var spotlight: SpotlightViewModel
-    private(set) var approvals: ApprovalsViewModel
-    private(set) var approvalsTree: ApprovalsTreeViewModel
     private(set) var financePersonal: FinancePersonalViewModel
     private(set) var financeAccounts: FinanceAccountsViewModel
     private(set) var financeTransactions: FinanceTransactionsViewModel
@@ -39,20 +35,13 @@ final class AppModel {
     /// so the iOS tab and any future deep links share scrollback state.
     let life: LifeViewModel
 
-    // M7 — People + Inbox.
-    private(set) var people: PeopleViewModel
-    private(set) var inbox: InboxListViewModel
-
-    // M8 — Advisors + Octagon + Trading Desk (Trading Desk is mac-only;
-    // iOS shows a placeholder until the desk layout earns its phone form).
+    // Advisors — financial advisors, personal-life scope.
     private(set) var advisors: AdvisorsListViewModel
-    private(set) var octagon: OctagonViewModel
 
-    // M9 — Sequences + Settings.
-    private(set) var sequences: SequencesViewModel
+    // Settings.
     private(set) var settings: SettingsViewModel
 
-    // M10 — deep-link router + restoration.
+    // Deep-link router + restoration.
     let lifecycle: AppLifecycleService
 
     private var bootstrapped = false
@@ -73,10 +62,6 @@ final class AppModel {
             session: .shared,
             defaultHeaders: ["Accept": "application/json"]
         )
-        self.spotlight = SpotlightViewModel(api: LiveSpotlightAPI(client: client))
-        let approvalsAPI = LiveApprovalsAPI(client: client)
-        self.approvals = ApprovalsViewModel(api: approvalsAPI)
-        self.approvalsTree = ApprovalsTreeViewModel(api: approvalsAPI)
         let financeAPI = LiveFinanceAPI(client: client)
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
@@ -84,21 +69,10 @@ final class AppModel {
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
         self.life = LifeViewModel(api: LiveLifeAPI(client: client, serverContractLive: false))
 
-        // M7 wiring.
-        self.people = PeopleViewModel(api: LivePeopleAPI(client: client))
-        self.inbox = InboxListViewModel(api: LiveInboxAPI(client: client))
-
-        // M8 wiring.
         self.advisors = AdvisorsListViewModel(api: LiveAdvisorsAPI(client: client))
-        self.octagon = OctagonViewModel(api: LiveOctagonAPI(
-            client: client, membershipsContractLive: false
-        ))
 
-        // M9 wiring.
-        self.sequences = SequencesViewModel(api: LiveSequencesAPI(client: client))
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
 
-        // M10 — lifecycle service.
         self.lifecycle = AppLifecycleService()
     }
 
@@ -146,17 +120,15 @@ private struct RootShell: View {
     }
 }
 
-/// Five visible tabs (HIG cap). Anything that doesn't earn a top-level
-/// tab lives in the `More` tab as a NavigationStack list.
+/// Four visible tabs: Finance, Life, Advisors, More (Settings + sign-out).
+/// Synnapse is a private-life client; work surfaces from synapse-v2
+/// (Spotlight, Approvals, People, Inbox, Sequences, Octagon, Trading
+/// Desk) deliberately do not live here.
 private struct RootTabView: View {
     @Bindable var appModel: AppModel
 
     var body: some View {
         TabView {
-            SpotlightView(viewModel: appModel.spotlight)
-                .identity(.editorial)
-                .tabItem { Label("Spotlight", systemImage: "sparkles") }
-
             FinanceTab(
                 personal: appModel.financePersonal,
                 accounts: appModel.financeAccounts,
@@ -174,9 +146,13 @@ private struct RootTabView: View {
             .identity(.terminalAmber)
             .tabItem { Label("Life", systemImage: "terminal") }
 
-            ApprovalsTab(flat: appModel.approvals, tree: appModel.approvalsTree)
-                .identity(.editorial)
-                .tabItem { Label("Approvals", systemImage: "checkmark.seal") }
+            NavigationStack {
+                AdvisorsView(viewModel: appModel.advisors)
+                    .navigationTitle("Advisors")
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+            .identity(.cockpitInstrument)
+            .tabItem { Label("Advisors", systemImage: "bubble.left.and.bubble.right") }
 
             MoreTab(appModel: appModel)
                 .tabItem { Label("More", systemImage: "ellipsis") }
@@ -223,74 +199,19 @@ private struct FinanceTab: View {
     }
 }
 
-/// Flat vs Tree is a top-of-screen segmented control. Both bind to the
-/// shared view models on `AppModel` so switching back and forth doesn't
-/// re-fetch or lose expansion / selection state.
-private struct ApprovalsTab: View {
-    let flat: ApprovalsViewModel
-    let tree: ApprovalsTreeViewModel
-
-    private enum Surface: Hashable { case flat, tree }
-    @State private var surface: Surface = .flat
-
-    var body: some View {
-        VStack(spacing: 0) {
-            Picker("Approvals surface", selection: $surface) {
-                Text("Flat").tag(Surface.flat)
-                Text("Tree").tag(Surface.tree)
-            }
-            .pickerStyle(.segmented)
-            .padding(.horizontal, 12)
-            .padding(.top, 8)
-
-            switch surface {
-            case .flat: ApprovalsFlatView(viewModel: flat)
-            case .tree: ApprovalsTreeView(viewModel: tree)
-            }
-        }
-    }
-}
-
-/// "More" tab. Hosts the six surfaces that did not earn a top-level tab:
-/// People, Inbox, Advisors, Octagon, Sequences, Settings. Trading Desk
-/// renders its iOS placeholder; the real desk is mac-only.
+/// "More" tab. Hosts Settings + any future scalar surfaces. Today it's
+/// just a Settings entry — kept as its own tab so the standard iOS
+/// "swipe down on More" gesture still works for surfaces we add later.
 private struct MoreTab: View {
     let appModel: AppModel
 
     private enum Route: Hashable {
-        case people, inbox, advisors, octagon
-        case tradingDesk, sequences, settings
+        case settings
     }
 
     var body: some View {
         NavigationStack {
             List {
-                Section("Workspace") {
-                    NavigationLink(value: Route.people) {
-                        Label("People", systemImage: "person.2")
-                    }
-                    NavigationLink(value: Route.inbox) {
-                        Label("Inbox", systemImage: "tray")
-                    }
-                }
-                Section("Intelligence") {
-                    NavigationLink(value: Route.advisors) {
-                        Label("Advisors", systemImage: "bubble.left.and.bubble.right")
-                    }
-                    NavigationLink(value: Route.octagon) {
-                        Label("Octagon", systemImage: "octagon")
-                    }
-                }
-                Section("Investing") {
-                    NavigationLink(value: Route.tradingDesk) {
-                        Label("Trading Desk", systemImage: "chart.bar.doc.horizontal")
-                    }
-                }
-                Section("Outreach") {
-                    NavigationLink(value: Route.sequences) {
-                        Label("Sequences", systemImage: "paperplane")
-                    }
-                }
                 Section {
                     NavigationLink(value: Route.settings) {
                         Label("Settings", systemImage: "gearshape")
@@ -300,24 +221,6 @@ private struct MoreTab: View {
             .navigationTitle("More")
             .navigationDestination(for: Route.self) { route in
                 switch route {
-                case .people:
-                    PeopleView(viewModel: appModel.people)
-                        .identity(.editorial)
-                case .inbox:
-                    InboxListView(viewModel: appModel.inbox)
-                        .identity(.editorial)
-                case .advisors:
-                    AdvisorsView(viewModel: appModel.advisors)
-                        .identity(.cockpitInstrument)
-                case .octagon:
-                    OctagonView(viewModel: appModel.octagon)
-                        .identity(.cockpitInstrument)
-                case .tradingDesk:
-                    TradingDeskPlaceholderView()
-                        .identity(.cockpitInstrument)
-                case .sequences:
-                    SequencesView(viewModel: appModel.sequences)
-                        .identity(.editorial)
                 case .settings:
                     SettingsForm(settings: appModel.settings, auth: appModel.auth)
                         .identity(.editorial)

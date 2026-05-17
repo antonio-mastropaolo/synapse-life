@@ -29,8 +29,7 @@ struct SettingsScreenSnapshotTests {
         let store = InMemorySettingsStore(initial: SettingsSnapshot(
             apiBaseURL: "http://localhost:3000/",
             concealBalances: true,
-            reduceMotionPreview: false,
-            spotlightHotkey: "Cmd + Shift + Space"
+            reduceMotionPreview: false
         ))
         return SettingsViewModel(store: store)
     }

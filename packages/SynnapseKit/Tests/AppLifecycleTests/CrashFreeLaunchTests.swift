@@ -7,10 +7,12 @@ import Testing
 /// `SynnapseiOSApp.AppModel`). The shells instantiate the same set of
 /// `Networking`/`Auth`/`Features` view models that `AppCore` does, so a
 /// crash-free `AppCore.init` is a load-bearing proxy for a crash-free
-/// shell `AppModel.init`. Platform-specific surfaces (`SpotlightPanel
-/// Controller`, `GlobalHotkeyMonitor`, `TradingDesk`) are intentionally
-/// excluded — they cannot run in a SwiftPM test process and are gated
-/// behind `#if os(macOS)` in the shells.
+/// shell `AppModel.init`.
+///
+/// Synnapse's surface scope is private-life only — Finance, Life,
+/// Advisors, Settings. Work surfaces from synapse-v2 (Spotlight,
+/// Approvals, People, Inbox, Sequences, Octagon, Trading Desk) live in
+/// the web app, not this client.
 @Suite("Crash-free launch")
 @MainActor
 struct CrashFreeLaunchTests {
@@ -21,19 +23,12 @@ struct CrashFreeLaunchTests {
         // Touch every wired-up VM so the test fails loudly if any of
         // them are nil or trap during init.
         _ = core.auth
-        _ = core.spotlight
-        _ = core.approvals
-        _ = core.approvalsTree
         _ = core.financePersonal
         _ = core.financeAccounts
         _ = core.financeTransactions
         _ = core.financeInvestments
         _ = core.lifeAPI
-        _ = core.people
-        _ = core.inbox
         _ = core.advisors
-        _ = core.octagon
-        _ = core.sequences
         _ = core.settings
     }
 

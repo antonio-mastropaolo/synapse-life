@@ -3,10 +3,9 @@ import SwiftUI
 /// Cockpit Dense shell — the app-wide chrome.
 ///
 /// The shell is the frame an unidentified subtree inherits. Inside, each
-/// surface still applies its own identity:
+/// surviving surface still applies its own identity:
 ///   - LIFE applies `.identity(.terminalAmber)`
-///   - Spotlight / Approvals / People / Inbox / Advisors / Sequences /
-///     Settings apply `.identity(.editorial)`
+///   - Advisors / Settings apply `.identity(.editorial)`
 ///   - Finance keeps `.identity(.cockpitInstrument)` — the inner identity
 ///     happens to match the shell, which is intentional. Finance is what
 ///     gave the shell its visual vocabulary in the first place.
@@ -92,32 +91,23 @@ private struct CockpitSidebar: View {
 
     /// Sidebar tree, encoded as a flat list with a `depth` column so the
     /// snapshot is deterministic (no NavigationSplitView host context
-    /// games). The labels match the ASCII preview the operator selected:
-    ///   SPOTLIGHT
+    /// games). Scope: private-life surfaces only — work-flavoured
+    /// sections (Spotlight, Approvals, People, Inbox, Sequences,
+    /// Octagon) live in the synapse-v2 web app, not this client.
+    ///
     ///   FINANCE
     ///     Personal
     ///     Accounts
     ///     Investments
     ///   LIFE
-    ///   APPROVALS
-    ///   PEOPLE
-    ///   INBOX
     ///   ADVISORS
-    ///   SEQUENCES
-    ///   OCTAGON
     private static let rows: [Row] = [
-        .init(id: "spotlight",    label: "SPOTLIGHT", depth: 0),
         .init(id: "finance",      label: "FINANCE",   depth: 0),
         .init(id: "finance-pers", label: "Personal",     depth: 1),
         .init(id: "finance-acc",  label: "Accounts",     depth: 1),
         .init(id: "finance-inv",  label: "Investments",  depth: 1),
         .init(id: "life",       label: "LIFE",      depth: 0),
-        .init(id: "approvals",  label: "APPROVALS", depth: 0),
-        .init(id: "people",     label: "PEOPLE",    depth: 0),
-        .init(id: "inbox",      label: "INBOX",     depth: 0),
-        .init(id: "advisors",   label: "ADVISORS",  depth: 0),
-        .init(id: "sequences",  label: "SEQUENCES", depth: 0),
-        .init(id: "octagon",    label: "OCTAGON",   depth: 0)
+        .init(id: "advisors",   label: "ADVISORS",  depth: 0)
     ]
 
     var body: some View {

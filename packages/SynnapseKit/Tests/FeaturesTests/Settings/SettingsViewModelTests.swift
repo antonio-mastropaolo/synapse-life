@@ -11,8 +11,7 @@ struct SettingsViewModelTests {
         let store = InMemorySettingsStore(initial: SettingsSnapshot(
             apiBaseURL: "https://example.test",
             concealBalances: true,
-            reduceMotionPreview: false,
-            spotlightHotkey: "Cmd + Shift + Space"
+            reduceMotionPreview: false
         ))
         let vm = SettingsViewModel(store: store)
         #expect(vm.apiBaseURL == "https://example.test")
@@ -50,8 +49,7 @@ struct SettingsViewModelTests {
         let store = InMemorySettingsStore(initial: SettingsSnapshot(
             apiBaseURL: "https://x",
             concealBalances: true,
-            reduceMotionPreview: true,
-            spotlightHotkey: "Cmd + K"
+            reduceMotionPreview: true
         ))
         let vm = SettingsViewModel(store: store)
         vm.resetToDefaults()
@@ -59,7 +57,6 @@ struct SettingsViewModelTests {
         #expect(snap.apiBaseURL == "")
         #expect(snap.concealBalances == false)
         #expect(snap.reduceMotionPreview == false)
-        #expect(snap.spotlightHotkey == "Cmd + Shift + Space")
     }
 
     @Test
@@ -70,8 +67,7 @@ struct SettingsViewModelTests {
         let snap = SettingsSnapshot(
             apiBaseURL: "https://round.trip",
             concealBalances: true,
-            reduceMotionPreview: true,
-            spotlightHotkey: "Cmd + J"
+            reduceMotionPreview: true
         )
         store.write(snap)
         let read = store.read()

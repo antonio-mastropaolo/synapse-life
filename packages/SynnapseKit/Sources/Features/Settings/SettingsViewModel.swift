@@ -21,9 +21,6 @@ public final class SettingsViewModel {
     public var reduceMotionPreview: Bool {
         didSet { persist() }
     }
-    public var spotlightHotkey: String {
-        didSet { persist() }
-    }
 
     private let store: SettingsStore
 
@@ -33,15 +30,13 @@ public final class SettingsViewModel {
         self.apiBaseURL = snapshot.apiBaseURL
         self.concealBalances = snapshot.concealBalances
         self.reduceMotionPreview = snapshot.reduceMotionPreview
-        self.spotlightHotkey = snapshot.spotlightHotkey
     }
 
     public var snapshot: SettingsSnapshot {
         SettingsSnapshot(
             apiBaseURL: apiBaseURL,
             concealBalances: concealBalances,
-            reduceMotionPreview: reduceMotionPreview,
-            spotlightHotkey: spotlightHotkey
+            reduceMotionPreview: reduceMotionPreview
         )
     }
 
@@ -63,7 +58,6 @@ public final class SettingsViewModel {
         apiBaseURL = defaults.apiBaseURL
         concealBalances = defaults.concealBalances
         reduceMotionPreview = defaults.reduceMotionPreview
-        spotlightHotkey = defaults.spotlightHotkey
     }
 
     private func persist() {
