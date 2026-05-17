@@ -29,7 +29,13 @@ struct DashboardRowView: View {
 
             Spacer(minLength: 8)
 
-            DashboardCategoryPill(category: entry.transaction.category)
+            // Canonical pill from the Categories module. Resolves the
+            // server category string → `CategoryID` via the shared
+            // `CategoryResolver`, then paints with `CategoryID.displayColor`
+            // — the source of truth across Dashboard, Categories, and the
+            // Copilot chrome. Reconciled 2026-05-17 during the four-branch
+            // integration to retire the local `DashboardCategoryPill`.
+            CategoryPill(transaction: entry.transaction, size: .compact)
 
             amountText(tokens: tokens)
                 // Tabular monospaced figures so the right edge of

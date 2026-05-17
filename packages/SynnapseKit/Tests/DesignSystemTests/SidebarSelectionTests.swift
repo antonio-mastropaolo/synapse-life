@@ -45,7 +45,16 @@ struct SidebarSelectionTests {
             .recurrings,
             .subscriptions,
             .life,
-            .advisors
+            .advisors,
+            // INTELLIGENCE section (AI++ wedge, 2026-05-17)
+            .digest,
+            .forecast,
+            .smartAlerts,
+            // Sheet-routable destinations (no sidebar row, but the
+            // routing VM must still round-trip them so a deep link or
+            // ⌘K can drive selection.)
+            .ask,
+            .anomalyExplainer
         ]
 
         for destination in destinations {
@@ -76,6 +85,11 @@ struct SidebarSelectionTests {
         // painted in the macOS sidebar. Other agents render content for
         // these destinations and rely on this contract to know which
         // row is which. Changing the order is a breaking change.
+        //
+        // Updated 2026-05-17 (Copilot integration): the eleven
+        // original rows are followed by the INTELLIGENCE section's
+        // three rows. Sheet-only destinations (.ask,
+        // .anomalyExplainer) are not in this list.
         let expected: [RootDestination] = [
             .dashboard,
             .transactions,
@@ -87,9 +101,21 @@ struct SidebarSelectionTests {
             .recurrings,
             .subscriptions,
             .life,
-            .advisors
+            .advisors,
+            .digest,
+            .forecast,
+            .smartAlerts
         ]
         #expect(RootDestination.canonicalOrder == expected)
+    }
+
+    @Test("Intelligence-section order is digest, forecast, smartAlerts")
+    func intelligenceSectionOrder() {
+        #expect(RootDestination.intelligenceOrder == [
+            .digest,
+            .forecast,
+            .smartAlerts
+        ])
     }
 
     // MARK: - Account row taps

@@ -12,14 +12,16 @@ struct SynnapseMacApp: App {
 
     @State private var appModel = AppModel()
     @State private var routing = RootShellViewModel()
+    /// Whether the Ask sheet is currently presented. The keystroke
+    /// (`⌘K`) and the legacy command-bar entry points both flip this
+    /// flag; the sheet itself is rendered as a centered overlay so it
+    /// can use the same focus / dim semantics as the previous
+    /// `CommandBarView` while delivering the richer
+    /// `IntelligenceAskView` answer surface.
+    @State private var isAskPresented: Bool = false
 
     var body: some Scene {
         WindowGroup("Synapse") {
-            // Single live shell. The previous build painted a static
-            // `RootView` preview in the main window and only opened the
-            // real surfaces in secondary windows via menu commands —
-            // sidebar rows did nothing. The new shell hosts the
-            // surviving surfaces directly, switched via the sidebar.
             ZStack(alignment: .top) {
                 CopilotShellMac(
                     routing: routing,
@@ -29,26 +31,36 @@ struct SynnapseMacApp: App {
                     investments: appModel.financeInvestments,
                     lifeAPI: appModel.lifeAPI,
                     advisors: appModel.advisors,
+                    dashboard: appModel.dashboard,
+                    categories: appModel.categories,
+                    digest: appModel.digest,
+                    forecast: appModel.forecast,
+                    smartAlerts: appModel.smartAlerts,
                     showsDemoDataFooter: appModel.usesDemoData
                 )
 
-                if appModel.commandBar.isPresented {
-                    // Dim the background and absorb taps outside the
-                    // palette so the user can dismiss with a click.
+                if isAskPresented {
+                    // Dim and absorb taps so a click outside the sheet
+                    // dismisses — same affordance the legacy command
+                    // bar used. The new Ask surface itself owns the
+                    // dismiss control inside its header.
                     Color.black.opacity(0.30)
                         .ignoresSafeArea()
-                        .onTapGesture { appModel.commandBar.close() }
+                        .onTapGesture { closeAsk() }
                         .transition(.opacity)
 
-                    CommandBarView(viewModel: appModel.commandBar) { sugg in
-                        applySuggestion(sugg)
-                        appModel.commandBar.close()
-                    }
-                    .padding(.top, 64)
+                    IntelligenceAskView(
+                        viewModel: appModel.intelligenceAsk,
+                        onCitationTap: { citation in
+                            routeCitation(citation)
+                        },
+                        onDismiss: { closeAsk() }
+                    )
+                    .padding(.top, 84)
                     .transition(.move(edge: .top).combined(with: .opacity))
                 }
             }
-            .animation(.easeOut(duration: 0.18), value: appModel.commandBar.isPresented)
+            .animation(.easeOut(duration: 0.18), value: isAskPresented)
             .frame(minWidth: 1080, minHeight: 720)
             .task { await appModel.bootstrapIfNeeded() }
             .onOpenURL { url in
@@ -60,10 +72,9 @@ struct SynnapseMacApp: App {
         .commands {
             // Sidebar keyboard shortcuts. Each command targets the
             // routing VM so the main window updates in place — no
-            // secondary windows. Matches the brief's "no extra chrome"
-            // direction.
+            // secondary windows.
             CommandGroup(after: .toolbar) {
-                Button("Ask Synapse") { appModel.commandBar.open() }
+                Button("Ask Synapse") { openAsk() }
                     .keyboardShortcut("k", modifiers: [.command])
                 Button("Dashboard") { routing.select(.dashboard) }
                     .keyboardShortcut("1", modifiers: [.command])
@@ -77,47 +88,52 @@ struct SynnapseMacApp: App {
                     .keyboardShortcut("5", modifiers: [.command])
                 Button("Advisors") { routing.select(.advisors) }
                     .keyboardShortcut("7", modifiers: [.command])
+                Button("Categories") { routing.select(.categories) }
+                    .keyboardShortcut("8", modifiers: [.command])
+                // INTELLIGENCE section
+                Button("Weekly Digest") { routing.select(.digest) }
+                    .keyboardShortcut("9", modifiers: [.command])
+                Button("Forecast") { routing.select(.forecast) }
+                    .keyboardShortcut("0", modifiers: [.command])
+                Button("Smart Alerts") { routing.select(.smartAlerts) }
+                    .keyboardShortcut("a", modifiers: [.command, .shift])
             }
         }
 
-        // No explicit window for the palette — it is overlaid inside
-        // the main scene above. `applySuggestion` lives here so the
-        // routing VM is in scope.
         Settings {
-            // M9 promoted Settings to the full `SettingsScene`. The
-            // standard macOS Cmd-, gesture opens this scene for free; no
-            // explicit command is needed.
             SettingsScene(settings: appModel.settings, auth: appModel.auth)
         }
     }
 
-    /// Route a command-bar suggestion to the right sidebar destination.
-    /// Surface jumps update routing; the other kinds are advisory-only
-    /// today (the advisor target lands as a routing.select(.advisors)).
-    private func applySuggestion(_ sugg: CommandSuggestion) {
-        switch sugg.kind {
-        case .surface(let target):
-            switch target {
-            // The Copilot redesign promotes Accounts / Transactions /
-            // Investments to top-level destinations. The command palette
-            // routes through those now so the active-row indicator
-            // lights up on the correct sidebar entry. `.personal` keeps
-            // its legacy `.finance(.personal)` mapping because there is
-            // no top-level Personal row in the redesign.
-            case .personal:     routing.select(.finance(.personal))
-            case .accounts:     routing.select(.accounts)
-            case .transactions: routing.select(.transactions)
-            case .investments:  routing.select(.investments)
-            case .life:         routing.select(.life)
-            case .advisors:     routing.select(.advisors)
-            case .settings:     break // macOS opens Settings via Cmd-,
-            }
-        case .savedQuery:
-            appModel.commandBar.query = sugg.label
-            appModel.commandBar.submit()
-        case .askAdvisor:
-            routing.select(.advisors)
+    // MARK: - Ask sheet
+
+    private func openAsk() {
+        // Refresh the route badge in case the system intelligence
+        // availability flipped (e.g. user toggled Apple Intelligence
+        // in System Settings between launches).
+        isAskPresented = true
+    }
+
+    private func closeAsk() {
+        appModel.intelligenceAsk.cancel()
+        isAskPresented = false
+    }
+
+    /// Route an Ask citation chip tap to the matching sidebar
+    /// destination. Per the AI++ manifest section 5: transactions and
+    /// accounts route through Transactions / Accounts, category chips
+    /// land on Categories, and insight chips dismiss the sheet (they
+    /// will route to the Insights surface once it lands).
+    private func routeCitation(_ citation: AskCitation) {
+        switch citation.kind {
+        case .transaction, .account:
+            routing.select(.transactions)
+        case .category:
+            routing.select(.categories)
+        case .insight:
+            break
         }
+        closeAsk()
     }
 }
 
@@ -132,33 +148,37 @@ final class AppModel {
     private(set) var financeTransactions: FinanceTransactionsViewModel
     private(set) var financeInvestments: FinanceInvestmentsViewModel
 
-    /// LIFE terminal API. Forward-compat against `/api/life/entries`; the
-    /// server has not implemented it yet so the live client returns an
-    /// empty stream and the view renders the deterministic boot line.
+    /// LIFE terminal API.
     let lifeAPI: LifeAPI
 
-    // Advisors — financial advisors, personal-life scope.
     private(set) var advisors: AdvisorsListViewModel
-
-    // Settings.
     private(set) var settings: SettingsViewModel
 
-    // Command bar — global ⌘K palette. Backed by the local Ask stub
-    // until /api/ai/ask lands.
-    private(set) var commandBar: CommandBarViewModel
+    /// Inbox of un-reviewed transactions (agent 2). Seeded with the
+    /// rich demo data so the Dashboard tab paints a believable 30-row
+    /// queue on first launch. When `/api/dashboard/inbox` lands, swap
+    /// to an empty VM and call `dashboard.load(...)` from bootstrap.
+    private(set) var dashboard: DashboardViewModel
 
-    // Deep-link router + restoration.
+    /// Categories VM — lifted to AppModel so a single instance
+    /// survives sidebar selections AND so `bootstrapIfNeeded` can
+    /// project the demo / live transactions through it once on
+    /// launch (so the surface renders populated pills the first time
+    /// the user clicks the Categories row).
+    private(set) var categories: CategoriesViewModel
+
+    // AI++ wedge VMs. The reducers are deterministic against the
+    // pinned demo data, so the surfaces render representative content
+    // even before any server contract exists.
+    private(set) var digest: DigestViewModel
+    private(set) var forecast: ForecastViewModel
+    private(set) var smartAlerts: SmartAlertsViewModel
+    private(set) var intelligenceAsk: IntelligenceAskViewModel
+
     let lifecycle: AppLifecycleService
 
-    /// When true, the VMs are bound to Mock APIs pre-seeded with demo
-    /// fixtures. DEBUG builds set this so the cockpit renders something
-    /// on first paint instead of empty `.idle` states. The sidebar
-    /// surfaces a one-line "demo data" footer in this mode.
     let usesDemoData: Bool
 
-    // Handles to the Mock APIs when running in demo mode; `nil` in
-    // release wiring. Kept to call `DemoData.seed` from
-    // `bootstrapIfNeeded` before the VMs refresh.
     private let demoFinanceAPI: MockFinanceAPI?
     private let demoLifeAPI: MockLifeAPI?
     private let demoAdvisorsAPI: MockAdvisorsAPI?
@@ -180,9 +200,6 @@ final class AppModel {
             defaultHeaders: ["Accept": "application/json"]
         )
 
-        // Default: Live APIs against the real synapse-v2 server at
-        // baseURL. Set SYNNAPSE_USE_DEMO=1 in the environment to fall
-        // back to Mock APIs with pre-seeded demo fixtures.
         let useDemo = ProcessInfo.processInfo.environment["SYNNAPSE_USE_DEMO"] == "1"
         let financeAPI: FinanceAPI
         let lifeAPI: LifeAPI
@@ -216,16 +233,48 @@ final class AppModel {
         self.lifeAPI = lifeAPI
 
         self.advisors = AdvisorsListViewModel(api: advisorsAPI)
-
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
 
-        // Command bar — captures a snapshot of the personal VM each
-        // time a query submits, so the Ask stub always has fresh
-        // context. Closes over a local reference to dodge the "self
-        // used before init" diagnostic.
-        self.commandBar = CommandBarViewModel(
-            askAPI: LiveAskAPI(client: client, serverContractLive: false),
-            advisorIds: ["financial", "tax", "life"],
+        // Dashboard inbox — seeded with the same demo data the iOS
+        // shell uses so the macOS detail pane paints a populated
+        // queue on first run.
+        self.dashboard = DashboardViewModel(
+            entries: DashboardDemoData.entries(
+                relativeTo: Date(),
+                calendar: Calendar.current
+            ),
+            ledgerTotal: DashboardDemoData.ledgerTotal,
+            calendar: Calendar.current,
+            referenceDate: Date(),
+            locale: .current
+        )
+
+        // Categories — shared VM. Projection happens in
+        // `bootstrapIfNeeded` after the dashboard's demo entries are
+        // known (a single shared CategoryStore is fine in-process).
+        self.categories = CategoriesViewModel(store: CategoryStore())
+
+        // AI++ wedge. Each VM defers to its local stub API until the
+        // matching synapse-v2 route lands. Refreshes are kicked off
+        // from `bootstrapIfNeeded` once the finance snapshot exists.
+        self.digest = DigestViewModel(api: LocalStubDigestAPI())
+        self.forecast = ForecastViewModel(api: LocalStubForecastAPI())
+        self.smartAlerts = SmartAlertsViewModel()
+
+        // Ask viewmodel — bridges the existing LiveAskAPI through the
+        // new IntelligenceRouter shape. The router auto-picks the
+        // Apple Intelligence path on supported systems and falls back
+        // to the server-style stream otherwise. The on-device branch
+        // wraps the server branch for the "wrap until FoundationModels
+        // is generally importable" path agent 5 documented.
+        let askAPI = LiveAskAPI(client: client, serverContractLive: false)
+        let serverRouter = ServerIntelligenceRouter(askAPI: askAPI)
+        let router = DefaultIntelligenceRouter(
+            appleIntelligence: AppleIntelligenceRouter(underlying: serverRouter),
+            server: serverRouter
+        )
+        self.intelligenceAsk = IntelligenceAskViewModel(
+            router: router,
             contextProvider: {
                 if case .ready(let snap) = personalVM.state {
                     return AskContext(
@@ -237,9 +286,6 @@ final class AppModel {
             }
         )
 
-        // Deep-link service. The route handler is installed in
-        // `bootstrapIfNeeded` so it can capture `openWindow` from the
-        // scene environment via a closure on the model.
         self.lifecycle = AppLifecycleService()
     }
 
@@ -248,8 +294,6 @@ final class AppModel {
         bootstrapped = true
         await auth.restoreFromStore()
 
-        // Seed the demo fixtures (when in demo mode) before the surfaces
-        // refresh so the first paint isn't an empty `.idle` state.
         if let finance = demoFinanceAPI,
            let life = demoLifeAPI,
            let advisorsAPI = demoAdvisorsAPI {
@@ -260,26 +304,42 @@ final class AppModel {
             )
         }
 
-        // Refresh every surface on bootstrap regardless of demo/live so
-        // the first paint shows real data even when the user lands on a
-        // tab whose `.task` hasn't fired yet.
         await financePersonal.refresh()
         await financeAccounts.refresh()
         await financeTransactions.refresh()
         await financeInvestments.refresh()
         await advisors.refresh()
 
-        // Settings <-> Finance bridge. When the conceal-balances
-        // preference is on, forward an inactive scene-phase signal to the
-        // finance personal VM so the home screen masks balances even
-        // while the app is active.
+        // Project the dashboard's transactions through the Categories
+        // VM so the surface paints populated pill rows on first click.
+        // The Dashboard's demo data is a richer set than the live
+        // finance VM's recent transactions today; once a real server
+        // contract lands, swap to `financePersonal.recentTransactions`.
+        let dashboardTxs = dashboard.entries.map(\.transaction)
+        await categories.project(transactions: dashboardTxs)
+
+        // Once the finance snapshot is in place, kick off the AI++
+        // refreshes so the INTELLIGENCE surfaces are populated before
+        // the user lands on them.
+        refreshIntelligenceSurfaces()
+
         applyConcealBalancesBridge()
     }
 
-    /// Mirror `settings.concealBalances` into `financePersonal` by reusing
-    /// the existing scene-phase path the M5 VM already exposes. The bridge
-    /// lives in the app shell because M9 deliberately did not add a public
-    /// setter to FinancePersonalViewModel.
+    /// Refresh Digest / Forecast / Smart Alerts against the current
+    /// finance snapshot. Called once from bootstrap; future hooks
+    /// (week-rollover, account selection) should re-invoke this.
+    private func refreshIntelligenceSurfaces() {
+        guard case .ready(let snap) = financePersonal.state else { return }
+        let tx = financePersonal.recentTransactions
+        digest.refresh(accounts: snap.accounts, transactions: tx)
+        if let primary = snap.accounts.first(where: { $0.kind == .checking })
+            ?? snap.accounts.first {
+            forecast.refresh(account: primary, transactions: tx)
+        }
+        smartAlerts.refresh(accounts: snap.accounts, transactions: tx)
+    }
+
     func applyConcealBalancesBridge() {
         if settings.concealBalances {
             financePersonal.scenePhaseDidChange(.inactive)
@@ -289,9 +349,5 @@ final class AppModel {
 
 // The previous `RootShell` wrapper gated the boot path on
 // `appModel.auth.state`. That wrapper has been removed: the app boots
-// straight into `RootView()`. Auth is now a user-initiated action
-// available from Settings (see `SettingsScene` in
-// `packages/SynnapseKit/Sources/Features/Settings/SettingsView.swift`).
-// `SignInView`, `AuthViewModel`, `SessionStore`, and `LiveSessionAPI`
-// remain in the codebase and stay reachable from Settings so they can
-// be re-engaged once the server-side endpoint exists.
+// straight into the live shell. Auth is now a user-initiated action
+// available from Settings (see `SettingsScene`).

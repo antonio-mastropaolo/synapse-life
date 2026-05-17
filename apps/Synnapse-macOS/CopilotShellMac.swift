@@ -39,6 +39,15 @@ struct CopilotShellMac: View {
     let investments: FinanceInvestmentsViewModel
     let lifeAPI: LifeAPI
     let advisors: AdvisorsListViewModel
+    // New (2026-05-17 Copilot integration) — dashboard inbox + AI++
+    // surfaces. These are owned by `AppModel` so the sidebar can route
+    // the new destinations through their real VMs instead of
+    // placeholders.
+    let dashboard: DashboardViewModel
+    let categories: CategoriesViewModel
+    let digest: DigestViewModel
+    let forecast: ForecastViewModel
+    let smartAlerts: SmartAlertsViewModel
 
     /// Surfaced when DEBUG/demo mode is on so the user knows the
     /// figures are fixtures rather than live data.
@@ -51,7 +60,11 @@ struct CopilotShellMac: View {
             CopilotSidebar(
                 routing: routing,
                 chrome: chrome,
-                showsDemoFooter: showsDemoDataFooter
+                showsDemoFooter: showsDemoDataFooter,
+                // Live unreviewed count from the Dashboard VM —
+                // mirrors agent 2's `entries.filter { !$0.reviewed }`
+                // path; the badge clears once the queue is empty.
+                unreviewedCount: dashboard.entries.filter { !$0.reviewed }.count
             )
             .frame(width: 248)
             .background(chrome.sidebarBackground.color)
@@ -68,6 +81,11 @@ struct CopilotShellMac: View {
                 investments: investments,
                 lifeAPI: lifeAPI,
                 advisors: advisors,
+                dashboard: dashboard,
+                categories: categories,
+                digest: digest,
+                forecast: forecast,
+                smartAlerts: smartAlerts,
                 chrome: chrome
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -86,6 +104,10 @@ private struct CopilotSidebar: View {
     @Bindable var routing: RootShellViewModel
     let chrome: CopilotTokens.Shell
     var showsDemoFooter: Bool
+    /// Live unreviewed-transactions count surfaced as the Dashboard
+    /// row's badge. Drives the Copilot-style "you have N to review"
+    /// affordance; `0` hides the badge.
+    var unreviewedCount: Int = 0
 
     // Search field state — visual only for now. The text is preserved
     // across re-renders so the operator does not lose what they typed
@@ -105,6 +127,7 @@ private struct CopilotSidebar: View {
                 VStack(alignment: .leading, spacing: 18) {
                     topLevelSection
                     myAccountsSection
+                    intelligenceSection
                 }
                 .padding(.bottom, 18)
             }
@@ -214,14 +237,16 @@ private struct CopilotSidebar: View {
         let icon: String
     }
 
-    /// Badge value for a destination. Mocked at 0 for now — agent 2
-    /// owns the live unreviewed-transactions count and will replace this
-    /// when its Dashboard VM lands. Returning `nil` hides the badge so
-    /// rows without a number stay clean.
+    /// Badge value for a destination. The Dashboard row paints a
+    /// Copilot-style "you have N to review" badge sourced from the live
+    /// `DashboardViewModel`; everything else returns `nil` so its row
+    /// stays clean.
     private func badge(for destination: RootDestination) -> Int? {
         switch destination {
-        case .transactions: return 0
-        default:            return nil
+        case .dashboard:
+            return unreviewedCount > 0 ? unreviewedCount : nil
+        default:
+            return nil
         }
     }
 
@@ -271,6 +296,46 @@ private struct CopilotSidebar: View {
         }
         .padding(.horizontal, 8)
     }
+
+    // MARK: INTELLIGENCE
+
+    /// AI++ wedge surfaces (Digest / Forecast / Smart alerts) painted
+    /// as a third sidebar section below MY ACCOUNTS. Mirrors the
+    /// Copilot "this column lives below your accounts" layout.
+    /// Added 2026-05-17 during the four-branch integration.
+    private var intelligenceSection: some View {
+        VStack(alignment: .leading, spacing: 1) {
+            Text("INTELLIGENCE")
+                .font(.system(size: 10, weight: .semibold, design: .default))
+                .tracking(0.9)
+                .foregroundStyle(chrome.foregroundSecondary.color)
+                .padding(.horizontal, 16)
+                .padding(.top, 6)
+                .padding(.bottom, 6)
+
+            ForEach(CopilotSidebar.intelligenceRows, id: \.destination) { row in
+                CopilotNavRow(
+                    label: row.label,
+                    systemImage: row.icon,
+                    badge: nil,
+                    isActive: routing.isActive(row.destination),
+                    chrome: chrome
+                ) {
+                    routing.select(row.destination)
+                }
+            }
+        }
+        .padding(.horizontal, 8)
+    }
+
+    /// Compile-time row metadata for the INTELLIGENCE section.
+    /// Mirrors `RootDestination.intelligenceOrder` — the test suite
+    /// locks that contract.
+    fileprivate static let intelligenceRows: [RowSpec] = [
+        .init(destination: .digest,      label: "Digest",       icon: "newspaper"),
+        .init(destination: .forecast,    label: "Forecast",     icon: "chart.line.uptrend.xyaxis"),
+        .init(destination: .smartAlerts, label: "Smart alerts", icon: "bell.badge")
+    ]
 
     // MARK: Footer
 
@@ -567,12 +632,17 @@ private struct CopilotDetailPane: View {
     let investments: FinanceInvestmentsViewModel
     let lifeAPI: LifeAPI
     let advisors: AdvisorsListViewModel
+    let dashboard: DashboardViewModel
+    let categories: CategoriesViewModel
+    let digest: DigestViewModel
+    let forecast: ForecastViewModel
+    let smartAlerts: SmartAlertsViewModel
     let chrome: CopilotTokens.Shell
 
     var body: some View {
         Group {
             switch routing.selection {
-            // Surfaces with a live view today route to that view.
+            // Live surfaces.
             case .transactions, .finance(.transactions):
                 FinanceTransactionsView(viewModel: transactions)
                     .identity(.cockpitInstrument)
@@ -603,33 +673,103 @@ private struct CopilotDetailPane: View {
                     .identity(.cockpitInstrument)
                     .id("advisors")
 
-            // Destinations owned by other agents — render a placeholder
-            // until their feature views land. The placeholder is
-            // identity-neutral so each surface inherits its own look on
-            // wire-up.
+            // Dashboard (agent 2). The default destination; renders
+            // the un-reviewed transactions inbox with the inspector
+            // on the right.
             case .dashboard:
-                CopilotPlaceholder(title: "Dashboard", subtitle: "Owned by agent 2 — coming up next.", chrome: chrome)
-                    .id("dashboard")
+                DashboardView(
+                    viewModel: dashboard,
+                    openGoals: { routing.select(.goals) }
+                )
+                .identity(.cockpitInstrument)
+                .id("dashboard")
 
-            case .goals:
-                CopilotPlaceholder(title: "Goals", subtitle: "Owned by agent 4 — coming up next.", chrome: chrome)
-                    .id("goals")
-
-            case .cashFlow:
-                CopilotPlaceholder(title: "Cash flow", subtitle: "Owned by agent 4 — coming up next.", chrome: chrome)
-                    .id("cashFlow")
-
+            // Categories (agent 3). Pill system + auto-categorize
+            // rules + new-category sheet. The shared VM lives on
+            // AppModel and has its transactions already projected by
+            // bootstrap so the pill rows are populated on first
+            // click.
             case .categories:
-                CopilotPlaceholder(title: "Categories", subtitle: "Owned by agent 3 — coming up next.", chrome: chrome)
+                CategoriesView(viewModel: categories)
+                    .identity(.cockpitInstrument)
                     .id("categories")
 
+            // INTELLIGENCE section (agent 5 / AI++ wedge).
+            case .digest:
+                DigestView(viewModel: digest)
+                    .identity(.cockpitInstrument)
+                    .id("digest")
+
+            case .forecast:
+                ForecastView(viewModel: forecast)
+                    .identity(.cockpitInstrument)
+                    .id("forecast")
+
+            case .smartAlerts:
+                SmartAlertsView(viewModel: smartAlerts)
+                    .identity(.cockpitInstrument)
+                    .id("smartAlerts")
+
+            // Sheet-presented surfaces — selecting them via deep
+            // link sets the destination, but the detail pane keeps
+            // showing the previous content while the host paints
+            // the sheet overlay. Render the placeholder so SwiftUI
+            // doesn't fall into the dead branch.
+            case .ask:
+                CopilotPlaceholder(
+                    title: "Ask",
+                    subtitle: "Use ⌘K to open the Ask sheet.",
+                    chrome: chrome
+                ).id("ask")
+
+            case .anomalyExplainer:
+                CopilotPlaceholder(
+                    title: "Anomaly explainer",
+                    subtitle: "Open an anomaly card and tap Why? to see the explanation.",
+                    chrome: chrome
+                ).id("anomalyExplainer")
+
+            // Four destinations the user stopped agent 4 from
+            // building. We paint a shared `ComingSoonView` so the
+            // sidebar rows stay clickable and don't crash. Copy
+            // matches the brief verbatim (subtitle was renamed from
+            // `message:` to honour the existing `ComingSoonView`
+            // signature).
+            case .goals:
+                ComingSoonView(
+                    title: "Goals",
+                    subtitle: "Track savings goals with AI-suggested timelines. Shipping in v0.2.",
+                    symbol: "target"
+                )
+                .identity(.cockpitInstrument)
+                .id("goals")
+
+            case .cashFlow:
+                ComingSoonView(
+                    title: "Cash flow",
+                    subtitle: "Monthly income vs expenses with AI budget projections. Shipping in v0.2.",
+                    symbol: "chart.line.uptrend.xyaxis"
+                )
+                .identity(.cockpitInstrument)
+                .id("cashFlow")
+
             case .recurrings:
-                CopilotPlaceholder(title: "Recurrings", subtitle: "Owned by agent 4 — coming up next.", chrome: chrome)
-                    .id("recurrings")
+                ComingSoonView(
+                    title: "Recurring bills",
+                    subtitle: "Auto-detected recurring charges with one-tap cancel. Shipping in v0.2.",
+                    symbol: "arrow.triangle.2.circlepath"
+                )
+                .identity(.cockpitInstrument)
+                .id("recurrings")
 
             case .subscriptions:
-                CopilotPlaceholder(title: "Subscriptions", subtitle: "Owned by agent 4 — coming up next.", chrome: chrome)
-                    .id("subscriptions")
+                ComingSoonView(
+                    title: "Subscriptions",
+                    subtitle: "Subscription tracker with cancel-instructions. Shipping in v0.2.",
+                    symbol: "rectangle.stack"
+                )
+                .identity(.cockpitInstrument)
+                .id("subscriptions")
             }
         }
         .transition(.opacity)

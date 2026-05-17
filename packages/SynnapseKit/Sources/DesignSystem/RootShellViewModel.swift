@@ -32,6 +32,22 @@ public enum RootDestination: Sendable, Equatable, Hashable {
     case life
     case advisors
 
+    // MARK: - INTELLIGENCE section (AI++ wedge, 2026-05-17)
+    //
+    // Added during the four-branch Copilot integration. Each surface
+    // owns a feature module under `Sources/Features/{Digest,Forecast,
+    // SmartAlerts}/`; the macOS shell renders them in a dedicated
+    // INTELLIGENCE section below MY ACCOUNTS. `.ask` and
+    // `.anomalyExplainer` are present so a deep link or sheet trigger
+    // can drive routing, but they are intentionally NOT in the
+    // `canonicalOrder` because they present as sheets, not sidebar
+    // rows. See `intelligenceOrder` below for the sidebar set.
+    case digest
+    case forecast
+    case smartAlerts
+    case ask
+    case anomalyExplainer
+
     // MARK: - Legacy finance sub-routes
     //
     // Kept for back-compat with the surviving FinancePersonalView /
@@ -45,6 +61,13 @@ extension RootDestination {
     /// Canonical order in which the macOS sidebar paints its rows.
     /// Other agents render content for these destinations and key off
     /// this ordering — changing it is a breaking change.
+    ///
+    /// Updated 2026-05-17 (Copilot integration): the original eleven
+    /// rows survive in their order, followed by the three INTELLIGENCE
+    /// rows from the AI++ wedge. `.ask` and `.anomalyExplainer` are
+    /// deliberately omitted because they present as sheets, not
+    /// sidebar rows — see `intelligenceOrder` for the sheet-routable
+    /// destinations.
     public static let canonicalOrder: [RootDestination] = [
         .dashboard,
         .transactions,
@@ -56,7 +79,22 @@ extension RootDestination {
         .recurrings,
         .subscriptions,
         .life,
-        .advisors
+        .advisors,
+        .digest,
+        .forecast,
+        .smartAlerts
+    ]
+
+    /// The INTELLIGENCE-section sidebar rows, in painting order. The
+    /// macOS sidebar renders this list under a "INTELLIGENCE" header
+    /// below MY ACCOUNTS. Kept distinct from `canonicalOrder` so a
+    /// caller iterating intelligence-only surfaces (e.g. an Apple
+    /// Intelligence settings pane) does not have to filter the full
+    /// list manually.
+    public static let intelligenceOrder: [RootDestination] = [
+        .digest,
+        .forecast,
+        .smartAlerts
     ]
 }
 

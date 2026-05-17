@@ -19,6 +19,7 @@
 		497B600CC67B93D532BA8E9E /* SynnapseiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 084AB5A5C770B02798D903A3 /* SynnapseiOSApp.swift */; };
 		60AD4B43B8C004A26DD0F792 /* FinanceHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D7A46127C27FAF236E7E0FF /* FinanceHubView.swift */; };
 		6368896E57A87F52414DB81F /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF8E04278EAA81E93B14977A /* AccountDetailView.swift */; };
+		63911B6A3AB7CBC176DBF174 /* MoreTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B5AB112C13B935B79863AEC /* MoreTab.swift */; };
 		7AB75C160144E6C5B8F51FF3 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6C66AC7FFF36359433613719 /* RootView.swift */; };
 		7DC2CFA818A5FC605A9C08DC /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 946FB557D2D570F7EF53D7F2 /* TransactionDetailView.swift */; };
 		800156F2ECEF90143B339967 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = D63ADC8599C9925F115635D3 /* Auth */; };
@@ -44,6 +45,7 @@
 		1E24156155FA9F2803999B8F /* SynnapseiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SynnapseiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		264A38AA058647E25DCD0355 /* FinanceShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceShellView.swift; sourceTree = "<group>"; };
 		287CEBA7E3EBF7BBCB955218 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
+		2B5AB112C13B935B79863AEC /* MoreTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreTab.swift; sourceTree = "<group>"; };
 		3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynnapseMacApp.swift; sourceTree = "<group>"; };
 		42C247BEA16054F7942A32B4 /* PositionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionDetailView.swift; sourceTree = "<group>"; };
 		5085850B5103E8CD1A5D86C7 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -125,6 +127,7 @@
 				DF8E04278EAA81E93B14977A /* AccountDetailView.swift */,
 				0D7A46127C27FAF236E7E0FF /* FinanceHubView.swift */,
 				F187A35D3CEA82B2E385A7F0 /* Haptics.swift */,
+				2B5AB112C13B935B79863AEC /* MoreTab.swift */,
 				42C247BEA16054F7942A32B4 /* PositionDetailView.swift */,
 				946FB557D2D570F7EF53D7F2 /* TransactionDetailView.swift */,
 			);
@@ -310,6 +313,7 @@
 				6368896E57A87F52414DB81F /* AccountDetailView.swift in Sources */,
 				60AD4B43B8C004A26DD0F792 /* FinanceHubView.swift in Sources */,
 				CAEB9E43C7D027B7888EBF67 /* Haptics.swift in Sources */,
+				63911B6A3AB7CBC176DBF174 /* MoreTab.swift in Sources */,
 				93F96479F13C4C2DFC2A9C6F /* PositionDetailView.swift in Sources */,
 				7AB75C160144E6C5B8F51FF3 /* RootView.swift in Sources */,
 				497B600CC67B93D532BA8E9E /* SynnapseiOSApp.swift in Sources */,

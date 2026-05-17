@@ -10,17 +10,28 @@ import DesignSystem
 /// expect a result. "Coming soon" with a clear glyph is the
 /// minimum-deception affordance and tracks the project's
 /// no-half-measures discipline.
+///
+/// Moved 2026-05-17 from `apps/Synnapse-iOS/Features/` into the
+/// shared Features module so the macOS `CopilotShellMac` detail pane
+/// can render it for the four stubbed destinations (Goals, Cash flow,
+/// Recurrings, Subscriptions) without duplicating the view.
 @MainActor
-struct ComingSoonView: View {
+public struct ComingSoonView: View {
 
-    let title: String
-    let subtitle: String
-    let symbol: String
+    public let title: String
+    public let subtitle: String
+    public let symbol: String
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
 
-    var body: some View {
+    public init(title: String, subtitle: String, symbol: String) {
+        self.title = title
+        self.subtitle = subtitle
+        self.symbol = symbol
+    }
+
+    public var body: some View {
         let tokens = theme.tokens(for: scheme)
         VStack(spacing: 14) {
             Image(systemName: symbol)
