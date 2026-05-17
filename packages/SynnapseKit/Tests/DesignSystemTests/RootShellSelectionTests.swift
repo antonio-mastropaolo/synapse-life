@@ -16,9 +16,22 @@ import Testing
 @MainActor
 struct RootShellSelectionTests {
 
-    @Test("Default selection is FINANCE → Personal")
-    func defaultSelectionIsFinancePersonal() {
+    @Test("Default selection is Dashboard (Copilot redesign)")
+    func defaultSelectionIsDashboard() {
+        // The pre-Copilot default was `.finance(.personal)`. The redesign
+        // promotes Dashboard to the canonical landing surface to match
+        // the reference shell — agent 2 owns the Dashboard view that
+        // paints under this selection.
         let vm = RootShellViewModel()
+        #expect(vm.selection == .dashboard)
+    }
+
+    @Test("Legacy finance default is reachable via explicit init")
+    func legacyFinanceDefaultReachable() {
+        // Callers that want the pre-redesign landing surface can pass
+        // `.finance(.personal)` explicitly. The destination still exists
+        // for the FinanceSubRouter path inside the live shell.
+        let vm = RootShellViewModel(selection: .finance(.personal))
         #expect(vm.selection == .finance(.personal))
     }
 

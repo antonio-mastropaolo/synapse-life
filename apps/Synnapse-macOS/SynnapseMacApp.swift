@@ -21,7 +21,7 @@ struct SynnapseMacApp: App {
             // sidebar rows did nothing. The new shell hosts the
             // surviving surfaces directly, switched via the sidebar.
             ZStack(alignment: .top) {
-                CockpitShellMac(
+                CopilotShellMac(
                     routing: routing,
                     personal: appModel.financePersonal,
                     accounts: appModel.financeAccounts,
@@ -49,7 +49,7 @@ struct SynnapseMacApp: App {
                 }
             }
             .animation(.easeOut(duration: 0.18), value: appModel.commandBar.isPresented)
-            .frame(minWidth: 960, minHeight: 640)
+            .frame(minWidth: 1080, minHeight: 720)
             .task { await appModel.bootstrapIfNeeded() }
             .onOpenURL { url in
                 appModel.lifecycle.handle(url: url)
@@ -65,16 +65,16 @@ struct SynnapseMacApp: App {
             CommandGroup(after: .toolbar) {
                 Button("Ask Synapse") { appModel.commandBar.open() }
                     .keyboardShortcut("k", modifiers: [.command])
-                Button("Finance") { routing.select(.finance(.personal)) }
+                Button("Dashboard") { routing.select(.dashboard) }
+                    .keyboardShortcut("1", modifiers: [.command])
+                Button("Transactions") { routing.select(.transactions) }
+                    .keyboardShortcut("2", modifiers: [.command])
+                Button("Accounts") { routing.select(.accounts) }
                     .keyboardShortcut("3", modifiers: [.command])
-                Button("Accounts") { routing.select(.finance(.accounts)) }
-                    .keyboardShortcut("3", modifiers: [.command, .shift])
-                Button("Transactions") { routing.select(.finance(.transactions)) }
-                    .keyboardShortcut("4", modifiers: [.command, .shift])
-                Button("Investments") { routing.select(.finance(.investments)) }
-                    .keyboardShortcut("5", modifiers: [.command, .shift])
-                Button("Life") { routing.select(.life) }
+                Button("Investments") { routing.select(.investments) }
                     .keyboardShortcut("4", modifiers: [.command])
+                Button("Life") { routing.select(.life) }
+                    .keyboardShortcut("5", modifiers: [.command])
                 Button("Advisors") { routing.select(.advisors) }
                     .keyboardShortcut("7", modifiers: [.command])
             }
@@ -98,10 +98,16 @@ struct SynnapseMacApp: App {
         switch sugg.kind {
         case .surface(let target):
             switch target {
+            // The Copilot redesign promotes Accounts / Transactions /
+            // Investments to top-level destinations. The command palette
+            // routes through those now so the active-row indicator
+            // lights up on the correct sidebar entry. `.personal` keeps
+            // its legacy `.finance(.personal)` mapping because there is
+            // no top-level Personal row in the redesign.
             case .personal:     routing.select(.finance(.personal))
-            case .accounts:     routing.select(.finance(.accounts))
-            case .transactions: routing.select(.finance(.transactions))
-            case .investments:  routing.select(.finance(.investments))
+            case .accounts:     routing.select(.accounts)
+            case .transactions: routing.select(.transactions)
+            case .investments:  routing.select(.investments)
             case .life:         routing.select(.life)
             case .advisors:     routing.select(.advisors)
             case .settings:     break // macOS opens Settings via Cmd-,
