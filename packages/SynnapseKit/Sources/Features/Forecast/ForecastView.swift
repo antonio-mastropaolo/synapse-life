@@ -1,6 +1,7 @@
 import SwiftUI
 import DesignSystem
 import Models
+import SynnapseCharts
 
 /// Minimal SwiftUI host for the cash-flow forecast.
 ///
@@ -44,6 +45,7 @@ public struct ForecastView: View {
                     if let banner = viewModel.projectedZeroBanner {
                         zeroCrossingBanner(text: banner, tokens: tokens)
                     }
+                    projectionChartSection(tokens: tokens)
                     predictedCharges(tokens: tokens)
                 } else if viewModel.isLoading {
                     loadingState(tokens: tokens)
@@ -132,6 +134,45 @@ public struct ForecastView: View {
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .stroke(tokens.category(.loans).opacity(0.35), lineWidth: 1)
         )
+    }
+
+    @ViewBuilder
+    private func projectionChartSection(tokens: TokenSet) -> some View {
+        // The Forecast v2 chart sits between the zero-crossing banner
+        // and the predicted-charges list. Height is a fixed 280pt so
+        // the surface scrolls predictably and the axis ticks have
+        // enough room to read without crowding. Agent B replaces the
+        // KPI cards above; this slot is owned by Agent A alone.
+        VStack(alignment: .leading, spacing: 8) {
+            Text("BALANCE PROJECTION")
+                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .tracking(0.8)
+                .foregroundStyle(tokens.foregroundSecondary.color)
+            BalanceProjectionChart(
+                historical: viewModel.historicalSeries,
+                projection: viewModel.projectionSeries,
+                events: chartEvents(),
+                zeroCrossing: viewModel.projection?.projectedZeroDate,
+                today: viewModel.projection?.today ?? Date()
+            )
+            .frame(height: 280)
+        }
+    }
+
+    private func chartEvents() -> [BalanceProjectionEvent] {
+        let credits = viewModel.creditEvents.map {
+            BalanceProjectionEvent(
+                merchant: $0.merchant, amount: $0.amount,
+                date: $0.date, kind: .credit
+            )
+        }
+        let debits = viewModel.debitEvents.map {
+            BalanceProjectionEvent(
+                merchant: $0.merchant, amount: $0.amount,
+                date: $0.date, kind: .debit
+            )
+        }
+        return credits + debits
     }
 
     @ViewBuilder

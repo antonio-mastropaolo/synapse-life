@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import Models
+import SynnapseCharts
 
 @MainActor
 @Observable
@@ -54,6 +55,65 @@ public final class ForecastViewModel {
     /// list below the banner.
     public var predictedChargesList: [ScheduledFlow] {
         projection?.scheduledDebits ?? []
+    }
+
+    // MARK: - Forecast v2 chart inputs
+    //
+    // Agent A's chart and KPI grid pull these directly off the
+    // [[BalanceProjection]] derived fields. The historical series is
+    // a deterministic 14-day backward walk anchored at the projection's
+    // starting checking balance — synthetic by design because we don't
+    // yet ship a real daily-balance history from the API. The walk is
+    // seeded by the starting balance so it's stable across reruns;
+    // surface agents B/C/E should never inject their own series.
+
+    public var historicalSeries: [MoneyTimePoint] {
+        guard let projection else { return [] }
+        return Self.historicalWalk(
+            anchor: projection.startingChecking,
+            today: projection.today,
+            days: 14
+        )
+    }
+
+    public var projectionSeries: [MoneyTimePoint] {
+        projection?.dailyBalanceSeries ?? []
+    }
+
+    public var creditEvents: [ScheduledFlow] {
+        projection?.scheduledCredits ?? []
+    }
+
+    public var debitEvents: [ScheduledFlow] {
+        projection?.scheduledDebits ?? []
+    }
+
+    /// Builds a deterministic 14-day trailing walk anchored at
+    /// `anchor`. We construct a small sine-wave wobble so the line
+    /// has visible shape rather than a flat artefact, but the
+    /// magnitude is small (±2% of the anchor) so it reads as
+    /// "this is roughly where you were" rather than as a real signal.
+    /// Replace with real daily-balance history once the API exposes it.
+    static func historicalWalk(anchor: Decimal, today: Date, days: Int) -> [MoneyTimePoint] {
+        guard days > 0 else { return [] }
+        let cal = Calendar(identifier: .gregorian)
+        let startOfToday = cal.startOfDay(for: today)
+        let anchorDouble = (anchor as NSDecimalNumber).doubleValue
+        let amplitude = max(anchorDouble * 0.02, 1.0)
+        var out: [MoneyTimePoint] = []
+        out.reserveCapacity(days)
+        // Walk from `days` ago up to (but not including) today; the
+        // projection series starts at today so historical hands off
+        // cleanly without painting the same point twice.
+        for offset in stride(from: days, through: 1, by: -1) {
+            let date = startOfToday.addingTimeInterval(Double(-offset) * 86_400)
+            // Deterministic wobble: sin of the day index scaled to
+            // [-amplitude, +amplitude].
+            let wobble = sin(Double(offset) * 0.65) * amplitude
+            let value = Decimal(anchorDouble + wobble)
+            out.append(MoneyTimePoint(date: date, amount: value))
+        }
+        return out
     }
 
     private let api: ForecastAPI

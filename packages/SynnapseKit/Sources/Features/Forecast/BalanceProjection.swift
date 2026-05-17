@@ -1,5 +1,6 @@
 import Foundation
 import Models
+import SynnapseCharts
 
 /// One scheduled flow in the projection window — a recurring bill or
 /// recurring deposit predicted to hit on a specific day. We carry the
@@ -38,8 +39,8 @@ public struct ScheduledFlow: Sendable, Hashable, Identifiable {
 /// 30-day drift. This one answers a sharper question — "given my
 /// detected recurrings, what specific bills are coming and on which
 /// day does the central estimate cross zero?". The Forecast surface's
-/// stat cards and the "may hit zero on May 18" banner all read from
-/// this struct.
+/// stat cards, the "may hit zero on May 18" banner, and the v2 chart
+/// + 8-card KPI grid all read from this struct.
 public struct BalanceProjection: Sendable, Hashable {
     public let startingChecking: Decimal
     public let scheduledDebits: [ScheduledFlow]
@@ -51,6 +52,48 @@ public struct BalanceProjection: Sendable, Hashable {
     public let horizonDays: Int
     public let today: Date
 
+    // MARK: - Forecast v2 derived fields
+    //
+    // These are populated by the same single running-balance walk that
+    // resolves `projectedZeroDate`, so adding them is free at compute
+    // time. The chart + KPI grid + scenario panel read off these
+    // instead of re-deriving the walk per call-site.
+
+    /// End-of-day projected checking balance for every day in
+    /// `[today, today + horizonDays]`. Always contains
+    /// `horizonDays + 1` points (one per day inclusive); the
+    /// degenerate `horizonDays == 0` case still yields a one-element
+    /// anchor series so charts have something to render.
+    public let dailyBalanceSeries: [MoneyTimePoint]
+
+    /// Lowest point on `dailyBalanceSeries` — useful for the
+    /// "Lowest balance" KPI card on the Forecast v2 grid.
+    public let lowestProjectedBalance: Decimal
+
+    /// Date of `lowestProjectedBalance`. When the minimum persists
+    /// across multiple days (e.g. flat after a debit, before any
+    /// later credit), the FIRST day it's reached wins.
+    public let lowestProjectedBalanceDate: Date
+
+    /// Calendar days from `today` to `projectedZeroDate`. `nil` when
+    /// the balance never crosses zero in the horizon — surfaces should
+    /// render "—" in that case rather than a dash-zero ambiguity.
+    public let runwayDays: Int?
+
+    /// Projected balance at end of horizon — equivalent to
+    /// `dailyBalanceSeries.last?.amount`.
+    public let freeCashAtHorizon: Decimal
+
+    /// The single largest debit in `scheduledDebits`. `nil` when the
+    /// horizon contains no debits. Ties are broken by earliest date,
+    /// then merchant name (sort already establishes that order).
+    public let biggestSingleCharge: ScheduledFlow?
+
+    /// `totalCredits / totalDebits`. `nil` when `totalDebits == 0`
+    /// so callers can render "∞" or "—" deliberately rather than
+    /// dividing by zero.
+    public let coverageRatio: Decimal?
+
     public init(
         startingChecking: Decimal,
         scheduledDebits: [ScheduledFlow],
@@ -60,7 +103,14 @@ public struct BalanceProjection: Sendable, Hashable {
         totalCredits: Decimal,
         predictedChargesCount: Int,
         horizonDays: Int,
-        today: Date
+        today: Date,
+        dailyBalanceSeries: [MoneyTimePoint],
+        lowestProjectedBalance: Decimal,
+        lowestProjectedBalanceDate: Date,
+        runwayDays: Int?,
+        freeCashAtHorizon: Decimal,
+        biggestSingleCharge: ScheduledFlow?,
+        coverageRatio: Decimal?
     ) {
         self.startingChecking = startingChecking
         self.scheduledDebits = scheduledDebits
@@ -71,11 +121,30 @@ public struct BalanceProjection: Sendable, Hashable {
         self.predictedChargesCount = predictedChargesCount
         self.horizonDays = horizonDays
         self.today = today
+        self.dailyBalanceSeries = dailyBalanceSeries
+        self.lowestProjectedBalance = lowestProjectedBalance
+        self.lowestProjectedBalanceDate = lowestProjectedBalanceDate
+        self.runwayDays = runwayDays
+        self.freeCashAtHorizon = freeCashAtHorizon
+        self.biggestSingleCharge = biggestSingleCharge
+        self.coverageRatio = coverageRatio
     }
 }
 
 /// Pure-logic balance projection.
 public enum BalanceProjector {
+
+    /// Output of a single day-by-day walk over the merged flow list.
+    /// Sharing this between the existing `projectedZeroDate` resolution
+    /// and the new daily-series field means the projection is a single
+    /// O(flows + horizonDays) pass — chart, KPIs, and zero-crossing
+    /// all derive from the same numbers.
+    struct WalkResult {
+        let dailySeries: [MoneyTimePoint]
+        let zeroCrossing: Date?
+        let lowestBalance: Decimal
+        let lowestBalanceDate: Date
+    }
 
     /// Project the sum of checking/depository account balances forward
     /// `horizonDays` days using the supplied detected recurring debits
@@ -102,7 +171,12 @@ public enum BalanceProjector {
 
         let cal = Calendar(identifier: .gregorian)
         let startOfToday = cal.startOfDay(for: today)
-        let horizonEnd = startOfToday.addingTimeInterval(Double(horizonDays) * 86_400)
+        // Horizon end is INCLUSIVE for the daily series (we want the
+        // last-day point) but EXCLUSIVE for flow expansion (a recurring
+        // landing exactly on horizonEnd belongs to the next window).
+        // Carry both: expansion uses `horizonEndExclusive`, the walk
+        // sweeps `0...horizonDays` inclusive for the series.
+        let horizonEndExclusive = startOfToday.addingTimeInterval(Double(horizonDays) * 86_400)
 
         let startingChecking = accounts
             .filter { isCheckingLike($0.kind) }
@@ -113,52 +187,55 @@ public enum BalanceProjector {
             recurrings: recurrings,
             direction: .debit,
             startOfToday: startOfToday,
-            horizonEnd: horizonEnd
+            horizonEnd: horizonEndExclusive
         )
         let scheduledCredits = expand(
             recurrings: incomeRecurrings,
             direction: .credit,
             startOfToday: startOfToday,
-            horizonEnd: horizonEnd
+            horizonEnd: horizonEndExclusive
         )
 
         let totalDebits = scheduledDebits.reduce(Decimal.zero) { $0 + $1.amount }
         let totalCredits = scheduledCredits.reduce(Decimal.zero) { $0 + $1.amount }
 
-        // Step through the horizon day-by-day applying flows in date
-        // order. First day the running balance hits ≤ 0 wins.
-        let merged: [ScheduledFlow] = (scheduledDebits + scheduledCredits)
-            .sorted { lhs, rhs in
-                if lhs.date == rhs.date {
-                    // Credits before debits on the same day so a
-                    // payday doesn't get a false "zero crossing" if
-                    // both land together.
-                    return lhs.direction == .credit && rhs.direction == .debit
-                }
-                return lhs.date < rhs.date
-            }
-        var running = startingChecking
-        var zero: Date?
-        for flow in merged {
-            switch flow.direction {
-            case .debit:  running -= flow.amount
-            case .credit: running += flow.amount
-            }
-            if zero == nil, running <= 0 {
-                zero = flow.date
-            }
+        let walk = runningBalanceWalk(
+            startingChecking: startingChecking,
+            debits: scheduledDebits,
+            credits: scheduledCredits,
+            startOfToday: startOfToday,
+            horizonDays: horizonDays,
+            calendar: cal
+        )
+
+        let runwayDays: Int? = walk.zeroCrossing.flatMap { zeroDate in
+            let zeroStart = cal.startOfDay(for: zeroDate)
+            return cal.dateComponents([.day], from: startOfToday, to: zeroStart).day
         }
+
+        let biggest = scheduledDebits.max(by: { $0.amount < $1.amount })
+
+        let coverage: Decimal? = totalDebits == 0
+            ? nil
+            : totalCredits / totalDebits
 
         return BalanceProjection(
             startingChecking: startingChecking,
             scheduledDebits: scheduledDebits,
             scheduledCredits: scheduledCredits,
-            projectedZeroDate: zero,
+            projectedZeroDate: walk.zeroCrossing,
             totalDebits: totalDebits,
             totalCredits: totalCredits,
             predictedChargesCount: scheduledDebits.count,
             horizonDays: horizonDays,
-            today: today
+            today: today,
+            dailyBalanceSeries: walk.dailySeries,
+            lowestProjectedBalance: walk.lowestBalance,
+            lowestProjectedBalanceDate: walk.lowestBalanceDate,
+            runwayDays: runwayDays,
+            freeCashAtHorizon: walk.dailySeries.last?.amount ?? startingChecking,
+            biggestSingleCharge: biggest,
+            coverageRatio: coverage
         )
     }
 
@@ -172,6 +249,79 @@ public enum BalanceProjector {
         case .other:    return true
         default:        return false
         }
+    }
+
+    /// Single source of truth for the day-by-day balance walk. Builds
+    /// the per-day series, the zero-crossing date, and the lowest-point
+    /// pair in one pass. Credits are applied before debits when they
+    /// share a day so a payday landing alongside rent doesn't paint a
+    /// false zero crossing.
+    static func runningBalanceWalk(
+        startingChecking: Decimal,
+        debits: [ScheduledFlow],
+        credits: [ScheduledFlow],
+        startOfToday: Date,
+        horizonDays: Int,
+        calendar: Calendar
+    ) -> WalkResult {
+        // Group flows by their start-of-day key so the walk can apply
+        // every flow that lands on a given day in one step.
+        var flowsByDay: [Date: [ScheduledFlow]] = [:]
+        for flow in debits + credits {
+            let key = calendar.startOfDay(for: flow.date)
+            flowsByDay[key, default: []].append(flow)
+        }
+        for key in flowsByDay.keys {
+            // Credits first on the same day — same rule as the
+            // pre-v2 merged sort.
+            flowsByDay[key]?.sort { lhs, rhs in
+                if lhs.direction == rhs.direction {
+                    return lhs.merchant < rhs.merchant
+                }
+                return lhs.direction == .credit && rhs.direction == .debit
+            }
+        }
+
+        var running = startingChecking
+        var lowest = startingChecking
+        var lowestDate = startOfToday
+        var zero: Date?
+        var series: [MoneyTimePoint] = []
+        series.reserveCapacity(horizonDays + 1)
+
+        // Walk inclusively from day 0 (today) through day horizonDays.
+        // For horizonDays == 0 we still emit a single anchor point so
+        // chart consumers don't have to special-case empty input.
+        for dayOffset in 0...max(0, horizonDays) {
+            let day = startOfToday.addingTimeInterval(Double(dayOffset) * 86_400)
+            // Day 0 carries no flows applied yet — the anchor point is
+            // the literal starting balance, mirroring the pre-v2
+            // semantics. From day 1 onward, apply every flow that
+            // lands on this calendar day before snapshotting.
+            if dayOffset > 0, let dayFlows = flowsByDay[day] {
+                for flow in dayFlows {
+                    switch flow.direction {
+                    case .debit:  running -= flow.amount
+                    case .credit: running += flow.amount
+                    }
+                    if zero == nil, running <= 0 {
+                        zero = flow.date
+                    }
+                }
+            }
+            series.append(MoneyTimePoint(date: day, amount: running))
+            if running < lowest {
+                lowest = running
+                lowestDate = day
+            }
+        }
+
+        return WalkResult(
+            dailySeries: series,
+            zeroCrossing: zero,
+            lowestBalance: lowest,
+            lowestBalanceDate: lowestDate
+        )
     }
 
     static func expand(
