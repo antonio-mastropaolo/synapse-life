@@ -53,10 +53,33 @@ struct FinanceTransactionsScreenSnapshotTests {
         ]
     }
 
+    private func sampleAccounts() -> [Models.FinanceAccount] {
+        [
+            Models.FinanceAccount(
+                id: "cash", institutionId: nil, institutionName: "Bank of America",
+                name: "Adv Plus Banking", officialName: nil, mask: "4223",
+                kind: .checking, currency: "USD",
+                currentBalance: nil, availableBalance: nil,
+                limitAmount: nil, balanceCapturedAt: nil
+            ),
+            Models.FinanceAccount(
+                id: "cc", institutionId: nil, institutionName: "Chase",
+                name: "Sapphire Reserve", officialName: nil, mask: "0001",
+                kind: .credit, currency: "USD",
+                currentBalance: nil, availableBalance: nil,
+                limitAmount: nil, balanceCapturedAt: nil
+            )
+        ]
+    }
+
     private func populatedVM() -> FinanceTransactionsViewModel {
         let api = MockFinanceAPI()
         let vm = FinanceTransactionsViewModel(api: api, accountId: nil)
-        vm.injectForSnapshots(transactions: sampleTransactions(), filter: LedgerFilter())
+        vm.injectForSnapshots(
+            transactions: sampleTransactions(),
+            accounts: sampleAccounts(),
+            filter: LedgerFilter()
+        )
         return vm
     }
 
@@ -65,7 +88,11 @@ struct FinanceTransactionsScreenSnapshotTests {
         let vm = FinanceTransactionsViewModel(api: api, accountId: nil)
         var filter = LedgerFilter()
         filter.categories = ["Food & Drink"]
-        vm.injectForSnapshots(transactions: sampleTransactions(), filter: filter)
+        vm.injectForSnapshots(
+            transactions: sampleTransactions(),
+            accounts: sampleAccounts(),
+            filter: filter
+        )
         return vm
     }
 
