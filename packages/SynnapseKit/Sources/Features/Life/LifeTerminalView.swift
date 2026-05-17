@@ -23,8 +23,23 @@ public struct LifeTerminalView: View {
     @Environment(\.legibilityWeight) private var legibility
     #endif
 
+    /// Snapshot-only seam. When non-nil, the system-stats line and the
+    /// cursor block freeze at this instant so the rendered output is
+    /// byte-deterministic. Production never passes this; the
+    /// TimelineViews drive the live values.
+    let frozenInstant: Date?
+
     public init(viewModel: LifeViewModel) {
         self.viewModel = viewModel
+        self.frozenInstant = nil
+    }
+
+    /// Snapshot-test init. Mirrors the pattern used by
+    /// `LifeViewModel.injectStateForSnapshots(_:)` — surfaces a clean
+    /// hook for tests without polluting the production API.
+    public init(viewModel: LifeViewModel, frozenInstantForSnapshots: Date) {
+        self.viewModel = viewModel
+        self.frozenInstant = frozenInstantForSnapshots
     }
 
     public var body: some View {
@@ -44,20 +59,34 @@ public struct LifeTerminalView: View {
             increaseContrast: false
         )
 
-        let lines = LifeReducer.linesFromEntries(currentEntries(), columns: 120)
+        GeometryReader { geo in
+            ZStack(alignment: .topLeading) {
+                // Background plate. The shader path runs Metal underneath
+                // the text; the Canvas fallback path paints flat ink
+                // (still under the same text overlay so the boot banner +
+                // stats line are present in both modes).
+                switch viewModel.currentRenderPath {
+                case .shader:
+                    shaderBackground(life: life, access: access)
+                case .canvasFallback:
+                    life.terminalInk.color.ignoresSafeArea()
+                }
 
-        ZStack(alignment: .topLeading) {
-            // Background plate. When the shader path is live we layer
-            // the amber phosphor under the SwiftUI text. When the
-            // fallback path is live we paint the flat ink and let the
-            // Canvas fallback render the body.
-            switch viewModel.currentRenderPath {
-            case .shader:
-                shaderBackground(life: life, access: access)
-                terminalText(lines: lines, life: life)
-            case .canvasFallback:
-                LifeTerminalViewCanvas(lines: lines, tokens: life)
+                // Content overlay. The same view in both render paths —
+                // boot banner, system stats, entries, empty-state footer,
+                // and prompt cursor. This is what makes the terminal read
+                // as alive instead of "orange backplate only".
+                LifeTerminalContent(
+                    entries: bufferEntries(),
+                    tokens: life,
+                    viewport: geo.size,
+                    reduceMotion: reduceMotion,
+                    launchedAt: viewModel.launchedAt,
+                    serverContractLive: viewModel.serverContractLive,
+                    frozenInstant: frozenInstant
+                )
             }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
         .background(life.terminalInk.color.ignoresSafeArea())
         .preferredColorScheme(.dark)
@@ -73,44 +102,15 @@ public struct LifeTerminalView: View {
         .accessibilityElement(children: .contain)
     }
 
-    private func currentEntries() -> [LifeEntry] {
+    /// Real entries from the view model. Returns `[]` when idle/loading/
+    /// error/empty — the content layer renders its own banner, stats
+    /// line, and empty-state footer, so we do not need to inject a
+    /// synthetic boot row here. (Past bug: returning a fake `[LifeEntry]`
+    /// with a single `.boot` row caused the text layer to render only one
+    /// glyph, making the screen look like a pure-orange Metal plate.)
+    private func bufferEntries() -> [LifeEntry] {
         if case .ready(let entries) = viewModel.state { return entries }
-        // While idle/loading, show the boot line so the terminal is never
-        // visually empty — a black rectangle would imply a broken render.
-        // The boot banner is the first thing the operator sees when the
-        // terminal is idle. The AI status line below the banner is the
-        // single inline "Apple Intelligence touched it" cue for LIFE.
-        let now = Date()
-        let f = DateFormatter()
-        f.locale = Locale(identifier: "en_US_POSIX")
-        f.dateFormat = "EEE MMM d HH:mm:ss yyyy"
-        let stamp = f.string(from: now)
-        return [
-            LifeEntry(
-                id: "boot.banner",
-                timestamp: now,
-                kind: .boot,
-                text: "SYNAPSE LIFE TERMINAL v0.1.0"
-            ),
-            LifeEntry(
-                id: "boot.session",
-                timestamp: now,
-                kind: .boot,
-                text: "Session opened at \(stamp)"
-            ),
-            LifeEntry(
-                id: "boot.ai",
-                timestamp: now,
-                kind: .boot,
-                text: "[ai] narrator online · awaiting your first entry"
-            ),
-            LifeEntry(
-                id: "boot.prompt",
-                timestamp: now,
-                kind: .boot,
-                text: "> What did you accomplish today?"
-            )
-        ]
+        return []
     }
 
     @ViewBuilder
@@ -124,31 +124,6 @@ public struct LifeTerminalView: View {
         #else
         life.terminalInk.color.ignoresSafeArea()
         #endif
-    }
-
-    private func terminalText(lines: [TerminalLine], life: LifeIdentityTokens) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(lines) { line in
-                    Text(line.text)
-                        .font(.system(size: 13, weight: .regular, design: .monospaced))
-                        .monospacedDigit()
-                        .foregroundStyle(
-                            line.role == .daySeparator
-                                ? life.phosphorDim.color
-                                : life.phosphorBright.color
-                        )
-                        .shadow(color: life.phosphorBright.color.opacity(0.35), radius: 2)
-                }
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        // Compositing: drawingGroup lets the shader's bloom and the text's
-        // soft phosphor shadow blend through a single Metal pass rather
-        // than every glyph being its own offscreen.
-        .drawingGroup(opaque: false)
     }
 }
 
