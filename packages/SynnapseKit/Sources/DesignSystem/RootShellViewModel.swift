@@ -3,14 +3,61 @@ import SwiftUI
 
 /// Top-level sidebar route for the macOS shell.
 ///
-/// The shell is intentionally flat: three first-class destinations
-/// (Finance, Life, Advisors). Finance is the only one with sub-routes,
-/// and those are owned by [[FinanceSurface]] so the sidebar can highlight
-/// either the parent FINANCE row or one of its children.
+/// The Copilot redesign expanded the sidebar from three first-class
+/// destinations (Finance / Life / Advisors) to eleven, matching the
+/// Copilot reference shell. The new top-level rows are flat — no
+/// disclosure groups, no parent/child semantics — because the
+/// reference treats them as peers under a single visual section.
+///
+/// The legacy `.finance(FinanceSurface)` case is preserved for the
+/// in-flight live shell (`CopilotShellMac` routes the redesigned
+/// `.transactions` / `.accounts` / `.investments` top-level rows
+/// through the existing FinancePersonalView family by mapping each
+/// row to its `.finance(_)` peer). Removing the case would break
+/// [[RootShellSelectionTests]] and the live FinanceSurface router.
 public enum RootDestination: Sendable, Equatable, Hashable {
-    case finance(FinanceSurface)
+
+    // MARK: - New Copilot rows
+    case dashboard
+    case transactions
+    case goals
+    case cashFlow
+    case accounts
+    case investments
+    case categories
+    case recurrings
+    case subscriptions
+
+    // MARK: - Surviving Synapse-only rows
     case life
     case advisors
+
+    // MARK: - Legacy finance sub-routes
+    //
+    // Kept for back-compat with the surviving FinancePersonalView /
+    // FinanceAccountsView / FinanceTransactionsView / FinanceInvestmentsView
+    // family. The Copilot redesign routes the new top-level rows through
+    // these surfaces under the hood.
+    case finance(FinanceSurface)
+}
+
+extension RootDestination {
+    /// Canonical order in which the macOS sidebar paints its rows.
+    /// Other agents render content for these destinations and key off
+    /// this ordering — changing it is a breaking change.
+    public static let canonicalOrder: [RootDestination] = [
+        .dashboard,
+        .transactions,
+        .goals,
+        .cashFlow,
+        .accounts,
+        .investments,
+        .categories,
+        .recurrings,
+        .subscriptions,
+        .life,
+        .advisors
+    ]
 }
 
 /// Sub-routes for the Finance destination. Mirrors the four surviving
@@ -59,33 +106,44 @@ public final class RootShellViewModel {
     /// view layer.
     public var selection: RootDestination
 
-    public init(selection: RootDestination = .finance(.personal)) {
+    /// Optional id of a MY ACCOUNTS row the user just tapped. Cleared on
+    /// any top-level destination change. Agent 2 will read this from the
+    /// Transactions VM to scope the list to that account; until that wire
+    /// lands, the slot is informational.
+    public var selectedAccountId: String?
+
+    public init(selection: RootDestination = .dashboard) {
         self.selection = selection
+        self.selectedAccountId = nil
     }
 
-    /// Convenience used by the sidebar rows. A parent row tap (FINANCE,
-    /// LIFE, ADVISORS) lands on the parent's default destination — for
-    /// FINANCE that is `.personal`. Sub-row taps go straight to the leaf.
+    /// Convenience used by the sidebar rows. A top-level row tap routes
+    /// straight to its destination and clears any pinned account — the
+    /// sidebar carries one selection at a time.
     public func select(_ destination: RootDestination) {
         selection = destination
+        selectedAccountId = nil
     }
 
-    /// Whether the given destination matches the current selection. Used
-    /// by the sidebar to paint the active-row accent bar.
-    ///
-    /// Sub-routes count as activating their parent: when the user is on
-    /// `.finance(.accounts)`, both the FINANCE parent row and the Accounts
-    /// child row report `true`. The child wins visually because it is the
-    /// deeper of the two highlights.
+    /// Records that the operator clicked a MY ACCOUNTS row. The
+    /// destination is not touched here — the brief specifies "today just
+    /// record the intent in the routing VM, no behavior change". Agent 2
+    /// will follow this id into a Transactions filter once that surface
+    /// is wired up.
+    public func select(account id: String) {
+        selectedAccountId = id
+    }
+
+    /// Whether the given destination is the current selection. Used by
+    /// the sidebar to paint the active-row accent bar. Top-level rows
+    /// match exactly; the legacy `.finance(_)` shape preserves its
+    /// "parent FINANCE row activates for every leaf" semantic.
     public func isActive(_ destination: RootDestination) -> Bool {
         switch (destination, selection) {
         case (.finance, .finance):
             // Parent FINANCE row is active whenever any finance leaf is
-            // selected — that is what `destination == .finance(.personal)`
-            // here represents (we encode the parent as its default leaf
-            // because there is no parent-only state).
-            return true
-        case (.life, .life), (.advisors, .advisors):
+            // selected — encoded as `destination == .finance(.personal)`
+            // because the parent has no surface of its own.
             return true
         default:
             return destination == selection
