@@ -218,9 +218,11 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					63D0D64918A9F4B26F27F24E = {
+						DevelopmentTeam = WCGJPF9TWU;
 						ProvisioningStyle = Automatic;
 					};
 					8687422F0D83BE796593FAD1 = {
+						DevelopmentTeam = WCGJPF9TWU;
 						ProvisioningStyle = Automatic;
 					};
 				};
@@ -302,6 +304,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -327,6 +330,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -353,6 +357,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
@@ -434,6 +439,7 @@
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
