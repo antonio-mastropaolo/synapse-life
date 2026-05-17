@@ -74,9 +74,25 @@ struct LifeTerminalScreenSnapshotTests {
         ]
     }
 
-    private func makeViewModel(reduceMotion: Bool) -> LifeViewModel {
-        let vm = LifeViewModel(api: MockLifeAPI())
-        vm.injectStateForSnapshots(.ready(sampleEntries()))
+    /// Frozen instant for all snapshot variants. Anchor:
+    /// 2026-05-17 12:34:56 UTC. Picked so the stats line reads
+    /// "[2026-05-17 12:34:56 UTC] up 00:00:00 · mem N.N GiB" with
+    /// `launchedAt == frozen` (uptime zero) — stable on any machine.
+    private let frozenInstant = Date(timeIntervalSince1970: 1_779_021_296)
+
+    private func makeViewModel(
+        reduceMotion: Bool,
+        entries: [LifeEntry] = []
+    ) -> LifeViewModel {
+        let vm = LifeViewModel(
+            api: MockLifeAPI(),
+            launchedAt: frozenInstant
+        )
+        if !entries.isEmpty {
+            vm.injectStateForSnapshots(.ready(entries))
+        }
+        // If entries empty, leave state `.idle` — `bufferEntries()` maps
+        // that to `[]` so the boot banner + empty-state footer render.
         vm.updateRenderPath(
             accessibility: LifeAccessibilityEnvironment(reduceMotion: reduceMotion)
         )
@@ -86,7 +102,10 @@ struct LifeTerminalScreenSnapshotTests {
     #if os(macOS)
 
     private func host(_ vm: LifeViewModel, scheme: ColorScheme, size: CGSize) -> NSView {
-        let root = LifeTerminalView(viewModel: vm)
+        let root = LifeTerminalView(
+            viewModel: vm,
+            frozenInstantForSnapshots: frozenInstant
+        )
             .identity(.terminalAmber)
             .environment(\.colorScheme, scheme)
             .frame(width: size.width, height: size.height)
@@ -100,29 +119,46 @@ struct LifeTerminalScreenSnapshotTests {
 
     @Test
     func darkMac() throws {
-        let vm = makeViewModel(reduceMotion: false)
+        // "with-entries" variant on macOS — full feed + banner + stats.
+        let vm = makeViewModel(reduceMotion: false, entries: sampleEntries())
         let view = host(vm, scheme: .dark, size: macSize)
         assertSnapshot(of: view, as: .image, named: "dark.mac")
     }
 
     @Test
     func lightMac() throws {
-        let vm = makeViewModel(reduceMotion: false)
+        let vm = makeViewModel(reduceMotion: false, entries: sampleEntries())
         let view = host(vm, scheme: .light, size: macSize)
         assertSnapshot(of: view, as: .image, named: "light.mac")
     }
 
     @Test
     func reduceMotionMac() throws {
-        let vm = makeViewModel(reduceMotion: true)
+        // Forces Canvas fallback (no shader) but the boot banner +
+        // stats line + footer still render — the regression we shipped
+        // this fix for was the pure-orange paint, not motion handling.
+        let vm = makeViewModel(reduceMotion: true, entries: sampleEntries())
         let view = host(vm, scheme: .dark, size: macSize)
         assertSnapshot(of: view, as: .image, named: "reduceMotion.mac")
+    }
+
+    @Test
+    func bootBannerZeroEntriesMac() throws {
+        // The "fixed" baseline: zero entries, shader path live. Must
+        // show the 4-line banner, the empty-state footer, the prompt
+        // line, and the system stats line — never a blank orange plate.
+        let vm = makeViewModel(reduceMotion: false, entries: [])
+        let view = host(vm, scheme: .dark, size: macSize)
+        assertSnapshot(of: view, as: .image, named: "bootBanner-zero-entries.mac")
     }
 
     #else
 
     private func host(_ vm: LifeViewModel, scheme: ColorScheme, size: CGSize) -> UIViewController {
-        let root = LifeTerminalView(viewModel: vm)
+        let root = LifeTerminalView(
+            viewModel: vm,
+            frozenInstantForSnapshots: frozenInstant
+        )
             .identity(.terminalAmber)
             .environment(\.colorScheme, scheme)
         let controller = UIHostingController(rootView: root)
@@ -136,23 +172,30 @@ struct LifeTerminalScreenSnapshotTests {
 
     @Test
     func darkIOS() throws {
-        let vm = makeViewModel(reduceMotion: false)
+        let vm = makeViewModel(reduceMotion: false, entries: sampleEntries())
         let vc = host(vm, scheme: .dark, size: iosSize)
         assertSnapshot(of: vc, as: .image(on: .iPhone13Pro), named: "dark.ios")
     }
 
     @Test
     func lightIOS() throws {
-        let vm = makeViewModel(reduceMotion: false)
+        let vm = makeViewModel(reduceMotion: false, entries: sampleEntries())
         let vc = host(vm, scheme: .light, size: iosSize)
         assertSnapshot(of: vc, as: .image(on: .iPhone13Pro), named: "light.ios")
     }
 
     @Test
     func reduceMotionIOS() throws {
-        let vm = makeViewModel(reduceMotion: true)
+        let vm = makeViewModel(reduceMotion: true, entries: sampleEntries())
         let vc = host(vm, scheme: .dark, size: iosSize)
         assertSnapshot(of: vc, as: .image(on: .iPhone13Pro), named: "reduceMotion.ios")
+    }
+
+    @Test
+    func bootBannerZeroEntriesIOS() throws {
+        let vm = makeViewModel(reduceMotion: false, entries: [])
+        let vc = host(vm, scheme: .dark, size: iosSize)
+        assertSnapshot(of: vc, as: .image(on: .iPhone13Pro), named: "bootBanner-zero-entries.ios")
     }
 
     #endif
