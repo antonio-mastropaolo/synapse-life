@@ -53,20 +53,27 @@ struct AccountDetailView: View {
                             .foregroundStyle(tokens.foregroundSecondary.color)
                     }
                     .listRowBackground(tokens.surface.color)
-                case .empty:
-                    Text("No recent transactions")
-                        .font(tokens.tickerFont(size: 11))
-                        .foregroundStyle(tokens.foregroundSecondary.color)
-                        .listRowBackground(tokens.surface.color)
                 case .error(let msg):
                     Text(msg)
                         .font(tokens.tickerFont(size: 11))
                         .foregroundStyle(tokens.lossAccent.color)
                         .listRowBackground(tokens.surface.color)
-                case .results(let rows):
-                    ForEach(rows.prefix(50), id: \.id) { row in
-                        compactRow(row)
+                case .ready(let groups):
+                    // The Transactions VM now emits CardGroup'd output
+                    // (worktree B). For the per-account inspector we flatten
+                    // back into rows — the VM is already scoped by
+                    // `accountId`, so all groups belong to this account.
+                    let rows = groups.flatMap(\.transactions)
+                    if rows.isEmpty {
+                        Text("No recent transactions")
+                            .font(tokens.tickerFont(size: 11))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
                             .listRowBackground(tokens.surface.color)
+                    } else {
+                        ForEach(rows.prefix(50), id: \.id) { row in
+                            compactRow(row)
+                                .listRowBackground(tokens.surface.color)
+                        }
                     }
                 }
             }
