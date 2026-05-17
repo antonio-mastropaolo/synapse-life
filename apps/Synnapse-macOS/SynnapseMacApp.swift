@@ -11,85 +11,50 @@ import AppLifecycle
 struct SynnapseMacApp: App {
 
     @State private var appModel = AppModel()
-
-    @Environment(\.openWindow) private var openWindow
+    @State private var routing = RootShellViewModel()
 
     var body: some Scene {
         WindowGroup("Synapse") {
-            // The login gate was removed: the cockpit shell renders
-            // unconditionally so the app boots straight into Finance /
-            // Life / Advisors. Auth is now a user-initiated action
-            // surfaced from Settings, not a startup blocker.
-            RootView(showsDemoDataFooter: appModel.usesDemoData)
-                .frame(minWidth: 720, minHeight: 480)
-                .task { await appModel.bootstrapIfNeeded() }
-                .onOpenURL { url in
-                    // Deep links are routed through `AppLifecycleService`.
-                    // The handler installed in `bootstrapIfNeeded`
-                    // dispatches each link to the matching surface via
-                    // `openWindow`. Links that don't parse are dropped
-                    // silently — `parse(url:)` returns nil.
-                    appModel.lifecycle.handle(url: url)
-                }
-        }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified)
-
-        WindowGroup("Finance", id: "finance") {
-            FinanceShellView(
+            // Single live shell. The previous build painted a static
+            // `RootView` preview in the main window and only opened the
+            // real surfaces in secondary windows via menu commands —
+            // sidebar rows did nothing. The new shell hosts the
+            // surviving surfaces directly, switched via the sidebar.
+            CockpitShellMac(
+                routing: routing,
                 personal: appModel.financePersonal,
                 accounts: appModel.financeAccounts,
                 transactions: appModel.financeTransactions,
                 investments: appModel.financeInvestments,
-                initialSurface: .personal
+                lifeAPI: appModel.lifeAPI,
+                advisors: appModel.advisors,
+                showsDemoDataFooter: appModel.usesDemoData
             )
-            .frame(minWidth: 1100, minHeight: 640)
-            .identity(.cockpitInstrument)
+            .frame(minWidth: 960, minHeight: 640)
+            .task { await appModel.bootstrapIfNeeded() }
+            .onOpenURL { url in
+                appModel.lifecycle.handle(url: url)
+            }
         }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified)
-
-        WindowGroup("Finance · Accounts", id: "finance-accounts") {
-            FinanceShellView(
-                personal: appModel.financePersonal,
-                accounts: appModel.financeAccounts,
-                transactions: appModel.financeTransactions,
-                investments: appModel.financeInvestments,
-                initialSurface: .accounts
-            )
-            .frame(minWidth: 1100, minHeight: 640)
-            .identity(.cockpitInstrument)
-        }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified)
-
-        WindowGroup("Life", id: "life") {
-            LifeTerminalScene(api: appModel.lifeAPI)
-                .frame(minWidth: 720, minHeight: 480)
-        }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified)
-
-        WindowGroup("Advisors", id: "advisors") {
-            AdvisorsView(viewModel: appModel.advisors)
-                .frame(minWidth: 1100, minHeight: 640)
-                .identity(.cockpitInstrument)
-        }
-        .windowStyle(.titleBar)
-        .windowToolbarStyle(.unified)
+        .windowStyle(.hiddenTitleBar)
+        .defaultSize(width: 1280, height: 800)
         .commands {
-            // Synnapse is a private-life client: Finance, Life,
-            // Advisors. The View menu opens each surviving surface in
-            // its own window. The system Settings shortcut (Cmd-,)
-            // opens the SettingsScene below without an explicit entry.
+            // Sidebar keyboard shortcuts. Each command targets the
+            // routing VM so the main window updates in place — no
+            // secondary windows. Matches the brief's "no extra chrome"
+            // direction.
             CommandGroup(after: .toolbar) {
-                Button("Finance") { openWindow(id: "finance") }
+                Button("Finance") { routing.select(.finance(.personal)) }
                     .keyboardShortcut("3", modifiers: [.command])
-                Button("Accounts") { openWindow(id: "finance-accounts") }
+                Button("Accounts") { routing.select(.finance(.accounts)) }
                     .keyboardShortcut("3", modifiers: [.command, .shift])
-                Button("Life") { openWindow(id: "life") }
+                Button("Transactions") { routing.select(.finance(.transactions)) }
+                    .keyboardShortcut("4", modifiers: [.command, .shift])
+                Button("Investments") { routing.select(.finance(.investments)) }
+                    .keyboardShortcut("5", modifiers: [.command, .shift])
+                Button("Life") { routing.select(.life) }
                     .keyboardShortcut("4", modifiers: [.command])
-                Button("Advisors") { openWindow(id: "advisors") }
+                Button("Advisors") { routing.select(.advisors) }
                     .keyboardShortcut("7", modifiers: [.command])
             }
         }
@@ -158,29 +123,33 @@ final class AppModel {
             defaultHeaders: ["Accept": "application/json"]
         )
 
-        // DEBUG: bind every VM to a Mock API and seed it from
-        // `bootstrapIfNeeded`. Release: live wiring against the real
-        // synapse-v2 server.
-        #if DEBUG
-        let mockFinance = MockFinanceAPI()
-        let mockLife = MockLifeAPI()
-        let mockAdvisors = MockAdvisorsAPI()
-        self.demoFinanceAPI = mockFinance
-        self.demoLifeAPI = mockLife
-        self.demoAdvisorsAPI = mockAdvisors
-        self.usesDemoData = true
-        let financeAPI: FinanceAPI = mockFinance
-        let lifeAPI: LifeAPI = mockLife
-        let advisorsAPI: AdvisorsAPI = mockAdvisors
-        #else
-        self.demoFinanceAPI = nil
-        self.demoLifeAPI = nil
-        self.demoAdvisorsAPI = nil
-        self.usesDemoData = false
-        let financeAPI: FinanceAPI = LiveFinanceAPI(client: client)
-        let lifeAPI: LifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
-        let advisorsAPI: AdvisorsAPI = LiveAdvisorsAPI(client: client)
-        #endif
+        // Default: Live APIs against the real synapse-v2 server at
+        // baseURL. Set SYNNAPSE_USE_DEMO=1 in the environment to fall
+        // back to Mock APIs with pre-seeded demo fixtures.
+        let useDemo = ProcessInfo.processInfo.environment["SYNNAPSE_USE_DEMO"] == "1"
+        let financeAPI: FinanceAPI
+        let lifeAPI: LifeAPI
+        let advisorsAPI: AdvisorsAPI
+        if useDemo {
+            let mockFinance = MockFinanceAPI()
+            let mockLife = MockLifeAPI()
+            let mockAdvisors = MockAdvisorsAPI()
+            self.demoFinanceAPI = mockFinance
+            self.demoLifeAPI = mockLife
+            self.demoAdvisorsAPI = mockAdvisors
+            self.usesDemoData = true
+            financeAPI = mockFinance
+            lifeAPI = mockLife
+            advisorsAPI = mockAdvisors
+        } else {
+            self.demoFinanceAPI = nil
+            self.demoLifeAPI = nil
+            self.demoAdvisorsAPI = nil
+            self.usesDemoData = false
+            financeAPI = LiveFinanceAPI(client: client)
+            lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+            advisorsAPI = LiveAdvisorsAPI(client: client)
+        }
 
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
@@ -203,8 +172,8 @@ final class AppModel {
         bootstrapped = true
         await auth.restoreFromStore()
 
-        // Seed the demo fixtures before the surfaces refresh so the
-        // first paint isn't an empty `.idle` state.
+        // Seed the demo fixtures (when in demo mode) before the surfaces
+        // refresh so the first paint isn't an empty `.idle` state.
         if let finance = demoFinanceAPI,
            let life = demoLifeAPI,
            let advisorsAPI = demoAdvisorsAPI {
@@ -213,12 +182,16 @@ final class AppModel {
                 life: life,
                 advisors: advisorsAPI
             )
-            await financePersonal.refresh()
-            await financeAccounts.refresh()
-            await financeTransactions.refresh()
-            await financeInvestments.refresh()
-            await advisors.refresh()
         }
+
+        // Refresh every surface on bootstrap regardless of demo/live so
+        // the first paint shows real data even when the user lands on a
+        // tab whose `.task` hasn't fired yet.
+        await financePersonal.refresh()
+        await financeAccounts.refresh()
+        await financeTransactions.refresh()
+        await financeInvestments.refresh()
+        await advisors.refresh()
 
         // Settings <-> Finance bridge. When the conceal-balances
         // preference is on, forward an inactive scene-phase signal to the

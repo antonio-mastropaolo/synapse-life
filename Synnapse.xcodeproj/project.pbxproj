@@ -29,6 +29,7 @@
 		C32ECF3D63E4E0EB3DB9586A /* SynnapseMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C70A7CD44A5F62A2D14C995 /* SynnapseMacApp.swift */; };
 		C955A1666AD07E21796B42DD /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5085850B5103E8CD1A5D86C7 /* Assets.xcassets */; };
 		CEC869AE47EE3F213990C361 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 60A84DD6EADA5FBDC5411AD1 /* DesignSystem */; };
+		CF06DB947FDE97BE4EF1B21A /* CockpitShellMac.swift in Sources */ = {isa = PBXBuildFile; fileRef = D1D3030F9CF80A305F6DF72A /* CockpitShellMac.swift */; };
 		DB13E2F975DB6609DAF8C217 /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E3985CE8BFC656951EE0 /* AppLifecycle */; };
 /* End PBXBuildFile section */
 
@@ -44,6 +45,7 @@
 		6F2A45A32A29942F0FFFD9F2 /* SynnapseKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynnapseKit; path = packages/SynnapseKit; sourceTree = SOURCE_ROOT; };
 		7BE72D4E4B57B067026EDF50 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
 		CB9EF5D27AA78C9B713BA1A2 /* Synnapse-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synnapse-iOS.entitlements"; sourceTree = "<group>"; };
+		D1D3030F9CF80A305F6DF72A /* CockpitShellMac.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CockpitShellMac.swift; sourceTree = "<group>"; };
 		E579C4776B7EFC22D327B488 /* SynnapseMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynnapseMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		E7F054B4B057295DD3C3E1C8 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -111,6 +113,7 @@
 			isa = PBXGroup;
 			children = (
 				5085850B5103E8CD1A5D86C7 /* Assets.xcassets */,
+				D1D3030F9CF80A305F6DF72A /* CockpitShellMac.swift */,
 				287CEBA7E3EBF7BBCB955218 /* ExportOptions.plist */,
 				264A38AA058647E25DCD0355 /* FinanceShellView.swift */,
 				660C10623B8263E3B14A24B0 /* Synnapse-macOS.entitlements */,
@@ -270,6 +273,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CF06DB947FDE97BE4EF1B21A /* CockpitShellMac.swift in Sources */,
 				85A2E5413387A3E4BFE10C52 /* FinanceShellView.swift in Sources */,
 				A8C479987B6ADC15773B0B59 /* RootView.swift in Sources */,
 				C32ECF3D63E4E0EB3DB9586A /* SynnapseMacApp.swift in Sources */,

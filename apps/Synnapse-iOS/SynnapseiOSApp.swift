@@ -77,26 +77,30 @@ final class AppModel {
             defaultHeaders: ["Accept": "application/json"]
         )
 
-        #if DEBUG
-        let mockFinance = MockFinanceAPI()
-        let mockLife = MockLifeAPI()
-        let mockAdvisors = MockAdvisorsAPI()
-        self.demoFinanceAPI = mockFinance
-        self.demoLifeAPI = mockLife
-        self.demoAdvisorsAPI = mockAdvisors
-        self.usesDemoData = true
-        let financeAPI: FinanceAPI = mockFinance
-        let lifeAPI: LifeAPI = mockLife
-        let advisorsAPI: AdvisorsAPI = mockAdvisors
-        #else
-        self.demoFinanceAPI = nil
-        self.demoLifeAPI = nil
-        self.demoAdvisorsAPI = nil
-        self.usesDemoData = false
-        let financeAPI: FinanceAPI = LiveFinanceAPI(client: client)
-        let lifeAPI: LifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
-        let advisorsAPI: AdvisorsAPI = LiveAdvisorsAPI(client: client)
-        #endif
+        let useDemo = ProcessInfo.processInfo.environment["SYNNAPSE_USE_DEMO"] == "1"
+        let financeAPI: FinanceAPI
+        let lifeAPI: LifeAPI
+        let advisorsAPI: AdvisorsAPI
+        if useDemo {
+            let mockFinance = MockFinanceAPI()
+            let mockLife = MockLifeAPI()
+            let mockAdvisors = MockAdvisorsAPI()
+            self.demoFinanceAPI = mockFinance
+            self.demoLifeAPI = mockLife
+            self.demoAdvisorsAPI = mockAdvisors
+            self.usesDemoData = true
+            financeAPI = mockFinance
+            lifeAPI = mockLife
+            advisorsAPI = mockAdvisors
+        } else {
+            self.demoFinanceAPI = nil
+            self.demoLifeAPI = nil
+            self.demoAdvisorsAPI = nil
+            self.usesDemoData = false
+            financeAPI = LiveFinanceAPI(client: client)
+            lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+            advisorsAPI = LiveAdvisorsAPI(client: client)
+        }
 
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
@@ -123,13 +127,13 @@ final class AppModel {
                 life: lifeMock,
                 advisors: advisorsMock
             )
-            await financePersonal.refresh()
-            await financeAccounts.refresh()
-            await financeTransactions.refresh()
-            await financeInvestments.refresh()
-            await life.refresh()
-            await advisors.refresh()
         }
+        await financePersonal.refresh()
+        await financeAccounts.refresh()
+        await financeTransactions.refresh()
+        await financeInvestments.refresh()
+        await life.refresh()
+        await advisors.refresh()
         applyConcealBalancesBridge()
     }
 
