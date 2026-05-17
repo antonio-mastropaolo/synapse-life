@@ -10,13 +10,29 @@ private func txn(
     name: String = "n",
     merchant: String? = nil,
     accountId: String = "a",
-    category: TransactionCategory = .unknown
+    category: TransactionCategory = .unknown,
+    pending: Bool = false
 ) -> Transaction {
     Transaction(
         id: id, accountId: accountId, accountName: nil,
         amount: amount, currency: "USD",
         date: date, name: name, merchantName: merchant,
-        category: category, subcategory: nil, pending: false
+        category: category, subcategory: nil, pending: pending
+    )
+}
+
+private func account(
+    id: String,
+    institution: String? = "Bank of America",
+    name: String = "Adv Plus Banking",
+    mask: String? = "4223"
+) -> FinanceAccount {
+    FinanceAccount(
+        id: id, institutionId: nil, institutionName: institution,
+        name: name, officialName: nil, mask: mask,
+        kind: .checking, currency: "USD",
+        currentBalance: nil, availableBalance: nil,
+        limitAmount: nil, balanceCapturedAt: nil
     )
 }
 
@@ -101,6 +117,137 @@ struct LedgerFilterTests {
         f.categories = ["Food & Drink"]
         f.searchText = "latte"
         #expect(f.apply(to: rows).map(\.id) == ["match"])
+    }
+
+    @Test
+    func showPendingFalseHidesPendingRows() {
+        let rows: [Transaction] = [
+            txn(id: "posted", amount: Decimal(-5), date: ref, pending: false),
+            txn(id: "pending", amount: Decimal(-5), date: ref, pending: true)
+        ]
+        var f = LedgerFilter()
+        f.showPending = false
+        #expect(f.apply(to: rows).map(\.id) == ["posted"])
+    }
+
+    @Test
+    func showPendingTrueKeepsPendingRows() {
+        let rows: [Transaction] = [
+            txn(id: "posted", amount: Decimal(-5), date: ref, pending: false),
+            txn(id: "pending", amount: Decimal(-5), date: ref, pending: true)
+        ]
+        let f = LedgerFilter() // default showPending = true
+        #expect(f.apply(to: rows).map(\.id) == ["posted", "pending"])
+    }
+
+    @Test
+    func groupByCardProducesSectionsInAccountOrder() {
+        let acctA = account(id: "a", institution: "Chase", name: "Total Checking", mask: "1111")
+        let acctB = account(id: "b", institution: "Amex", name: "Gold", mask: "2222")
+        let rows: [Transaction] = [
+            txn(id: "b1", amount: Decimal(-1), date: ref, accountId: "b"),
+            txn(id: "a1", amount: Decimal(-1), date: ref, accountId: "a"),
+            txn(id: "a2", amount: Decimal(-1), date: ref.addingTimeInterval(60), accountId: "a")
+        ]
+        let groups = LedgerFilter().groupByCard(rows: rows, accounts: [acctA, acctB])
+        #expect(groups.map(\.account.id) == ["a", "b"])
+        // Within each section: newest-first.
+        #expect(groups[0].transactions.map(\.id) == ["a2", "a1"])
+        #expect(groups[1].transactions.map(\.id) == ["b1"])
+    }
+
+    @Test
+    func groupByCardOmitsEmptySections() {
+        let acctA = account(id: "a")
+        let acctB = account(id: "b")
+        let rows: [Transaction] = [
+            txn(id: "a1", amount: Decimal(-1), date: ref, accountId: "a")
+        ]
+        let groups = LedgerFilter().groupByCard(rows: rows, accounts: [acctA, acctB])
+        #expect(groups.map(\.account.id) == ["a"])
+    }
+
+    @Test
+    func groupByCardComposesWithCategoryFilter() {
+        let acctA = account(id: "a")
+        let acctB = account(id: "b")
+        let rows: [Transaction] = [
+            txn(id: "food-a", amount: Decimal(-1), date: ref,
+                accountId: "a", category: .knownCategory("Food & Drink")),
+            txn(id: "uber-a", amount: Decimal(-1), date: ref,
+                accountId: "a", category: .knownCategory("Transportation")),
+            txn(id: "uber-b", amount: Decimal(-1), date: ref,
+                accountId: "b", category: .knownCategory("Transportation"))
+        ]
+        var f = LedgerFilter()
+        f.categories = ["Food & Drink"]
+        let groups = f.groupByCard(rows: rows, accounts: [acctA, acctB])
+        // Only acctA has a Food & Drink row, acctB section disappears.
+        #expect(groups.map(\.account.id) == ["a"])
+        #expect(groups[0].transactions.map(\.id) == ["food-a"])
+    }
+
+    @Test
+    func groupByCardComposesWithSearchTextCaseInsensitively() {
+        let acctA = account(id: "a")
+        let rows: [Transaction] = [
+            txn(id: "1", amount: Decimal(-1), date: ref,
+                name: "BLUE BOTTLE", accountId: "a"),
+            txn(id: "2", amount: Decimal(-1), date: ref,
+                name: "PHILZ", accountId: "a")
+        ]
+        var f = LedgerFilter()
+        f.searchText = "bottle"
+        let groups = f.groupByCard(rows: rows, accounts: [acctA])
+        #expect(groups.flatMap { $0.transactions }.map(\.id) == ["1"])
+    }
+
+    @Test
+    func groupByCardComposesWithShowPendingToggle() {
+        let acctA = account(id: "a")
+        let rows: [Transaction] = [
+            txn(id: "posted", amount: Decimal(-1), date: ref, accountId: "a"),
+            txn(id: "pending", amount: Decimal(-1), date: ref,
+                accountId: "a", pending: true)
+        ]
+        var f = LedgerFilter()
+        f.showPending = false
+        let groups = f.groupByCard(rows: rows, accounts: [acctA])
+        #expect(groups.flatMap { $0.transactions }.map(\.id) == ["posted"])
+    }
+
+    @Test
+    func groupByCardDropsRowsWithNoMatchingAccount() {
+        // Defensive: a row referencing an unknown accountId should not
+        // create a phantom section.
+        let acctA = account(id: "a")
+        let rows: [Transaction] = [
+            txn(id: "orphan", amount: Decimal(-1), date: ref, accountId: "zzz"),
+            txn(id: "a1", amount: Decimal(-1), date: ref, accountId: "a")
+        ]
+        let groups = LedgerFilter().groupByCard(rows: rows, accounts: [acctA])
+        #expect(groups.map(\.account.id) == ["a"])
+        #expect(groups[0].transactions.map(\.id) == ["a1"])
+    }
+
+    @Test
+    func cardSectionTitleUsesInstitutionAndMask() {
+        let acct = account(id: "a", institution: "Bank of America",
+                           name: "Adv Plus", mask: "4223")
+        #expect(acct.cardSectionTitle == "Bank of America •• 4223")
+    }
+
+    @Test
+    func cardSectionTitleFallsBackToAccountNameWhenInstitutionMissing() {
+        let acct = account(id: "a", institution: nil, name: "House Account", mask: "0001")
+        #expect(acct.cardSectionTitle == "House Account •• 0001")
+    }
+
+    @Test
+    func cardSectionTitleOmitsMaskSuffixWhenAbsent() {
+        let acct = account(id: "a", institution: "Fidelity",
+                           name: "Brokerage", mask: nil)
+        #expect(acct.cardSectionTitle == "Fidelity")
     }
 
     @Test
