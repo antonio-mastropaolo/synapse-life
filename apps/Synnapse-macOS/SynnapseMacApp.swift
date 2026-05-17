@@ -20,16 +20,35 @@ struct SynnapseMacApp: App {
             // real surfaces in secondary windows via menu commands —
             // sidebar rows did nothing. The new shell hosts the
             // surviving surfaces directly, switched via the sidebar.
-            CockpitShellMac(
-                routing: routing,
-                personal: appModel.financePersonal,
-                accounts: appModel.financeAccounts,
-                transactions: appModel.financeTransactions,
-                investments: appModel.financeInvestments,
-                lifeAPI: appModel.lifeAPI,
-                advisors: appModel.advisors,
-                showsDemoDataFooter: appModel.usesDemoData
-            )
+            ZStack(alignment: .top) {
+                CockpitShellMac(
+                    routing: routing,
+                    personal: appModel.financePersonal,
+                    accounts: appModel.financeAccounts,
+                    transactions: appModel.financeTransactions,
+                    investments: appModel.financeInvestments,
+                    lifeAPI: appModel.lifeAPI,
+                    advisors: appModel.advisors,
+                    showsDemoDataFooter: appModel.usesDemoData
+                )
+
+                if appModel.commandBar.isPresented {
+                    // Dim the background and absorb taps outside the
+                    // palette so the user can dismiss with a click.
+                    Color.black.opacity(0.30)
+                        .ignoresSafeArea()
+                        .onTapGesture { appModel.commandBar.close() }
+                        .transition(.opacity)
+
+                    CommandBarView(viewModel: appModel.commandBar) { sugg in
+                        applySuggestion(sugg)
+                        appModel.commandBar.close()
+                    }
+                    .padding(.top, 64)
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.easeOut(duration: 0.18), value: appModel.commandBar.isPresented)
             .frame(minWidth: 960, minHeight: 640)
             .task { await appModel.bootstrapIfNeeded() }
             .onOpenURL { url in
@@ -44,6 +63,8 @@ struct SynnapseMacApp: App {
             // secondary windows. Matches the brief's "no extra chrome"
             // direction.
             CommandGroup(after: .toolbar) {
+                Button("Ask Synapse") { appModel.commandBar.open() }
+                    .keyboardShortcut("k", modifiers: [.command])
                 Button("Finance") { routing.select(.finance(.personal)) }
                     .keyboardShortcut("3", modifiers: [.command])
                 Button("Accounts") { routing.select(.finance(.accounts)) }
@@ -59,11 +80,37 @@ struct SynnapseMacApp: App {
             }
         }
 
+        // No explicit window for the palette — it is overlaid inside
+        // the main scene above. `applySuggestion` lives here so the
+        // routing VM is in scope.
         Settings {
             // M9 promoted Settings to the full `SettingsScene`. The
             // standard macOS Cmd-, gesture opens this scene for free; no
             // explicit command is needed.
             SettingsScene(settings: appModel.settings, auth: appModel.auth)
+        }
+    }
+
+    /// Route a command-bar suggestion to the right sidebar destination.
+    /// Surface jumps update routing; the other kinds are advisory-only
+    /// today (the advisor target lands as a routing.select(.advisors)).
+    private func applySuggestion(_ sugg: CommandSuggestion) {
+        switch sugg.kind {
+        case .surface(let target):
+            switch target {
+            case .personal:     routing.select(.finance(.personal))
+            case .accounts:     routing.select(.finance(.accounts))
+            case .transactions: routing.select(.finance(.transactions))
+            case .investments:  routing.select(.finance(.investments))
+            case .life:         routing.select(.life)
+            case .advisors:     routing.select(.advisors)
+            case .settings:     break // macOS opens Settings via Cmd-,
+            }
+        case .savedQuery:
+            appModel.commandBar.query = sugg.label
+            appModel.commandBar.submit()
+        case .askAdvisor:
+            routing.select(.advisors)
         }
     }
 }
@@ -89,6 +136,10 @@ final class AppModel {
 
     // Settings.
     private(set) var settings: SettingsViewModel
+
+    // Command bar — global ⌘K palette. Backed by the local Ask stub
+    // until /api/ai/ask lands.
+    private(set) var commandBar: CommandBarViewModel
 
     // Deep-link router + restoration.
     let lifecycle: AppLifecycleService
@@ -151,7 +202,8 @@ final class AppModel {
             advisorsAPI = LiveAdvisorsAPI(client: client)
         }
 
-        self.financePersonal = FinancePersonalViewModel(api: financeAPI)
+        let personalVM = FinancePersonalViewModel(api: financeAPI)
+        self.financePersonal = personalVM
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
@@ -160,6 +212,24 @@ final class AppModel {
         self.advisors = AdvisorsListViewModel(api: advisorsAPI)
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
+
+        // Command bar — captures a snapshot of the personal VM each
+        // time a query submits, so the Ask stub always has fresh
+        // context. Closes over a local reference to dodge the "self
+        // used before init" diagnostic.
+        self.commandBar = CommandBarViewModel(
+            askAPI: LiveAskAPI(client: client, serverContractLive: false),
+            advisorIds: ["financial", "tax", "life"],
+            contextProvider: {
+                if case .ready(let snap) = personalVM.state {
+                    return AskContext(
+                        accounts: snap.accounts,
+                        recentTransactions: personalVM.recentTransactions
+                    )
+                }
+                return AskContext(accounts: [], recentTransactions: [])
+            }
+        )
 
         // Deep-link service. The route handler is installed in
         // `bootstrapIfNeeded` so it can capture `openWindow` from the

@@ -99,6 +99,8 @@ public struct FinancePersonalView: View {
                 VStack(alignment: .leading, spacing: 18) {
                     netWorthHero
                         .padding(.horizontal, 16)
+                    insightStrip
+                        .padding(.horizontal, 16)
                     allocationCard
                         .padding(.horizontal, 16)
                     accountsList
@@ -140,12 +142,31 @@ public struct FinancePersonalView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 18) {
                     netWorthHero(snapshot: snapshot)
+                    insightStrip
                     allocationCard(slices: snapshot.allocation)
                     Spacer(minLength: 4)
                 }
                 .padding(20)
             }
             .background(tokens.background.color)
+        }
+    }
+
+    /// Horizontal strip of AI insight cards. The strip is read-only
+    /// here — the VM refreshes the cards inside its own `refresh()`.
+    @ViewBuilder
+    private var insightStrip: some View {
+        InsightStrip(
+            insights: viewModel.insights.insights,
+            isLoading: viewModel.insights.isLoading
+        ) { insight in
+            // Tap-to-account: if the insight names an account, route
+            // there. The macOS shell observes `selectedAccount`.
+            if let acctId = insight.accountId,
+               case .ready(let snap) = viewModel.state,
+               let match = snap.accounts.first(where: { $0.id == acctId }) {
+                viewModel.selectAccount(match)
+            }
         }
     }
 
@@ -187,6 +208,9 @@ public struct FinancePersonalView: View {
                 .font(tokens.tickerFont(size: 36, weight: .medium))
                 .foregroundStyle(tokens.foregroundPrimary.color)
                 .accessibilityLabel(viewModel.concealBalances ? "Balance concealed" : "Net worth")
+            if let narration = viewModel.insights.insights.first(where: { $0.kind == .narration }) {
+                NarrationLine(text: narration.body)
+            }
             HStack(spacing: 18) {
                 kpiCell(label: "Assets",
                         amount: snapshot.allocation

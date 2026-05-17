@@ -21,6 +21,27 @@ public final class SettingsViewModel {
     public var reduceMotionPreview: Bool {
         didSet { persist() }
     }
+    public var aiModel: String {
+        didSet { persist() }
+    }
+    public var aiOnDeviceTranscription: Bool {
+        didSet { persist() }
+    }
+    public var aiInsightsDigest: Bool {
+        didSet { persist() }
+    }
+    public var aiAnomalySensitivity: Int {
+        didSet { persist() }
+    }
+
+    /// Choices for the model picker. The user's auto-memory pins
+    /// load-bearing calls to `claude-opus-4-7`; the other entries are
+    /// surfaced for transparency, not as a cheaper fallback.
+    public static let aiModelChoices: [String] = [
+        "claude-opus-4-7",
+        "claude-sonnet-4-6",
+        "claude-haiku-4-5"
+    ]
 
     private let store: SettingsStore
 
@@ -30,13 +51,21 @@ public final class SettingsViewModel {
         self.apiBaseURL = snapshot.apiBaseURL
         self.concealBalances = snapshot.concealBalances
         self.reduceMotionPreview = snapshot.reduceMotionPreview
+        self.aiModel = snapshot.aiModel
+        self.aiOnDeviceTranscription = snapshot.aiOnDeviceTranscription
+        self.aiInsightsDigest = snapshot.aiInsightsDigest
+        self.aiAnomalySensitivity = snapshot.aiAnomalySensitivity
     }
 
     public var snapshot: SettingsSnapshot {
         SettingsSnapshot(
             apiBaseURL: apiBaseURL,
             concealBalances: concealBalances,
-            reduceMotionPreview: reduceMotionPreview
+            reduceMotionPreview: reduceMotionPreview,
+            aiModel: aiModel,
+            aiOnDeviceTranscription: aiOnDeviceTranscription,
+            aiInsightsDigest: aiInsightsDigest,
+            aiAnomalySensitivity: aiAnomalySensitivity
         )
     }
 
@@ -58,6 +87,10 @@ public final class SettingsViewModel {
         apiBaseURL = defaults.apiBaseURL
         concealBalances = defaults.concealBalances
         reduceMotionPreview = defaults.reduceMotionPreview
+        aiModel = defaults.aiModel
+        aiOnDeviceTranscription = defaults.aiOnDeviceTranscription
+        aiInsightsDigest = defaults.aiInsightsDigest
+        aiAnomalySensitivity = defaults.aiAnomalySensitivity
     }
 
     private func persist() {

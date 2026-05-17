@@ -79,6 +79,8 @@ public struct FinanceAccountsView: View {
         let kinds = AccountKind.allCases.filter { grouped[$0] != nil }
         return ScrollView {
             VStack(alignment: .leading, spacing: 14) {
+                syncHealthCard(accounts: accounts)
+                    .padding(.horizontal, 12)
                 ForEach(kinds, id: \.self) { kind in
                     if let rows = grouped[kind] {
                         VStack(alignment: .leading, spacing: 6) {
@@ -159,6 +161,39 @@ public struct FinanceAccountsView: View {
     }
     #endif
 
+    // MARK: - AI sync-health card
+
+    /// One-line summary the operator reads first. Counts the institutions
+    /// the user has linked and flags the action target (synapse-v2 web)
+    /// rather than offering a re-link button in the native app — Plaid
+    /// Link is web-owned.
+    private func syncHealthCard(accounts: [FinanceAccount]) -> some View {
+        InsightCard(insight: makeSyncHealthInsight(accounts: accounts))
+    }
+
+    private func makeSyncHealthInsight(accounts: [FinanceAccount]) -> Insight {
+        let institutions = Set(accounts.compactMap(\.institutionName))
+        if institutions.isEmpty {
+            return Insight(
+                id: "accounts.sync.health",
+                kind: .narration,
+                headline: "Sync health",
+                body: "No linked institutions. Connect a bank in synapse-v2 to start syncing.",
+                severity: .warning
+            )
+        }
+        let inst = institutions.sorted().joined(separator: ", ")
+        let count = institutions.count
+        let plural = count == 1 ? "" : "s"
+        return Insight(
+            id: "accounts.sync.health",
+            kind: .narration,
+            headline: "Sync health",
+            body: "\(count) institution\(plural) linked: \(inst). Re-link from synapse-v2 if a sync stalls.",
+            severity: .info
+        )
+    }
+
     // MARK: - Row
 
     private func accountTableRow(_ account: FinanceAccount) -> some View {
@@ -182,11 +217,33 @@ public struct FinanceAccountsView: View {
                 }
             }
             Spacer()
+            Text(aiTagLabel(account.kind))
+                .font(tokens.tickerFont(size: 9, weight: .semibold))
+                .tracking(0.6)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
+                .foregroundStyle(tokens.foregroundSecondary.color)
+                .background(tokens.foregroundSecondary.color.opacity(0.10))
+                .clipShape(Capsule())
             Text(formatMoney(account.currentBalance, currency: account.currency))
                 .font(tokens.tickerFont(size: 12, weight: .medium))
                 .foregroundStyle(
                     account.kind.isLiability ? tokens.lossAccent.color : tokens.foregroundPrimary.color
                 )
+        }
+    }
+
+    /// One-word AI tag for an account, displayed as a capsule next to
+    /// the balance. Maps the Plaid taxonomy to the four buckets the
+    /// brief asks for (Cash / Credit / Brokerage / Loan).
+    private func aiTagLabel(_ kind: AccountKind) -> String {
+        switch kind {
+        case .checking, .savings: return "CASH"
+        case .credit:             return "CREDIT"
+        case .brokerage,
+             .retirement:         return "BROKERAGE"
+        case .loan:               return "LOAN"
+        case .other:              return "OTHER"
         }
     }
 

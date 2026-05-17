@@ -35,12 +35,24 @@ public final class FinancePersonalViewModel {
     public private(set) var concealBalances: Bool = false
     public var selectedAccount: FinanceAccount?
 
+    /// AI insights strip below the hero. The personal pane owns the
+    /// VM so the cards re-rank whenever accounts refresh. Lives in the
+    /// finance VM rather than the view so snapshot tests can inject
+    /// deterministic cards via `injectForSnapshots(insights:)`.
+    public let insights: InsightsViewModel
+
+    /// Latest transactions snapshot used to derive insights. Fetched as
+    /// part of `refresh()`. Kept here so the command bar's `AskContext`
+    /// has a single source of truth.
+    public private(set) var recentTransactions: [Models.Transaction] = []
+
     private let api: FinanceAPI
     private let repository: FinanceRepository
 
-    public init(api: FinanceAPI) {
+    public init(api: FinanceAPI, insightsAPI: InsightsAPI = LocalStubInsightsAPI()) {
         self.api = api
         self.repository = FinanceRepository(api: api)
+        self.insights = InsightsViewModel(api: insightsAPI)
     }
 
     public func refresh() async {
@@ -48,6 +60,10 @@ public final class FinancePersonalViewModel {
         do {
             try await repository.refreshAccounts()
             let accounts = await repository.accounts
+            // Also pull a recent transactions window for insights + the
+            // command bar's AskContext. Best-effort: if the route is
+            // empty or fails, the personal hero still paints.
+            await fetchRecentTransactions()
             do {
                 let netWorth = try PortfolioReducer.netWorth(accounts)
                 let allocation = try PortfolioReducer.allocation(accounts)
@@ -61,8 +77,19 @@ public final class FinancePersonalViewModel {
                     accounts: accounts, netWorth: nil, allocation: []
                 ))
             }
+            insights.refresh(accounts: accounts, transactions: recentTransactions)
         } catch {
             state = .error(String(describing: error))
+        }
+    }
+
+    private func fetchRecentTransactions() async {
+        do {
+            let result = try await api.transactions(accountId: nil, cursor: nil)
+            recentTransactions = result.rows
+        } catch {
+            // Quiet: insights tolerate an empty transactions snapshot.
+            recentTransactions = []
         }
     }
 

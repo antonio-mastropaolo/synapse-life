@@ -10,6 +10,10 @@ public enum SettingsKey: String, CaseIterable {
     case apiBaseURL = "synnapse.settings.apiBaseURL"
     case concealBalances = "synnapse.settings.concealBalances"
     case reduceMotionPreview = "synnapse.settings.reduceMotionPreview"
+    case aiModel = "synnapse.settings.aiModel"
+    case aiOnDeviceTranscription = "synnapse.settings.aiOnDeviceTranscription"
+    case aiInsightsDigest = "synnapse.settings.aiInsightsDigest"
+    case aiAnomalySensitivity = "synnapse.settings.aiAnomalySensitivity"
 }
 
 /// Pure-value snapshot of every setting. Equatable so the test suite can
@@ -18,15 +22,27 @@ public struct SettingsSnapshot: Sendable, Equatable {
     public var apiBaseURL: String
     public var concealBalances: Bool
     public var reduceMotionPreview: Bool
+    public var aiModel: String
+    public var aiOnDeviceTranscription: Bool
+    public var aiInsightsDigest: Bool
+    public var aiAnomalySensitivity: Int
 
     public init(
         apiBaseURL: String = "",
         concealBalances: Bool = false,
-        reduceMotionPreview: Bool = false
+        reduceMotionPreview: Bool = false,
+        aiModel: String = "claude-opus-4-7",
+        aiOnDeviceTranscription: Bool = false,
+        aiInsightsDigest: Bool = false,
+        aiAnomalySensitivity: Int = 3
     ) {
         self.apiBaseURL = apiBaseURL
         self.concealBalances = concealBalances
         self.reduceMotionPreview = reduceMotionPreview
+        self.aiModel = aiModel
+        self.aiOnDeviceTranscription = aiOnDeviceTranscription
+        self.aiInsightsDigest = aiInsightsDigest
+        self.aiAnomalySensitivity = aiAnomalySensitivity
     }
 }
 
@@ -52,10 +68,16 @@ public struct UserDefaultsSettingsStore: SettingsStore, @unchecked Sendable {
     }
 
     public func read() -> SettingsSnapshot {
-        SettingsSnapshot(
+        let storedSensitivity = defaults.object(forKey: SettingsKey.aiAnomalySensitivity.rawValue) as? Int
+        let storedModel = defaults.string(forKey: SettingsKey.aiModel.rawValue) ?? "claude-opus-4-7"
+        return SettingsSnapshot(
             apiBaseURL: defaults.string(forKey: SettingsKey.apiBaseURL.rawValue) ?? "",
             concealBalances: defaults.bool(forKey: SettingsKey.concealBalances.rawValue),
-            reduceMotionPreview: defaults.bool(forKey: SettingsKey.reduceMotionPreview.rawValue)
+            reduceMotionPreview: defaults.bool(forKey: SettingsKey.reduceMotionPreview.rawValue),
+            aiModel: storedModel,
+            aiOnDeviceTranscription: defaults.bool(forKey: SettingsKey.aiOnDeviceTranscription.rawValue),
+            aiInsightsDigest: defaults.bool(forKey: SettingsKey.aiInsightsDigest.rawValue),
+            aiAnomalySensitivity: storedSensitivity ?? 3
         )
     }
 
@@ -63,6 +85,10 @@ public struct UserDefaultsSettingsStore: SettingsStore, @unchecked Sendable {
         defaults.set(snapshot.apiBaseURL, forKey: SettingsKey.apiBaseURL.rawValue)
         defaults.set(snapshot.concealBalances, forKey: SettingsKey.concealBalances.rawValue)
         defaults.set(snapshot.reduceMotionPreview, forKey: SettingsKey.reduceMotionPreview.rawValue)
+        defaults.set(snapshot.aiModel, forKey: SettingsKey.aiModel.rawValue)
+        defaults.set(snapshot.aiOnDeviceTranscription, forKey: SettingsKey.aiOnDeviceTranscription.rawValue)
+        defaults.set(snapshot.aiInsightsDigest, forKey: SettingsKey.aiInsightsDigest.rawValue)
+        defaults.set(snapshot.aiAnomalySensitivity, forKey: SettingsKey.aiAnomalySensitivity.rawValue)
     }
 }
 

@@ -30,6 +30,8 @@ public struct SettingsScene: View {
         TabView {
             accountTab
                 .tabItem { Label("Account", systemImage: "person.crop.circle") }
+            intelligenceTab
+                .tabItem { Label("Intelligence", systemImage: "sparkles") }
             networkTab
                 .tabItem { Label("Network", systemImage: "network") }
             privacyTab
@@ -37,7 +39,7 @@ public struct SettingsScene: View {
             appearanceTab
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
         }
-        .frame(width: 480, height: 360)
+        .frame(width: 520, height: 400)
         .sheet(isPresented: $showSignInSheet) {
             SignInView(
                 onComplete: { result in
@@ -142,6 +144,65 @@ public struct SettingsScene: View {
         .formStyle(.grouped)
         .padding()
     }
+
+    /// "Synapse Intelligence" — the AI-side preferences pane. Model
+    /// picker is the load-bearing control; the two placeholder toggles
+    /// stay off until the on-device transcription and Apple Intelligence
+    /// digest pipelines actually exist.
+    private var intelligenceTab: some View {
+        Form {
+            Section("Model") {
+                Picker("Reasoning model", selection: $settings.aiModel) {
+                    ForEach(SettingsViewModel.aiModelChoices, id: \.self) { model in
+                        Text(model).tag(model)
+                    }
+                }
+                .pickerStyle(.menu)
+                .accessibilityIdentifier("settings.ai.modelPicker")
+                Text("All load-bearing reasoning runs on Opus 4.7 by default. The other entries are surfaced for transparency.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Anomaly sensitivity") {
+                HStack {
+                    Text("1")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Slider(
+                        value: Binding(
+                            get: { Double(settings.aiAnomalySensitivity) },
+                            set: { settings.aiAnomalySensitivity = Int($0.rounded()) }
+                        ),
+                        in: 1...5,
+                        step: 1
+                    )
+                    .accessibilityIdentifier("settings.ai.sensitivity")
+                    Text("5")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                Text("Current: \(settings.aiAnomalySensitivity). Higher = more flags.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Section("Apple Intelligence") {
+                Toggle("Use on-device transcription for journal voice input",
+                       isOn: $settings.aiOnDeviceTranscription)
+                    .disabled(true)
+                Text("Reserved for the LIFE journal voice composer.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                Toggle("Send insights digest to Apple Intelligence",
+                       isOn: $settings.aiInsightsDigest)
+                    .disabled(true)
+                Text("Reserved for the Apple Intelligence summary integration.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .padding()
+    }
 }
 
 /// iOS Settings form. Rooted under the "More" tab in `RootTabView`.
@@ -213,6 +274,36 @@ public struct SettingsForm: View {
                        isOn: $settings.concealBalances)
                     .frame(minHeight: 44)
                     .accessibilityHint("Hides numeric balances on the Finance surfaces.")
+            }
+            Section("Synapse Intelligence") {
+                Picker("Reasoning model", selection: $settings.aiModel) {
+                    ForEach(SettingsViewModel.aiModelChoices, id: \.self) { model in
+                        Text(model).tag(model)
+                    }
+                }
+                .frame(minHeight: 44)
+                .accessibilityIdentifier("settings.ai.modelPicker")
+                VStack(alignment: .leading) {
+                    Text("Anomaly sensitivity: \(settings.aiAnomalySensitivity)")
+                    Slider(
+                        value: Binding(
+                            get: { Double(settings.aiAnomalySensitivity) },
+                            set: { settings.aiAnomalySensitivity = Int($0.rounded()) }
+                        ),
+                        in: 1...5,
+                        step: 1
+                    )
+                    .accessibilityIdentifier("settings.ai.sensitivity")
+                }
+                .frame(minHeight: 60)
+                Toggle("On-device transcription (journal)",
+                       isOn: $settings.aiOnDeviceTranscription)
+                    .disabled(true)
+                    .frame(minHeight: 44)
+                Toggle("Send insights digest to Apple Intelligence",
+                       isOn: $settings.aiInsightsDigest)
+                    .disabled(true)
+                    .frame(minHeight: 44)
             }
             Section("Appearance") {
                 Toggle("Preview Reduce Motion",

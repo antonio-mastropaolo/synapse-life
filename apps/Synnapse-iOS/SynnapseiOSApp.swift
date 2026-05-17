@@ -46,6 +46,9 @@ final class AppModel {
     // Settings.
     private(set) var settings: SettingsViewModel
 
+    // Command bar — opened from the Finance tab toolbar.
+    private(set) var commandBar: CommandBarViewModel
+
     // Deep-link router + restoration.
     let lifecycle: AppLifecycleService
 
@@ -102,7 +105,8 @@ final class AppModel {
             advisorsAPI = LiveAdvisorsAPI(client: client)
         }
 
-        self.financePersonal = FinancePersonalViewModel(api: financeAPI)
+        let personalVM = FinancePersonalViewModel(api: financeAPI)
+        self.financePersonal = personalVM
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
@@ -111,6 +115,20 @@ final class AppModel {
         self.advisors = AdvisorsListViewModel(api: advisorsAPI)
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
+
+        self.commandBar = CommandBarViewModel(
+            askAPI: LiveAskAPI(client: client, serverContractLive: false),
+            advisorIds: ["financial", "tax", "life"],
+            contextProvider: {
+                if case .ready(let snap) = personalVM.state {
+                    return AskContext(
+                        accounts: snap.accounts,
+                        recentTransactions: personalVM.recentTransactions
+                    )
+                }
+                return AskContext(accounts: [], recentTransactions: [])
+            }
+        )
 
         self.lifecycle = AppLifecycleService()
     }
@@ -167,7 +185,8 @@ private struct RootTabView: View {
                 personal: appModel.financePersonal,
                 accounts: appModel.financeAccounts,
                 transactions: appModel.financeTransactions,
-                investments: appModel.financeInvestments
+                investments: appModel.financeInvestments,
+                commandBar: appModel.commandBar
             )
             .identity(.cockpitInstrument)
             .tabItem { Label("Finance", systemImage: "chart.line.uptrend.xyaxis") }
@@ -201,6 +220,7 @@ private struct FinanceTab: View {
     let accounts: FinanceAccountsViewModel
     let transactions: FinanceTransactionsViewModel
     let investments: FinanceInvestmentsViewModel
+    @Bindable var commandBar: CommandBarViewModel
 
     private enum Route: Hashable {
         case accounts, transactions, investments
@@ -211,6 +231,12 @@ private struct FinanceTab: View {
             FinancePersonalView(viewModel: personal)
                 .toolbar {
                     ToolbarItemGroup(placement: .topBarTrailing) {
+                        Button {
+                            commandBar.open()
+                        } label: {
+                            Image(systemName: "sparkles")
+                        }
+                        .accessibilityLabel("Ask Synapse")
                         NavigationLink(value: Route.accounts) {
                             Image(systemName: "list.bullet.rectangle")
                         }
@@ -228,6 +254,13 @@ private struct FinanceTab: View {
                     case .transactions: FinanceTransactionsView(viewModel: transactions)
                     case .investments: FinanceInvestmentsView(viewModel: investments)
                     }
+                }
+                .sheet(isPresented: $commandBar.isPresented) {
+                    CommandBarView(viewModel: commandBar) { _ in
+                        commandBar.close()
+                    }
+                    .padding()
+                    .presentationDetents([.medium, .large])
                 }
         }
     }

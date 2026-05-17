@@ -31,8 +31,19 @@ public struct FinanceInvestmentsView: View {
             case .idle, .loading:
                 ProgressView().tint(tokens.foregroundSecondary.color)
             case .empty:
-                Text("No holdings")
-                    .foregroundStyle(tokens.foregroundSecondary.color)
+                VStack(spacing: 10) {
+                    Image(systemName: "chart.line.uptrend.xyaxis")
+                        .font(.system(size: 24, weight: .light))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                    Text("No holdings yet")
+                        .font(tokens.tickerFont(size: 13, weight: .medium))
+                        .foregroundStyle(tokens.foregroundPrimary.color)
+                    Text("Connect a brokerage in synapse-v2 to start tracking returns.")
+                        .font(tokens.tickerFont(size: 11))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                        .multilineTextAlignment(.center)
+                }
+                .padding(40)
             case .error(let message):
                 Text(message)
                     .font(tokens.tickerFont(size: 11))
@@ -41,6 +52,7 @@ public struct FinanceInvestmentsView: View {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 18) {
                         hero(positions: positions)
+                        concentrationInsight(positions: positions)
                         donut
                         positionsTable(positions)
                     }
@@ -183,6 +195,45 @@ public struct FinanceInvestmentsView: View {
                 .font(tokens.tickerFont(size: 11, weight: .medium))
                 .foregroundStyle(isGain ? tokens.gainAccent.color : tokens.lossAccent.color)
         }
+    }
+
+    /// One-line AI insight under the portfolio hero. Computes a
+    /// concentration percentage from the position list and flags when
+    /// any single security carries more than 40% of the total. Falls
+    /// silent below the threshold rather than emitting a celebratory
+    /// banner.
+    @ViewBuilder
+    private func concentrationInsight(positions: [InvestmentPosition]) -> some View {
+        if let insight = makeConcentrationInsight(positions: positions) {
+            InsightCard(insight: insight)
+                .frame(maxWidth: 420)
+                .accessibilityIdentifier("investments.insight.concentration")
+        }
+    }
+
+    private func makeConcentrationInsight(positions: [InvestmentPosition]) -> Insight? {
+        let total = positions.compactMap({ Optional($0.value) }).reduce(Decimal.zero, +)
+        guard total > 0,
+              let top = positions.max(by: { $0.value < $1.value }),
+              top.value > 0 else { return nil }
+        let pct = NSDecimalNumber(decimal: top.value / total * 100).doubleValue
+        let label = top.ticker ?? top.name ?? "your top holding"
+        let body: String
+        let severity: Insight.Severity
+        if pct > 40 {
+            body = String(format: "%.0f%% of your portfolio sits in %@. Consider diversifying.", pct, label)
+            severity = .warning
+        } else {
+            body = String(format: "%.0f%% of your portfolio sits in %@.", pct, label)
+            severity = .info
+        }
+        return Insight(
+            id: "investments.concentration",
+            kind: .pattern,
+            headline: "Concentration check",
+            body: body,
+            severity: severity
+        )
     }
 
     private func color(for kind: SecurityKind) -> Color {

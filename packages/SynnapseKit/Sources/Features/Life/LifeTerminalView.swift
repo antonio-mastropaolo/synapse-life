@@ -77,12 +77,40 @@ public struct LifeTerminalView: View {
         if case .ready(let entries) = viewModel.state { return entries }
         // While idle/loading, show the boot line so the terminal is never
         // visually empty — a black rectangle would imply a broken render.
-        return [LifeEntry(
-            id: "boot",
-            timestamp: Date(),
-            kind: .boot,
-            text: "SYNAPSE LIFE TERMINAL — awaiting feed"
-        )]
+        // The boot banner is the first thing the operator sees when the
+        // terminal is idle. The AI status line below the banner is the
+        // single inline "Apple Intelligence touched it" cue for LIFE.
+        let now = Date()
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "EEE MMM d HH:mm:ss yyyy"
+        let stamp = f.string(from: now)
+        return [
+            LifeEntry(
+                id: "boot.banner",
+                timestamp: now,
+                kind: .boot,
+                text: "SYNAPSE LIFE TERMINAL v0.1.0"
+            ),
+            LifeEntry(
+                id: "boot.session",
+                timestamp: now,
+                kind: .boot,
+                text: "Session opened at \(stamp)"
+            ),
+            LifeEntry(
+                id: "boot.ai",
+                timestamp: now,
+                kind: .boot,
+                text: "[ai] narrator online · awaiting your first entry"
+            ),
+            LifeEntry(
+                id: "boot.prompt",
+                timestamp: now,
+                kind: .boot,
+                text: "> What did you accomplish today?"
+            )
+        ]
     }
 
     @ViewBuilder

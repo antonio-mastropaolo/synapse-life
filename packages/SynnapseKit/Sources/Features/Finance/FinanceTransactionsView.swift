@@ -178,11 +178,31 @@ public struct FinanceTransactionsView: View {
     private func ledgerRow(_ row: Models.Transaction) -> some View {
         let tokens = theme.tokens(for: scheme)
         let isInflow = (row.amount ?? .zero) > .zero
+        let guess = LocalStubCategorizationAPI.classify(
+            name: row.name,
+            fallback: row.category.displayLabel
+        )
         return HStack(spacing: 12) {
+            // Anomaly indicator — a thin caret leading edge for rows
+            // whose absolute amount is unusually large for this dataset.
+            // Cheap heuristic: |amount| > $250 for outflows.
+            ZStack {
+                if !row.pending, let a = row.amount, a < 0, -a > 250 {
+                    Rectangle()
+                        .fill(tokens.lossAccent.color)
+                        .frame(width: 2)
+                } else {
+                    Rectangle()
+                        .fill(Color.clear)
+                        .frame(width: 2)
+                }
+            }
+            .frame(width: 2)
             Text(dayFormatter.string(from: row.date))
-                .frame(width: 84, alignment: .leading)
+                .frame(width: 76, alignment: .leading)
                 .font(tokens.tickerFont(size: 11))
                 .foregroundStyle(tokens.foregroundSecondary.color)
+                .opacity(row.pending ? 0.5 : 1.0)
             VStack(alignment: .leading, spacing: 1) {
                 Text(row.name)
                     .font(.system(size: 12, weight: .medium))
@@ -195,15 +215,31 @@ public struct FinanceTransactionsView: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            Text(row.category.displayLabel)
-                .frame(width: 140, alignment: .leading)
-                .font(tokens.tickerFont(size: 10))
-                .foregroundStyle(tokens.foregroundSecondary.color)
-                .lineLimit(1)
+            .opacity(row.pending ? 0.55 : 1.0)
+            VStack(alignment: .leading, spacing: 3) {
+                Text(guess.label)
+                    .font(tokens.tickerFont(size: 10))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .lineLimit(1)
+                // Confidence bar — width scales with how sure the matcher is.
+                GeometryReader { proxy in
+                    ZStack(alignment: .leading) {
+                        Rectangle()
+                            .fill(tokens.foregroundSecondary.color.opacity(0.15))
+                            .frame(height: 1.5)
+                        Rectangle()
+                            .fill(tokens.accent.color)
+                            .frame(width: proxy.size.width * guess.confidence, height: 1.5)
+                    }
+                }
+                .frame(height: 1.5)
+            }
+            .frame(width: 132, alignment: .leading)
             Text(formatMoney(row.amount, currency: row.currency))
                 .frame(width: 110, alignment: .trailing)
                 .font(tokens.tickerFont(size: 12, weight: .medium))
                 .foregroundStyle(isInflow ? tokens.gainAccent.color : tokens.foregroundPrimary.color)
+                .opacity(row.pending ? 0.55 : 1.0)
         }
     }
 
