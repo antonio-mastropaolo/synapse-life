@@ -48,6 +48,12 @@ struct CopilotShellMac: View {
     let digest: DigestViewModel
     let forecast: ForecastViewModel
     let smartAlerts: SmartAlertsViewModel
+    // Subscriptions + Recurrings surfaces — previously rendered
+    // ComingSoonView placeholders; now backed by real detectors
+    // running off the same transaction feed the Forecast surface
+    // consumes.
+    let subscriptions: SubscriptionsViewModel
+    let recurrings: RecurringsViewModel
 
     /// Surfaced when DEBUG/demo mode is on so the user knows the
     /// figures are fixtures rather than live data.
@@ -86,6 +92,8 @@ struct CopilotShellMac: View {
                 digest: digest,
                 forecast: forecast,
                 smartAlerts: smartAlerts,
+                subscriptions: subscriptions,
+                recurrings: recurrings,
                 chrome: chrome
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -637,6 +645,8 @@ private struct CopilotDetailPane: View {
     let digest: DigestViewModel
     let forecast: ForecastViewModel
     let smartAlerts: SmartAlertsViewModel
+    let subscriptions: SubscriptionsViewModel
+    let recurrings: RecurringsViewModel
     let chrome: CopilotTokens.Shell
 
     var body: some View {
@@ -754,21 +764,13 @@ private struct CopilotDetailPane: View {
                 .id("cashFlow")
 
             case .recurrings:
-                ComingSoonView(
-                    title: "Recurring bills",
-                    subtitle: "Auto-detected recurring charges with one-tap cancel. Shipping in v0.2.",
-                    symbol: "arrow.triangle.2.circlepath"
-                )
-                .identity(.cockpitInstrument)
-                .id("recurrings")
+                RecurringsView(viewModel: recurrings)
+                    .identity(.cockpitInstrument)
+                    .id("recurrings")
 
             case .subscriptions:
-                ComingSoonView(
-                    title: "Subscriptions",
-                    subtitle: "Subscription tracker with cancel-instructions. Shipping in v0.2.",
-                    symbol: "rectangle.stack"
-                )
-                .identity(.cockpitInstrument)
+                SubscriptionsView(viewModel: subscriptions)
+                    .identity(.cockpitInstrument)
                 .id("subscriptions")
             }
         }

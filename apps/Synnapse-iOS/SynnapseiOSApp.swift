@@ -55,6 +55,17 @@ final class AppModel {
     // Settings.
     private(set) var settings: SettingsViewModel
 
+    /// Subscriptions surface (replaces the previous ComingSoonView).
+    /// Refreshed after demo bootstrap so the More-tab destination
+    /// renders detected subscriptions on first push.
+    private(set) var subscriptions: SubscriptionsViewModel
+
+    /// Recurrings surface — broader than Subscriptions; surfaces
+    /// every detected cadence including bi-weekly payroll and
+    /// monthly rent. Persists Confirm / Ignore decisions through
+    /// [[RecurringStatusStore]].
+    private(set) var recurrings: RecurringsViewModel
+
     // Command bar — opened from the Finance tab toolbar.
     private(set) var commandBar: CommandBarViewModel
 
@@ -144,6 +155,12 @@ final class AppModel {
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
 
+        // Subscriptions + Recurrings view models — populated from the
+        // finance transactions feed in `bootstrapIfNeeded` once the
+        // mock or live API has lent us its data.
+        self.subscriptions = SubscriptionsViewModel()
+        self.recurrings = RecurringsViewModel()
+
         self.commandBar = CommandBarViewModel(
             askAPI: LiveAskAPI(client: client, serverContractLive: false),
             advisorIds: ["financial", "tax", "life"],
@@ -180,6 +197,14 @@ final class AppModel {
         await financeInvestments.refresh()
         await life.refresh()
         await advisors.refresh()
+
+        // Hydrate Subscriptions + Recurrings off the same
+        // transaction feed the FinancePersonal VM consumed. The
+        // detectors are pure-logic so this is a synchronous step.
+        let tx = financePersonal.recentTransactions
+        subscriptions.refresh(transactions: tx)
+        recurrings.refresh(transactions: tx)
+
         applyConcealBalancesBridge()
     }
 

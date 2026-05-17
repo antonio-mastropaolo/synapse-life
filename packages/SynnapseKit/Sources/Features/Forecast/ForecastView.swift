@@ -33,12 +33,18 @@ public struct ForecastView: View {
             VStack(alignment: .leading, spacing: 18) {
                 header(tokens: tokens)
 
-                if let forecast = viewModel.forecast {
-                    summaryRow(forecast: forecast, tokens: tokens)
-                    if let crossing = forecast.zeroCrossing {
-                        zeroCrossingBanner(crossing: crossing, tokens: tokens)
+                // Stat cards, zero-crossing banner, and predicted
+                // charges list all read from `viewModel.projection`
+                // — a deterministic [[BalanceProjection]] derived
+                // from the user's recurring history. Every figure on
+                // this surface is a function of the transaction feed,
+                // not a hardcoded string.
+                if viewModel.projection != nil {
+                    summaryRow(tokens: tokens)
+                    if let banner = viewModel.projectedZeroBanner {
+                        zeroCrossingBanner(text: banner, tokens: tokens)
                     }
-                    predictedCharges(forecast: forecast, tokens: tokens)
+                    predictedCharges(tokens: tokens)
                 } else if viewModel.isLoading {
                     loadingState(tokens: tokens)
                 } else if let err = viewModel.lastError {
@@ -72,16 +78,16 @@ public struct ForecastView: View {
     }
 
     @ViewBuilder
-    private func summaryRow(forecast: Forecast, tokens: TokenSet) -> some View {
+    private func summaryRow(tokens: TokenSet) -> some View {
         HStack(spacing: 16) {
             statCard(
-                label: "Next 30 days of bills",
-                value: formatCurrency(forecast.nextThirtyDaysTotal),
+                label: "Next \(viewModel.horizonDays) days of bills",
+                value: formatCurrency(viewModel.nextThirtyDaysBillsTotal),
                 tokens: tokens
             )
             statCard(
                 label: "Predicted charges",
-                value: "\(forecast.predictedCharges.count)",
+                value: "\(viewModel.predictedChargesCount)",
                 tokens: tokens
             )
         }
@@ -108,11 +114,11 @@ public struct ForecastView: View {
     }
 
     @ViewBuilder
-    private func zeroCrossingBanner(crossing: Date, tokens: TokenSet) -> some View {
+    private func zeroCrossingBanner(text: String, tokens: TokenSet) -> some View {
         HStack(spacing: 10) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .foregroundStyle(tokens.category(.loans))
-            Text("Checking may hit zero on \(formatDate(crossing))")
+            Text(text)
                 .font(.system(size: 12, weight: .semibold))
                 .foregroundStyle(tokens.foregroundPrimary.color)
             Spacer()
@@ -129,37 +135,38 @@ public struct ForecastView: View {
     }
 
     @ViewBuilder
-    private func predictedCharges(forecast: Forecast, tokens: TokenSet) -> some View {
+    private func predictedCharges(tokens: TokenSet) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("PREDICTED CHARGES")
                 .font(.system(size: 10, weight: .bold, design: .monospaced))
                 .tracking(0.8)
                 .foregroundStyle(tokens.foregroundSecondary.color)
-            if forecast.predictedCharges.isEmpty {
+            let charges = viewModel.predictedChargesList
+            if charges.isEmpty {
                 Text("No predicted recurring charges in this window.")
                     .font(.system(size: 12, weight: .regular, design: .monospaced))
                     .foregroundStyle(tokens.foregroundSecondary.color)
             } else {
-                ForEach(forecast.predictedCharges) { charge in
-                    chargeRow(charge: charge, tokens: tokens)
+                ForEach(charges) { flow in
+                    flowRow(flow: flow, tokens: tokens)
                 }
             }
         }
     }
 
     @ViewBuilder
-    private func chargeRow(charge: PredictedCharge, tokens: TokenSet) -> some View {
+    private func flowRow(flow: ScheduledFlow, tokens: TokenSet) -> some View {
         HStack {
             VStack(alignment: .leading, spacing: 2) {
-                Text(charge.merchantName)
+                Text(flow.merchant)
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(tokens.foregroundPrimary.color)
-                Text(formatDate(charge.date))
+                Text(formatDate(flow.date))
                     .font(.system(size: 11, weight: .regular, design: .monospaced))
                     .foregroundStyle(tokens.foregroundSecondary.color)
             }
             Spacer()
-            Text(formatCurrency(charge.amount))
+            Text(formatCurrency(flow.amount))
                 .font(.system(size: 13, weight: .semibold, design: .monospaced))
                 .foregroundStyle(tokens.foregroundPrimary.color)
                 .monospacedDigit()

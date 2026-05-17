@@ -103,21 +103,19 @@ struct MoreTab: View {
                     subtitle: "Savings targets")
         }
         NavigationLink {
-            ComingSoonView(
-                title: "Subscriptions",
-                subtitle: "Recurring SaaS and streaming charges",
-                symbol: "rectangle.stack"
-            )
+            SubscriptionsView(viewModel: appModel.subscriptions)
+                .navigationTitle("Subscriptions")
+                .navigationBarTitleDisplayMode(.large)
+                .identity(.cockpitInstrument)
         } label: {
             moreRow(symbol: "rectangle.stack", title: "Subscriptions",
                     subtitle: "All your recurring charges")
         }
         NavigationLink {
-            ComingSoonView(
-                title: "Recurrings",
-                subtitle: "Predicted upcoming charges",
-                symbol: "arrow.clockwise"
-            )
+            RecurringsView(viewModel: appModel.recurrings)
+                .navigationTitle("Recurrings")
+                .navigationBarTitleDisplayMode(.large)
+                .identity(.cockpitInstrument)
         } label: {
             moreRow(symbol: "arrow.clockwise", title: "Recurrings",
                     subtitle: "Predicted bills next month")

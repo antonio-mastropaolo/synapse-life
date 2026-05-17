@@ -36,6 +36,8 @@ struct SynnapseMacApp: App {
                     digest: appModel.digest,
                     forecast: appModel.forecast,
                     smartAlerts: appModel.smartAlerts,
+                    subscriptions: appModel.subscriptions,
+                    recurrings: appModel.recurrings,
                     showsDemoDataFooter: appModel.usesDemoData
                 )
 
@@ -175,6 +177,18 @@ final class AppModel {
     private(set) var smartAlerts: SmartAlertsViewModel
     private(set) var intelligenceAsk: IntelligenceAskViewModel
 
+    /// Subscriptions surface (replaces the previous ComingSoonView
+    /// stub). The view model owns the detected `[DetectedSubscription]`
+    /// list and computes monthly / yearly totals; the detector itself
+    /// is pure-logic so `refresh(...)` is synchronous.
+    private(set) var subscriptions: SubscriptionsViewModel
+
+    /// Recurrings surface — broader than Subscriptions, includes every
+    /// detected cadence (weekly transit, bi-weekly payroll, monthly
+    /// rent). Paired with [[RecurringStatusStore]] so the user's
+    /// Confirm / Ignore decisions survive relaunch.
+    private(set) var recurrings: RecurringsViewModel
+
     let lifecycle: AppLifecycleService
 
     let usesDemoData: Bool
@@ -260,6 +274,8 @@ final class AppModel {
         self.digest = DigestViewModel(api: LocalStubDigestAPI())
         self.forecast = ForecastViewModel(api: LocalStubForecastAPI())
         self.smartAlerts = SmartAlertsViewModel()
+        self.subscriptions = SubscriptionsViewModel()
+        self.recurrings = RecurringsViewModel()
 
         // Ask viewmodel — bridges the existing LiveAskAPI through the
         // new IntelligenceRouter shape. The router auto-picks the
@@ -333,11 +349,17 @@ final class AppModel {
         guard case .ready(let snap) = financePersonal.state else { return }
         let tx = financePersonal.recentTransactions
         digest.refresh(accounts: snap.accounts, transactions: tx)
-        if let primary = snap.accounts.first(where: { $0.kind == .checking })
-            ?? snap.accounts.first {
-            forecast.refresh(account: primary, transactions: tx)
-        }
+        // Forecast consumes the full account set so the deterministic
+        // BalanceProjection sums across every checking-style balance,
+        // while the stochastic chart still pins to the primary
+        // checking account internally.
+        forecast.refresh(accounts: snap.accounts, transactions: tx)
         smartAlerts.refresh(accounts: snap.accounts, transactions: tx)
+        // Subscriptions + Recurrings — fed the same transactions feed
+        // so their detection sets stay aligned with what the Forecast
+        // is reading from.
+        subscriptions.refresh(transactions: tx)
+        recurrings.refresh(transactions: tx)
     }
 
     func applyConcealBalancesBridge() {

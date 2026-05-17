@@ -47,8 +47,15 @@ public enum DemoData {
                 mask: "4421",
                 kind: .checking,
                 currency: "USD",
-                currentBalance: Decimal(string: "8412.55"),
-                availableBalance: Decimal(string: "8312.55"),
+                // Deliberately low so the BalanceProjector's
+                // zero-crossing banner fires once the upcoming rent
+                // hit is applied. Savings still carries the real
+                // runway; this is the day-to-day account. With
+                // bi-weekly payroll landing ahead of the apartment
+                // debit, the balance has to be small enough that
+                // the rent overshoots even after the payroll lift.
+                currentBalance: Decimal(string: "212.55"),
+                availableBalance: Decimal(string: "112.55"),
                 limitAmount: nil,
                 balanceCapturedAt: capturedAt
             ),
@@ -112,10 +119,94 @@ public enum DemoData {
     }
 
     private static func transactions() -> [Transaction] {
-        let now = Date(timeIntervalSince1970: 1_715_000_000)
+        // Anchor the synthetic history to "today" (relative to wall
+        // clock) rather than a frozen epoch so the detectors fire on
+        // a 180-day window the user is actually inside of. The
+        // Recurrings + Subscriptions surfaces need ≥ 3 occurrences in
+        // the trailing 180-day window to detect a merchant; six
+        // months of monthly subs satisfies that with comfortable
+        // headroom.
+        let now = Date()
         let day: TimeInterval = 86_400
         func d(_ daysAgo: Int) -> Date { now.addingTimeInterval(-day * Double(daysAgo)) }
-        return [
+
+        var out: [Transaction] = []
+
+        // Recurring SaaS / streaming subs — 6 monthly hits each so
+        // SubscriptionDetector picks all three with high confidence.
+        let monthlyRecurrings: [(merchant: String, name: String, cat: String, amount: String, accountId: String, accountName: String, dayOfMonth: Int)] = [
+            ("Anthropic", "Anthropic — Claude Pro",   "Software",      "-20.00",  "acc-credit-01",   "Gold Card",        15),
+            ("Netflix",   "Netflix Premium",          "Subscriptions", "-22.99",  "acc-credit-01",   "Gold Card",        8),
+            ("Spotify",   "Spotify Premium Family",   "Subscriptions", "-16.99",  "acc-credit-01",   "Gold Card",        14),
+            ("Apple",     "iCloud+ 2TB",              "Subscriptions", "-9.99",   "acc-credit-01",   "Gold Card",        11),
+            ("NYTimes",   "NYT Cooking + News",       "Subscriptions", "-25.00",  "acc-credit-01",   "Gold Card",        9),
+            ("SiriusXM",  "SiriusXM",                 "Subscriptions", "-16.99",  "acc-credit-01",   "Gold Card",        6),
+        ]
+        for sub in monthlyRecurrings {
+            for i in 0..<6 {
+                let daysAgo = sub.dayOfMonth + i * 30
+                out.append(Transaction(
+                    id: "tx-sub-\(sub.merchant.lowercased())-\(i)",
+                    accountId: sub.accountId,
+                    accountName: sub.accountName,
+                    amount: Decimal(string: sub.amount),
+                    currency: "USD",
+                    date: d(daysAgo),
+                    name: sub.name,
+                    merchantName: sub.merchant,
+                    category: .knownCategory(sub.cat),
+                    subcategory: nil,
+                    pending: false
+                ))
+            }
+        }
+
+        // Bi-weekly payroll — drives the income side of the balance
+        // projection so the zero-crossing banner reads against a
+        // realistic income offset.
+        for i in 0..<13 {
+            let daysAgo = 2 + i * 14
+            out.append(Transaction(
+                id: "tx-payroll-\(i)",
+                accountId: "acc-checking-01",
+                accountName: "Everyday Checking",
+                amount: Decimal(string: "3460.82"),
+                currency: "USD",
+                date: d(daysAgo),
+                name: "ACH CREDIT — Payroll",
+                merchantName: nil,
+                category: .knownCategory("Income"),
+                subcategory: "Payroll",
+                pending: false
+            ))
+        }
+
+        // Monthly rent — large debit. Anchor the last occurrence
+        // 27 days ago so the next predicted rent lands ~3 days from
+        // "now", AHEAD of the next bi-weekly payroll. With checking
+        // intentionally low (see `financeAccounts()`), this is the
+        // hit that forces the BalanceProjector's zero-crossing
+        // banner to fire on the Forecast surface.
+        for i in 0..<6 {
+            let daysAgo = 27 + i * 30
+            out.append(Transaction(
+                id: "tx-rent-\(i)",
+                accountId: "acc-checking-01",
+                accountName: "Everyday Checking",
+                amount: Decimal(string: "-1850.00"),
+                currency: "USD",
+                date: d(daysAgo),
+                name: "Rent — Apartment",
+                merchantName: "Apartment",
+                category: .knownCategory("Housing"),
+                subcategory: "Rent",
+                pending: false
+            ))
+        }
+
+        // Hand-picked one-offs so the recent transactions list shows
+        // non-recurring rows alongside the predictable spine.
+        out.append(contentsOf: [
             Transaction(
                 id: "tx-001",
                 accountId: "acc-checking-01",
@@ -220,7 +311,13 @@ public enum DemoData {
                 subcategory: "Interest",
                 pending: false
             )
-        ]
+        ])
+
+        // Lower the checking balance so the projected zero-crossing
+        // banner reads against meaningful upcoming bills. The seeded
+        // accounts will be patched below to a runway closer to the
+        // bills hitting in the next 30 days.
+        return out
     }
 
     private static func investments() -> [InvestmentPosition] {
