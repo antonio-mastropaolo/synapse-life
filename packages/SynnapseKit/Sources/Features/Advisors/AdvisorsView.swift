@@ -82,44 +82,43 @@ public struct AdvisorsView: View {
     // MARK: - iOS
 
     #if os(iOS)
+    /// iOS layout. The outer `NavigationStack` lives in the tab shell
+    /// (so deep links and tab-root reset behave correctly); this view
+    /// only contributes content + `.navigationDestination`. Removing the
+    /// inner `NavigationStack` also stops the double large-title that
+    /// appeared on tab open in the previous iteration.
     private var iosLayout: some View {
         let tokens = theme.tokens(for: scheme)
-        return NavigationStack {
-            ZStack {
-                tokens.background.color.ignoresSafeArea()
-                switch viewModel.state {
-                case .idle, .loading:
-                    ProgressView().tint(tokens.foregroundSecondary.color)
-                case .error(let message):
-                    errorBody(message: message)
-                case .ready(let advisors):
-                    List {
-                        Section {
-                            ForEach(advisors) { advisor in
-                                NavigationLink(value: advisor.id) {
-                                    AdvisorRow(advisor: advisor)
-                                }
-                                .listRowBackground(tokens.surface.color)
+        return ZStack {
+            tokens.background.color.ignoresSafeArea()
+            switch viewModel.state {
+            case .idle, .loading:
+                ProgressView().tint(tokens.foregroundSecondary.color)
+            case .error(let message):
+                errorBody(message: message)
+            case .ready(let advisors):
+                List {
+                    Section {
+                        ForEach(advisors) { advisor in
+                            NavigationLink(value: advisor.id) {
+                                AdvisorRow(advisor: advisor)
                             }
-                        } header: {
-                            Text("Advisors")
-                                .font(tokens.tickerFont(size: 10, weight: .semibold))
-                                .foregroundStyle(tokens.foregroundSecondary.color)
+                            .listRowBackground(tokens.surface.color)
                         }
                     }
-                    .listStyle(.insetGrouped)
-                    .scrollContentBackground(.hidden)
                 }
-            }
-            .navigationTitle("Advisors")
-            .navigationDestination(for: String.self) { advisorId in
-                if let advisor = viewModel.advisors.first(where: { $0.id == advisorId }) {
-                    ChatPane(viewModel: viewModel.chatViewModel(for: advisor))
-                        .navigationTitle(advisor.name)
-                        .navigationBarTitleDisplayMode(.inline)
-                }
+                .listStyle(.insetGrouped)
+                .scrollContentBackground(.hidden)
             }
         }
+        .navigationDestination(for: String.self) { advisorId in
+            if let advisor = viewModel.advisors.first(where: { $0.id == advisorId }) {
+                ChatPane(viewModel: viewModel.chatViewModel(for: advisor))
+                    .navigationTitle(advisor.name)
+                    .navigationBarTitleDisplayMode(.inline)
+            }
+        }
+        .refreshable { await viewModel.refresh() }
     }
     #endif
 
@@ -288,6 +287,12 @@ public struct ChatPane: View {
                 .padding(16)
             }
             .background(tokens.background.color)
+            #if os(iOS)
+            // Drag-to-dismiss the keyboard while reviewing scrollback.
+            // `.interactively` follows the gesture instead of dismissing
+            // on the first downward delta — feels like Messages.app.
+            .scrollDismissesKeyboard(.interactively)
+            #endif
             .onChange(of: viewModel.messages.count) { _, _ in
                 if let last = viewModel.messages.last {
                     withAnimation(.easeOut(duration: 0.18)) {

@@ -1,6 +1,37 @@
 import Foundation
 import Models
 
+/// Pending / posted scope for the iOS Transactions segmented control.
+/// Lives next to `LedgerFilter` so the same surface can compose status
+/// filtering with the existing search/category filter. The reducer is a
+/// pure function so a view-model or view can call it directly.
+public enum LedgerStatusScope: Sendable, Hashable, CaseIterable {
+    case all
+    case pending
+    case posted
+
+    /// Filter `rows` by the chosen scope. `.all` is identity.
+    public func apply(to rows: [Transaction]) -> [Transaction] {
+        switch self {
+        case .all: return rows
+        case .pending: return rows.filter(\.pending)
+        case .posted: return rows.filter { !$0.pending }
+        }
+    }
+}
+
+/// Groups a flat ledger by `accountName` (falling back to `accountId`,
+/// then "Unknown"). Returned tuple list is stable: section keys come
+/// back sorted lexicographically so two callers with the same input
+/// always produce the same section order.
+public func groupTransactionsByCard(_ rows: [Transaction])
+-> [(card: String, rows: [Transaction])] {
+    let grouped = Dictionary(grouping: rows) { row -> String in
+        row.accountName ?? row.accountId ?? "Unknown"
+    }
+    return grouped.keys.sorted().map { ($0, grouped[$0] ?? []) }
+}
+
 /// Composable filter over a `[Transaction]`. Each field narrows further;
 /// an empty filter returns the input unchanged. The reducer is pure so the
 /// view model can call it on every keystroke without locking.

@@ -110,13 +110,20 @@ public struct FinanceTransactionsView: View {
                             Text("No transactions")
                                 .foregroundStyle(tokens.foregroundSecondary.color)
                         } else {
+                            // Sectioned-by-card list (worktree B grouping)
+                            // with per-row drill-down to TransactionDetailView
+                            // (worktree C wiring). The shared `ledgerRow`
+                            // carries the AI category chip + confidence bar
+                            // from the AI-UI pass.
                             List {
                                 ForEach(groups) { group in
                                     Section {
                                         ForEach(group.transactions) { row in
-                                            ledgerRow(row)
-                                                .listRowBackground(tokens.surface.color)
-                                                .listRowSeparator(.hidden)
+                                            NavigationLink(value: row) {
+                                                ledgerRow(row)
+                                            }
+                                            .listRowBackground(tokens.surface.color)
+                                            .listRowSeparator(.hidden)
                                         }
                                     } header: {
                                         sectionHeader(group)
@@ -134,6 +141,7 @@ public struct FinanceTransactionsView: View {
         .searchable(text: $viewModel.filter.searchText, prompt: "Search ledger")
         .refreshable { await viewModel.refresh() }
         .navigationTitle("Transactions")
+        .navigationBarTitleDisplayMode(.large)
     }
     #endif
 

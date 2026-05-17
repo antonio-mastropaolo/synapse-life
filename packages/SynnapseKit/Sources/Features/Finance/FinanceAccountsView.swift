@@ -109,6 +109,8 @@ public struct FinanceAccountsView: View {
     // MARK: - iOS
 
     #if os(iOS)
+    @State private var hiddenAccountIds: Set<String> = []
+
     private var iosLayout: some View {
         let tokens = theme.tokens(for: scheme)
         return Group {
@@ -134,29 +136,62 @@ public struct FinanceAccountsView: View {
                     }
                 }
             case .results(let accounts):
-                accountsGroupedList(accounts)
+                accountsGroupedList(accounts.filter { !hiddenAccountIds.contains($0.id) })
             }
         }
         .background(tokens.background.color)
         .searchable(text: $viewModel.searchText, prompt: "Search accounts")
         .refreshable { await viewModel.refresh() }
         .navigationTitle("Accounts")
+        .navigationBarTitleDisplayMode(.large)
     }
 
+    /// iOS grouping intentionally keys on **institution** rather than
+    /// account kind — on a phone, the user's mental model is "where is
+    /// the money" (Chase, Fidelity, …), not "what type of account".
+    /// The macOS table still groups by kind because its sortable column
+    /// header carries the kind affordance.
     private func accountsGroupedList(_ accounts: [FinanceAccount]) -> some View {
         let tokens = theme.tokens(for: scheme)
-        let grouped = Dictionary(grouping: accounts, by: \.kind)
-        let kinds = AccountKind.allCases.filter { grouped[$0] != nil }
+        let grouped = Dictionary(grouping: accounts) { $0.institutionName ?? "Other" }
+        let institutions = grouped.keys.sorted()
         return List {
-            ForEach(kinds, id: \.self) { kind in
-                Section(kind.rawValue.capitalized) {
-                    ForEach(grouped[kind] ?? []) { account in
-                        accountTableRow(account)
-                            .listRowBackground(tokens.surface.color)
+            ForEach(institutions, id: \.self) { institution in
+                Section {
+                    ForEach(grouped[institution] ?? []) { account in
+                        NavigationLink(value: account) {
+                            accountTableRow(account)
+                        }
+                        .listRowBackground(tokens.surface.color)
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button {
+                                hiddenAccountIds.insert(account.id)
+                            } label: {
+                                Label("Hide", systemImage: "eye.slash")
+                            }
+                            .tint(.gray)
+                            Button {
+                                Task { await viewModel.refresh() }
+                            } label: {
+                                Label("Sync", systemImage: "arrow.clockwise")
+                            }
+                            .tint(.blue)
+                        }
+                    }
+                } header: {
+                    HStack {
+                        Text(institution.uppercased())
+                            .font(tokens.tickerFont(size: 10, weight: .semibold))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                        Spacer()
+                        Text("\(grouped[institution]?.count ?? 0)")
+                            .font(tokens.tickerFont(size: 10))
+                            .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.7))
                     }
                 }
             }
         }
+        .listStyle(.insetGrouped)
         .scrollContentBackground(.hidden)
     }
     #endif
