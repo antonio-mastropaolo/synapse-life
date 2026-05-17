@@ -32,6 +32,11 @@ struct SynnapseiOSApp: App {
 @Observable
 final class AppModel {
     var auth: AuthViewModel
+    /// Inbox of un-reviewed transactions. The Copilot-inspired
+    /// Dashboard tab is the iOS shell's default; the view model is
+    /// seeded with [[DashboardDemoData]] at init so the first paint
+    /// is never empty even before the server contract lands.
+    private(set) var dashboard: DashboardViewModel
     private(set) var financePersonal: FinancePersonalViewModel
     private(set) var financeAccounts: FinanceAccountsViewModel
     private(set) var financeTransactions: FinanceTransactionsViewModel
@@ -118,6 +123,21 @@ final class AppModel {
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
+        // Seed the Dashboard with the rich demo inbox so the tab paints
+        // a believable 30-row review queue on first launch. When the
+        // server contract for `/api/dashboard/inbox` lands, swap this
+        // for an empty VM and call `dashboard.load(...)` from
+        // `bootstrapIfNeeded`.
+        self.dashboard = DashboardViewModel(
+            entries: DashboardDemoData.entries(
+                relativeTo: Date(),
+                calendar: Calendar.current
+            ),
+            ledgerTotal: DashboardDemoData.ledgerTotal,
+            calendar: Calendar.current,
+            referenceDate: Date(),
+            locale: .current
+        )
         self.life = LifeViewModel(api: lifeAPI)
 
         self.advisors = AdvisorsListViewModel(api: advisorsAPI)
@@ -180,13 +200,19 @@ final class AppModel {
 // `SignInView`, `AuthViewModel`, `SessionStore`, and `LiveSessionAPI`
 // stay in the codebase and remain reachable from Settings.
 
-/// Four visible tabs: Finance, Life, Advisors, Settings.
+/// Five visible tabs (Copilot-inspired reshape, 2026-05-17):
+///   Dashboard · Transactions · Cash flow · Investments · More
 ///
-/// The iOS shell deliberately collapses the macOS multi-window product
-/// onto a bottom `TabView`. Tab order is canonical: Finance first because
-/// it owns the most-used surfaces (net worth, accounts, ledger);
-/// Settings last because Apple's HIG places "configuration / account"
-/// tabs at the trailing edge.
+/// The shape mirrors Copilot's bottom rail. The first tab is now the
+/// review-queue inbox rather than the finance hub — that matches the
+/// product's primary action ("look at what's new and triage") rather
+/// than the analytic view ("how much do I have"). Cash flow and
+/// Investments are first-class because they're the two surfaces a
+/// user opens daily without a triage intent.
+///
+/// More holds the long tail: Goals, Recurrings, Subscriptions,
+/// Categories, Accounts, Personal, Life, Advisors, Settings, plus
+/// Sign-in entry. The drill-down list lives in [[MoreTab]].
 ///
 /// Synnapse is a private-life client; work surfaces from synapse-v2
 /// (Spotlight, Approvals, People, Inbox, Sequences, Octagon, Trading
@@ -194,45 +220,49 @@ final class AppModel {
 private struct RootTabView: View {
     @Bindable var appModel: AppModel
 
-    /// Identifiers for the four root tabs. We track selection ourselves
+    /// The five visible tab identifiers. We track selection ourselves
     /// (rather than letting `TabView` drive an implicit `Int`) so the
     /// `onChange` handler can fire a selection haptic the instant the
     /// user lands on a new tab. Apple's own tab bar does not haptic on
-    /// switch; we add it because every other top-tier finance app on iOS
+    /// switch; we add it because every top-tier finance app on iOS
     /// does, and the absence reads as a missing affordance.
     enum Tab: Hashable {
-        case finance, life, advisors, settings
+        case dashboard, transactions, cashflow, investments, more
     }
 
-    @State private var selection: Tab = .finance
+    @State private var selection: Tab = .dashboard
 
     var body: some View {
         TabView(selection: $selection) {
-            FinanceTab(
-                personal: appModel.financePersonal,
-                accounts: appModel.financeAccounts,
-                transactions: appModel.financeTransactions,
-                investments: appModel.financeInvestments,
-                financeAPI: appModel.financeAPI,
-                commandBar: appModel.commandBar
+            DashboardTab(viewModel: appModel.dashboard)
+                .identity(.cockpitInstrument)
+                .tabItem { Label("Dashboard", systemImage: "square.grid.2x2") }
+                .tag(Tab.dashboard)
+
+            TransactionsTab(
+                viewModel: appModel.financeTransactions,
+                financeAPI: appModel.financeAPI
             )
             .identity(.cockpitInstrument)
-            .tabItem { Label("Finance", systemImage: "chart.line.uptrend.xyaxis") }
-            .tag(Tab.finance)
+            .tabItem { Label("Transactions", systemImage: "list.bullet.indent") }
+            .tag(Tab.transactions)
 
-            LifeTab(viewModel: appModel.life)
-                .identity(.terminalAmber)
-                .tabItem { Label("Life", systemImage: "terminal") }
-                .tag(Tab.life)
-
-            AdvisorsTab(viewModel: appModel.advisors)
+            CashFlowTab()
                 .identity(.cockpitInstrument)
-                .tabItem { Label("Advisors", systemImage: "person.bubble") }
-                .tag(Tab.advisors)
+                .tabItem {
+                    Label("Cash flow", systemImage: "chart.line.uptrend.xyaxis")
+                }
+                .tag(Tab.cashflow)
 
-            SettingsTab(appModel: appModel)
-                .tabItem { Label("Settings", systemImage: "gearshape") }
-                .tag(Tab.settings)
+            InvestmentsTab(viewModel: appModel.financeInvestments)
+                .identity(.cockpitInstrument)
+                .tabItem { Label("Investments", systemImage: "briefcase") }
+                .tag(Tab.investments)
+
+            MoreTab(appModel: appModel)
+                .identity(.cockpitInstrument)
+                .tabItem { Label("More", systemImage: "ellipsis.circle") }
+                .tag(Tab.more)
         }
         .onChange(of: selection) { _, _ in
             Haptics.tabSwitch()
@@ -240,103 +270,74 @@ private struct RootTabView: View {
     }
 }
 
-/// iOS Finance tab: NavigationStack rooted at the **Finance Hub** — four
-/// large drill-down cards (Personal / Accounts / Transactions /
-/// Investments). The hub itself shows a compact net-worth strip so the
-/// first paint always communicates the headline KPI.
-private struct FinanceTab: View {
-    @Bindable var personal: FinancePersonalViewModel
-    let accounts: FinanceAccountsViewModel
-    let transactions: FinanceTransactionsViewModel
-    let investments: FinanceInvestmentsViewModel
+/// Dashboard tab — the inbox of un-reviewed transactions. The view
+/// reads from a single `DashboardViewModel` owned by the AppModel;
+/// the navigation stack here only carries through to a future
+/// `TransactionDetailView` push when an inbox row is tapped (not yet
+/// wired — the row's primary affordance is selection, not navigation).
+private struct DashboardTab: View {
+    @Bindable var viewModel: DashboardViewModel
+
+    var body: some View {
+        NavigationStack {
+            DashboardView(viewModel: viewModel)
+                .navigationTitle("Dashboard")
+                .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+/// Transactions tab. The macOS surface is the same `FinanceTransactionsView`;
+/// on iOS it owns its own NavigationStack so deep links from the More
+/// tab (Categories → filtered transactions) push onto it cleanly.
+private struct TransactionsTab: View {
+    @Bindable var viewModel: FinanceTransactionsViewModel
     let financeAPI: FinanceAPI
-    @Bindable var commandBar: CommandBarViewModel
 
     var body: some View {
         NavigationStack {
-            FinanceHubView(
-                personal: personal,
-                accounts: accounts,
-                transactions: transactions,
-                investments: investments
+            FinanceTransactionsView(viewModel: viewModel)
+                .navigationTitle("Transactions")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(for: Models.Transaction.self) { tx in
+                    TransactionDetailView(transaction: tx)
+                }
+        }
+    }
+}
+
+/// Cash flow tab. Agent 4 owns the surface module
+/// (`Features/CashFlow/**`); until that lands we render a placeholder
+/// so the tab bar's slot is reserved and tappable without a crash.
+/// The placeholder is intentionally honest — "Coming soon" beats a
+/// half-built chart in a screenshot review.
+private struct CashFlowTab: View {
+    var body: some View {
+        NavigationStack {
+            ComingSoonView(
+                title: "Cash flow",
+                subtitle: "Monthly inflow / outflow with category mix",
+                symbol: "chart.line.uptrend.xyaxis"
             )
-            // Command bar overlay — preserved from the AI-UI v2 pass on
-            // top of the worktree's 4-tile hub. The sparkles toolbar item
-            // opens an `Ask Synapse` sheet that streams across all three
-            // advisors with personal-finance context.
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        commandBar.open()
-                    } label: {
-                        Image(systemName: "sparkles")
-                    }
-                    .accessibilityLabel("Ask Synapse")
+            .navigationTitle("Cash flow")
+            .navigationBarTitleDisplayMode(.inline)
+        }
+    }
+}
+
+/// Investments tab — was the fourth card on the old hub; now its
+/// own bottom-rail entry.
+private struct InvestmentsTab: View {
+    @Bindable var viewModel: FinanceInvestmentsViewModel
+
+    var body: some View {
+        NavigationStack {
+            FinanceInvestmentsView(viewModel: viewModel)
+                .navigationTitle("Investments")
+                .navigationBarTitleDisplayMode(.inline)
+                .navigationDestination(for: InvestmentPosition.self) { position in
+                    PositionDetailView(position: position)
                 }
-            }
-            .sheet(isPresented: $commandBar.isPresented) {
-                CommandBarView(viewModel: commandBar) { _ in
-                    commandBar.close()
-                }
-                .padding()
-                .presentationDetents([.medium, .large])
-            }
-            // Per-account drill-down. Anchored at the hub so any push
-            // from Accounts (a deeper view in the stack) still resolves
-            // — `NavigationStack` walks up its `.navigationDestination`
-            // entries until it finds a matching type.
-            .navigationDestination(for: FinanceAccount.self) { account in
-                AccountDetailView(account: account, financeAPI: financeAPI)
-            }
-            .navigationDestination(for: Models.Transaction.self) { tx in
-                TransactionDetailView(transaction: tx)
-            }
-            .navigationDestination(for: InvestmentPosition.self) { position in
-                PositionDetailView(position: position)
-            }
-        }
-    }
-}
-
-/// Life tab. The LIFE terminal is full-bleed: the nav bar is hidden so
-/// the amber phosphor reaches the status bar, and the safe area is
-/// honoured by the inner `ScrollView` rather than the chrome above it.
-private struct LifeTab: View {
-    @Bindable var viewModel: LifeViewModel
-
-    var body: some View {
-        NavigationStack {
-            LifeTerminalView(viewModel: viewModel)
-                .navigationBarHidden(true)
-                .ignoresSafeArea(.container, edges: .top)
-        }
-    }
-}
-
-/// Advisors tab. The shell owns the `NavigationStack` so deep links from
-/// other surfaces (e.g. Spotlight → advisor) can push directly onto it.
-private struct AdvisorsTab: View {
-    @Bindable var viewModel: AdvisorsListViewModel
-
-    var body: some View {
-        NavigationStack {
-            AdvisorsView(viewModel: viewModel)
-                .navigationTitle("Advisors")
-                .navigationBarTitleDisplayMode(.large)
-        }
-    }
-}
-
-/// Settings tab. Rooted at the iOS `SettingsForm` (a plain `Form` with
-/// native toggles, pickers, and disclosure rows). Auth lives here as a
-/// user-initiated action, not as a startup gate.
-private struct SettingsTab: View {
-    let appModel: AppModel
-
-    var body: some View {
-        NavigationStack {
-            SettingsForm(settings: appModel.settings, auth: appModel.auth)
-                .identity(.editorial)
         }
     }
 }
