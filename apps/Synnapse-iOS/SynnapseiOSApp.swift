@@ -11,7 +11,12 @@ struct SynnapseiOSApp: App {
 
     var body: some Scene {
         WindowGroup {
-            RootShell(appModel: appModel)
+            // The login gate was removed: the tab view renders
+            // unconditionally so the app boots straight into Finance /
+            // Life / Advisors. Auth is now a user-initiated action
+            // surfaced from Settings (under the More tab), not a
+            // startup blocker.
+            RootTabView(appModel: appModel)
                 .task { await appModel.bootstrapIfNeeded() }
                 .onOpenURL { url in
                     // Deep links route through `AppLifecycleService`.
@@ -44,6 +49,15 @@ final class AppModel {
     // Deep-link router + restoration.
     let lifecycle: AppLifecycleService
 
+    /// When true, the VMs are bound to Mock APIs pre-seeded with demo
+    /// fixtures so the cockpit renders representative data on first
+    /// paint. DEBUG-only; release builds talk to the live server.
+    let usesDemoData: Bool
+
+    private let demoFinanceAPI: MockFinanceAPI?
+    private let demoLifeAPI: MockLifeAPI?
+    private let demoAdvisorsAPI: MockAdvisorsAPI?
+
     private var bootstrapped = false
 
     init() {
@@ -62,14 +76,35 @@ final class AppModel {
             session: .shared,
             defaultHeaders: ["Accept": "application/json"]
         )
-        let financeAPI = LiveFinanceAPI(client: client)
+
+        #if DEBUG
+        let mockFinance = MockFinanceAPI()
+        let mockLife = MockLifeAPI()
+        let mockAdvisors = MockAdvisorsAPI()
+        self.demoFinanceAPI = mockFinance
+        self.demoLifeAPI = mockLife
+        self.demoAdvisorsAPI = mockAdvisors
+        self.usesDemoData = true
+        let financeAPI: FinanceAPI = mockFinance
+        let lifeAPI: LifeAPI = mockLife
+        let advisorsAPI: AdvisorsAPI = mockAdvisors
+        #else
+        self.demoFinanceAPI = nil
+        self.demoLifeAPI = nil
+        self.demoAdvisorsAPI = nil
+        self.usesDemoData = false
+        let financeAPI: FinanceAPI = LiveFinanceAPI(client: client)
+        let lifeAPI: LifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+        let advisorsAPI: AdvisorsAPI = LiveAdvisorsAPI(client: client)
+        #endif
+
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
-        self.life = LifeViewModel(api: LiveLifeAPI(client: client, serverContractLive: false))
+        self.life = LifeViewModel(api: lifeAPI)
 
-        self.advisors = AdvisorsListViewModel(api: LiveAdvisorsAPI(client: client))
+        self.advisors = AdvisorsListViewModel(api: advisorsAPI)
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
 
@@ -80,6 +115,21 @@ final class AppModel {
         guard !bootstrapped else { return }
         bootstrapped = true
         await auth.restoreFromStore()
+        if let finance = demoFinanceAPI,
+           let lifeMock = demoLifeAPI,
+           let advisorsMock = demoAdvisorsAPI {
+            await DemoData.seed(
+                finance: finance,
+                life: lifeMock,
+                advisors: advisorsMock
+            )
+            await financePersonal.refresh()
+            await financeAccounts.refresh()
+            await financeTransactions.refresh()
+            await financeInvestments.refresh()
+            await life.refresh()
+            await advisors.refresh()
+        }
         applyConcealBalancesBridge()
     }
 
@@ -93,51 +143,12 @@ final class AppModel {
     }
 }
 
-private struct RootShell: View {
-    @Bindable var appModel: AppModel
-
-    private var errorMessage: String? {
-        if case .error(let reason) = appModel.auth.state { return reason }
-        return nil
-    }
-
-    /// Gating the property at file scope keeps release binaries free of
-    /// the bypass closure entirely; `SignInView` then hides the row.
-    private var debugBypassHandler: (() -> Void)? {
-        #if DEBUG
-        return {
-            Task { await appModel.auth.signInForDebugBypass() }
-        }
-        #else
-        return nil
-        #endif
-    }
-
-    var body: some View {
-        switch appModel.auth.state {
-        case .signedIn:
-            RootTabView(appModel: appModel)
-        case .signedOut, .error:
-            SignInView(
-                onComplete: { result in
-                    Task {
-                        switch result {
-                        case .success(let cred):
-                            await appModel.auth.signIn(with: cred)
-                        case .failure:
-                            break
-                        }
-                    }
-                },
-                onTapDebugBypass: debugBypassHandler,
-                errorMessage: errorMessage
-            )
-            .identity(.editorial)
-        case .signingIn:
-            ZStack { ProgressView() }
-        }
-    }
-}
+// The previous `RootShell` wrapper switched between `RootTabView` and
+// `SignInView` based on `appModel.auth.state`. That wrapper has been
+// removed: the iOS app boots straight into `RootTabView`. Auth is now
+// a user-initiated action surfaced from Settings (under the More tab).
+// `SignInView`, `AuthViewModel`, `SessionStore`, and `LiveSessionAPI`
+// stay in the codebase and remain reachable from Settings.
 
 /// Four visible tabs: Finance, Life, Advisors, More (Settings + sign-out).
 /// Synnapse is a private-life client; work surfaces from synapse-v2

@@ -15,9 +15,13 @@ import DesignSystem
 @MainActor
 public struct RootView: View {
 
-    public init() {}
+    private let showsDemoDataFooter: Bool
+
+    public init(showsDemoDataFooter: Bool = false) {
+        self.showsDemoDataFooter = showsDemoDataFooter
+    }
 
     public var body: some View {
-        CockpitShellPreview()
+        CockpitShellPreview(showsDemoDataFooter: showsDemoDataFooter)
     }
 }

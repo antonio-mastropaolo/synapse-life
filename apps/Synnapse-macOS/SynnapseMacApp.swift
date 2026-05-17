@@ -16,7 +16,11 @@ struct SynnapseMacApp: App {
 
     var body: some Scene {
         WindowGroup("Synapse") {
-            RootShell(appModel: appModel)
+            // The login gate was removed: the cockpit shell renders
+            // unconditionally so the app boots straight into Finance /
+            // Life / Advisors. Auth is now a user-initiated action
+            // surfaced from Settings, not a startup blocker.
+            RootView(showsDemoDataFooter: appModel.usesDemoData)
                 .frame(minWidth: 720, minHeight: 480)
                 .task { await appModel.bootstrapIfNeeded() }
                 .onOpenURL { url in
@@ -124,6 +128,19 @@ final class AppModel {
     // Deep-link router + restoration.
     let lifecycle: AppLifecycleService
 
+    /// When true, the VMs are bound to Mock APIs pre-seeded with demo
+    /// fixtures. DEBUG builds set this so the cockpit renders something
+    /// on first paint instead of empty `.idle` states. The sidebar
+    /// surfaces a one-line "demo data" footer in this mode.
+    let usesDemoData: Bool
+
+    // Handles to the Mock APIs when running in demo mode; `nil` in
+    // release wiring. Kept to call `DemoData.seed` from
+    // `bootstrapIfNeeded` before the VMs refresh.
+    private let demoFinanceAPI: MockFinanceAPI?
+    private let demoLifeAPI: MockLifeAPI?
+    private let demoAdvisorsAPI: MockAdvisorsAPI?
+
     init() {
         let baseURLString = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
             ?? "http://localhost:3000/"
@@ -140,14 +157,38 @@ final class AppModel {
             session: .shared,
             defaultHeaders: ["Accept": "application/json"]
         )
-        let financeAPI = LiveFinanceAPI(client: client)
+
+        // DEBUG: bind every VM to a Mock API and seed it from
+        // `bootstrapIfNeeded`. Release: live wiring against the real
+        // synapse-v2 server.
+        #if DEBUG
+        let mockFinance = MockFinanceAPI()
+        let mockLife = MockLifeAPI()
+        let mockAdvisors = MockAdvisorsAPI()
+        self.demoFinanceAPI = mockFinance
+        self.demoLifeAPI = mockLife
+        self.demoAdvisorsAPI = mockAdvisors
+        self.usesDemoData = true
+        let financeAPI: FinanceAPI = mockFinance
+        let lifeAPI: LifeAPI = mockLife
+        let advisorsAPI: AdvisorsAPI = mockAdvisors
+        #else
+        self.demoFinanceAPI = nil
+        self.demoLifeAPI = nil
+        self.demoAdvisorsAPI = nil
+        self.usesDemoData = false
+        let financeAPI: FinanceAPI = LiveFinanceAPI(client: client)
+        let lifeAPI: LifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+        let advisorsAPI: AdvisorsAPI = LiveAdvisorsAPI(client: client)
+        #endif
+
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
-        self.lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+        self.lifeAPI = lifeAPI
 
-        self.advisors = AdvisorsListViewModel(api: LiveAdvisorsAPI(client: client))
+        self.advisors = AdvisorsListViewModel(api: advisorsAPI)
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
 
@@ -161,6 +202,23 @@ final class AppModel {
         guard !bootstrapped else { return }
         bootstrapped = true
         await auth.restoreFromStore()
+
+        // Seed the demo fixtures before the surfaces refresh so the
+        // first paint isn't an empty `.idle` state.
+        if let finance = demoFinanceAPI,
+           let life = demoLifeAPI,
+           let advisorsAPI = demoAdvisorsAPI {
+            await DemoData.seed(
+                finance: finance,
+                life: life,
+                advisors: advisorsAPI
+            )
+            await financePersonal.refresh()
+            await financeAccounts.refresh()
+            await financeTransactions.refresh()
+            await financeInvestments.refresh()
+            await advisors.refresh()
+        }
 
         // Settings <-> Finance bridge. When the conceal-balances
         // preference is on, forward an inactive scene-phase signal to the
@@ -180,55 +238,11 @@ final class AppModel {
     }
 }
 
-/// Top-level shell: shows `SignInView` as a sheet over `RootView` until the
-/// `AuthViewModel` reports a session, then drops the sheet.
-private struct RootShell: View {
-    @Bindable var appModel: AppModel
-
-    private var isSignedIn: Bool {
-        if case .signedIn = appModel.auth.state { return true }
-        return false
-    }
-
-    private var errorMessage: String? {
-        if case .error(let reason) = appModel.auth.state { return reason }
-        return nil
-    }
-
-    var body: some View {
-        RootView()
-            .sheet(isPresented: .constant(!isSignedIn)) {
-                SignInView(
-                    onComplete: { result in
-                        Task {
-                            switch result {
-                            case .success(let cred):
-                                await appModel.auth.signIn(with: cred)
-                            case .failure:
-                                break
-                            }
-                        }
-                    },
-                    onTapDebugBypass: debugBypassHandler,
-                    errorMessage: errorMessage
-                )
-                .identity(.editorial)
-                .frame(minWidth: 480, minHeight: 360)
-                .interactiveDismissDisabled(true)
-            }
-    }
-
-    /// `#if DEBUG` is evaluated at file scope so the property's *existence*
-    /// — not just its value — is gated by build configuration. Release
-    /// builds compile a `nil` for this handler; the `SignInView` then
-    /// hides the bypass row entirely.
-    private var debugBypassHandler: (() -> Void)? {
-        #if DEBUG
-        return {
-            Task { await appModel.auth.signInForDebugBypass() }
-        }
-        #else
-        return nil
-        #endif
-    }
-}
+// The previous `RootShell` wrapper gated the boot path on
+// `appModel.auth.state`. That wrapper has been removed: the app boots
+// straight into `RootView()`. Auth is now a user-initiated action
+// available from Settings (see `SettingsScene` in
+// `packages/SynnapseKit/Sources/Features/Settings/SettingsView.swift`).
+// `SignInView`, `AuthViewModel`, `SessionStore`, and `LiveSessionAPI`
+// remain in the codebase and stay reachable from Settings so they can
+// be re-engaged once the server-side endpoint exists.

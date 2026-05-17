@@ -30,6 +30,20 @@ public final class AppCore {
     public let advisors: AdvisorsListViewModel
     public let settings: SettingsViewModel
 
+    /// When true, the VMs were wired to the Mock APIs and the demo
+    /// fixtures should be seeded before the scene refreshes. DEBUG
+    /// builds set this so the cockpit boots with representative data
+    /// instead of the empty `.idle` state a Live API would yield while
+    /// `synapse-v2` is offline.
+    public let usesDemoData: Bool
+
+    /// References to the Mock APIs when `usesDemoData == true`. The
+    /// shell uses these handles in `bootstrap()` to call `DemoData.seed`
+    /// before refreshing each VM. `nil` in release wiring.
+    public let demoFinanceAPI: MockFinanceAPI?
+    public let demoLifeAPI: MockLifeAPI?
+    public let demoAdvisorsAPI: MockAdvisorsAPI?
+
     /// Surfaced for [[CrashFreeLaunchTests]] — set to `true` only if a
     /// future edit introduces a `Task.detached` somewhere in `init`.
     /// Today: no detached work is needed before the scene mounts; all
@@ -37,7 +51,7 @@ public final class AppCore {
     /// awaits from `.task`.
     public let usedDetachedTaskDuringInit: Bool = false
 
-    public init(baseURLOverride: String? = nil) {
+    public init(baseURLOverride: String? = nil, useDemoData: Bool = false) {
         let envBase = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
         let raw = baseURLOverride ?? envBase ?? "http://localhost:3000/"
         // Two-step parse: try the caller-supplied value first, then
@@ -72,22 +86,59 @@ public final class AppCore {
             defaultHeaders: ["Accept": "application/json"]
         )
 
-        let financeAPI = LiveFinanceAPI(client: client)
+        // Wire either Live or Mock APIs depending on the caller. Mock
+        // wiring is what makes a DEBUG launch render demo fixtures
+        // instead of an empty `.idle` state pointing at an offline
+        // `synapse-v2` server. The Live path is unchanged.
+        let financeAPI: FinanceAPI
+        let lifeAPIWire: LifeAPI
+        let advisorsAPIWire: AdvisorsAPI
+        if useDemoData {
+            let mockFinance = MockFinanceAPI()
+            let mockLife = MockLifeAPI()
+            let mockAdvisors = MockAdvisorsAPI()
+            self.demoFinanceAPI = mockFinance
+            self.demoLifeAPI = mockLife
+            self.demoAdvisorsAPI = mockAdvisors
+            financeAPI = mockFinance
+            lifeAPIWire = mockLife
+            advisorsAPIWire = mockAdvisors
+        } else {
+            self.demoFinanceAPI = nil
+            self.demoLifeAPI = nil
+            self.demoAdvisorsAPI = nil
+            financeAPI = LiveFinanceAPI(client: client)
+            lifeAPIWire = LiveLifeAPI(client: client, serverContractLive: false)
+            advisorsAPIWire = LiveAdvisorsAPI(client: client)
+        }
+        self.usesDemoData = useDemoData
+
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
 
-        self.lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
+        self.lifeAPI = lifeAPIWire
 
-        self.advisors = AdvisorsListViewModel(api: LiveAdvisorsAPI(client: client))
+        self.advisors = AdvisorsListViewModel(api: advisorsAPIWire)
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
     }
 
     /// Async bootstrap mirror of what the shell's `bootstrapIfNeeded`
-    /// would call. Currently restores the auth session from keychain.
+    /// would call. Restores the auth session from keychain and, when
+    /// the core was wired with Mock APIs, seeds the demo fixtures so
+    /// the cockpit renders something on first paint.
     public func bootstrap() async {
         await auth.restoreFromStore()
+        if let finance = demoFinanceAPI,
+           let life = demoLifeAPI,
+           let advisorsAPI = demoAdvisorsAPI {
+            await DemoData.seed(
+                finance: finance,
+                life: life,
+                advisors: advisorsAPI
+            )
+        }
     }
 }

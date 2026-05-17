@@ -20,7 +20,16 @@ public struct CockpitShellPreview: View {
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
 
-    public init() {}
+    /// When true, paints a single-line "demo data" footer in the sidebar
+    /// so the operator can tell at a glance the figures aren't real.
+    /// Set by the DEBUG shells (which wire the Mock APIs); release
+    /// builds default to `false` and the line disappears entirely so
+    /// the snapshot suite remains pixel-stable.
+    private let showsDemoDataFooter: Bool
+
+    public init(showsDemoDataFooter: Bool = false) {
+        self.showsDemoDataFooter = showsDemoDataFooter
+    }
 
     public var body: some View {
         let tokens = theme.tokens(for: scheme)
@@ -36,7 +45,7 @@ public struct CockpitShellPreview: View {
     @ViewBuilder
     private func macLayout(tokens: TokenSet) -> some View {
         HStack(spacing: 0) {
-            CockpitSidebar(tokens: tokens)
+            CockpitSidebar(tokens: tokens, showsDemoFooter: showsDemoDataFooter)
                 .frame(width: 220)
                 .background(tokens.surface.color)
 
@@ -68,7 +77,7 @@ public struct CockpitShellPreview: View {
             // Mini sidebar overview kept visible on phone width so the
             // snapshot diff against the macOS rendering is meaningful
             // (same sections, vertically stacked).
-            CockpitSidebar(tokens: tokens)
+            CockpitSidebar(tokens: tokens, showsDemoFooter: showsDemoDataFooter)
                 .frame(height: 240)
                 .background(tokens.surface.color)
         }
@@ -83,6 +92,7 @@ public struct CockpitShellPreview: View {
 @MainActor
 private struct CockpitSidebar: View {
     let tokens: TokenSet
+    var showsDemoFooter: Bool = false
 
     private struct Row: Identifiable {
         let id: String
@@ -151,6 +161,19 @@ private struct CockpitSidebar: View {
             }
 
             Spacer(minLength: 0)
+
+            if showsDemoFooter {
+                // Subtle monospace footer — the cockpit picks its own
+                // identity, so we paint inside the same accent palette
+                // rather than introducing a new color.
+                Text("demo data \u{00B7} sign in to sync")
+                    .font(Tokens.tickerFont(size: 9).swiftUIFont)
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .lineLimit(1)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .accessibilityIdentifier("cockpit.sidebar.demoDataFooter")
+            }
         }
     }
 }

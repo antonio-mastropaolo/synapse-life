@@ -19,6 +19,12 @@ public struct SettingsScene: View {
         self.auth = auth
     }
 
+    /// Drives the optional Sign in with Apple sheet surfaced from the
+    /// Account section. The boot path no longer gates the app on auth,
+    /// so signing in is a user-initiated action that lives in
+    /// Settings — exactly where macOS conventions expect it.
+    @State private var showSignInSheet: Bool = false
+
     public var body: some View {
         #if os(macOS)
         TabView {
@@ -32,6 +38,23 @@ public struct SettingsScene: View {
                 .tabItem { Label("Appearance", systemImage: "paintpalette") }
         }
         .frame(width: 480, height: 360)
+        .sheet(isPresented: $showSignInSheet) {
+            SignInView(
+                onComplete: { result in
+                    Task {
+                        if case .success(let cred) = result {
+                            await auth.signIn(with: cred)
+                        }
+                        showSignInSheet = false
+                    }
+                },
+                errorMessage: {
+                    if case .error(let reason) = auth.state { return reason }
+                    return nil
+                }()
+            )
+            .frame(minWidth: 480, minHeight: 360)
+        }
         #else
         SettingsForm(settings: settings, auth: auth)
         #endif
@@ -51,8 +74,14 @@ public struct SettingsScene: View {
                     .controlSize(.regular)
                     .accessibilityHint("Signs out of Synapse on this device")
                 case .signedOut, .error:
-                    Text("Not signed in.")
+                    Text("Signed out. Synapse runs locally with demo data until you sign in.")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+                    Button("Sign in with Apple") {
+                        showSignInSheet = true
+                    }
+                    .controlSize(.regular)
+                    .accessibilityIdentifier("settings.account.signInButton")
                 case .signingIn:
                     ProgressView()
                 }
@@ -146,6 +175,8 @@ public struct SettingsForm: View {
         #endif
     }
 
+    @State private var showSignInSheet: Bool = false
+
     public var body: some View {
         Form {
             Section("Account") {
@@ -157,7 +188,14 @@ public struct SettingsForm: View {
                     }
                     .frame(minHeight: 44)
                 case .signedOut, .error:
-                    Text("Not signed in.").foregroundStyle(.secondary)
+                    Text("Signed out. Synapse runs locally with demo data until you sign in.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    Button("Sign in with Apple") {
+                        showSignInSheet = true
+                    }
+                    .frame(minHeight: 44)
+                    .accessibilityIdentifier("settings.account.signInButton")
                 case .signingIn:
                     ProgressView()
                 }
@@ -183,5 +221,21 @@ public struct SettingsForm: View {
             }
         }
         .navigationTitle("Settings")
+        .sheet(isPresented: $showSignInSheet) {
+            SignInView(
+                onComplete: { result in
+                    Task {
+                        if case .success(let cred) = result {
+                            await auth.signIn(with: cred)
+                        }
+                        showSignInSheet = false
+                    }
+                },
+                errorMessage: {
+                    if case .error(let reason) = auth.state { return reason }
+                    return nil
+                }()
+            )
+        }
     }
 }
