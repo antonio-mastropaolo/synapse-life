@@ -106,8 +106,10 @@ public struct FinancePersonalView: View {
                 .padding(.vertical, 16)
             }
             .refreshable { await viewModel.refresh() }
+            .scrollDismissesKeyboard(.immediately)
         }
         .navigationTitle("Personal")
+        .navigationBarTitleDisplayMode(.large)
     }
     #endif
 
@@ -276,12 +278,31 @@ public struct FinancePersonalView: View {
                     .font(tokens.tickerFont(size: 10, weight: .semibold))
                     .foregroundStyle(tokens.foregroundSecondary.color)
                     .padding(.horizontal, 16)
+                #if os(iOS)
+                VStack(spacing: 1) {
+                    ForEach(Array(snap.accounts.enumerated()), id: \.element.id) { idx, account in
+                        NavigationLink(value: account) {
+                            accountRow(account: account)
+                                .padding(.horizontal, 16)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(tokens.surface.color)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Opens account details")
+                    }
+                }
+                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .padding(.horizontal, 16)
+                #else
                 ForEach(snap.accounts) { account in
                     accountRow(account: account)
                         .padding(.horizontal, 16)
                         .padding(.vertical, 8)
                         .background(tokens.surface.color)
                 }
+                #endif
             }
         }
     }

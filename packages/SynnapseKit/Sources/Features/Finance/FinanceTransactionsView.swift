@@ -99,12 +99,26 @@ public struct FinanceTransactionsView: View {
     // MARK: - iOS
 
     #if os(iOS)
+    @State private var scope: LedgerStatusScope = .all
+    @State private var collapsedAccountIds: Set<String> = []
+
     private var iosLayout: some View {
         let tokens = theme.tokens(for: scheme)
         return ZStack {
             tokens.background.color.ignoresSafeArea()
             VStack(spacing: 0) {
+                Picker("Scope", selection: $scope) {
+                    Text("All").tag(LedgerStatusScope.all)
+                    Text("Pending").tag(LedgerStatusScope.pending)
+                    Text("Posted").tag(LedgerStatusScope.posted)
+                }
+                .pickerStyle(.segmented)
+                .padding(.horizontal, 16)
+                .padding(.top, 8)
+                .padding(.bottom, 6)
+
                 chipsRow
+
                 Group {
                     switch viewModel.state {
                     case .idle, .loading:
@@ -117,13 +131,7 @@ public struct FinanceTransactionsView: View {
                             .font(tokens.tickerFont(size: 11))
                             .foregroundStyle(tokens.foregroundSecondary.color)
                     case .results(let rows):
-                        List {
-                            ForEach(rows) { row in
-                                ledgerRow(row)
-                                    .listRowBackground(tokens.surface.color)
-                            }
-                        }
-                        .scrollContentBackground(.hidden)
+                        groupedByCardList(scope.apply(to: rows))
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -132,6 +140,62 @@ public struct FinanceTransactionsView: View {
         .searchable(text: $viewModel.filter.searchText, prompt: "Search ledger")
         .refreshable { await viewModel.refresh() }
         .navigationTitle("Transactions")
+        .navigationBarTitleDisplayMode(.large)
+    }
+
+    /// Groups rows by `accountName` (falling back to `accountId` then
+    /// "Unknown") and renders them as collapsible sections. The grouping
+    /// itself is a pure function in `LedgerFilter.swift` so its ordering
+    /// can be unit-tested without spinning up SwiftUI.
+    private func groupedByCardList(_ rows: [Models.Transaction]) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        let sections = groupTransactionsByCard(rows)
+        return List {
+            ForEach(sections, id: \.card) { section in
+                let card = section.card
+                let cardRows = section.rows
+                let collapsed = collapsedAccountIds.contains(card)
+                Section {
+                    if !collapsed {
+                        ForEach(cardRows) { row in
+                            NavigationLink(value: row) {
+                                phoneLedgerRow(row)
+                            }
+                            .listRowBackground(tokens.surface.color)
+                        }
+                    }
+                } header: {
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            if collapsed {
+                                collapsedAccountIds.remove(card)
+                            } else {
+                                collapsedAccountIds.insert(card)
+                            }
+                        }
+                    } label: {
+                        HStack {
+                            Image(systemName: collapsed ? "chevron.right" : "chevron.down")
+                                .font(.system(size: 10, weight: .semibold))
+                                .foregroundStyle(tokens.foregroundSecondary.color)
+                            Text(card.uppercased())
+                                .font(tokens.tickerFont(size: 10, weight: .semibold))
+                                .foregroundStyle(tokens.foregroundSecondary.color)
+                            Spacer()
+                            Text("\(cardRows.count)")
+                                .font(tokens.tickerFont(size: 10))
+                                .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.7))
+                        }
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("\(card), \(cardRows.count) transactions")
+                    .accessibilityHint(collapsed ? "Tap to expand" : "Tap to collapse")
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
     }
 
     @ViewBuilder
@@ -170,6 +234,48 @@ public struct FinanceTransactionsView: View {
                 .padding(.vertical, 6)
             }
         }
+    }
+
+    /// Phone-tuned ledger row. The shared `ledgerRow` uses fixed-pixel
+    /// column widths because the macOS table needs aligned columns; on a
+    /// 402-pt iPhone width those widths blow past the trailing edge.
+    /// This variant uses an `HStack` with a flexible centre column and
+    /// trailing-aligned amount, so the row fits Dynamic Type up to
+    /// Accessibility Large without truncating the merchant name.
+    private func phoneLedgerRow(_ row: Models.Transaction) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        let isInflow = (row.amount ?? .zero) > .zero
+        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(row.name)
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                    .lineLimit(1)
+                HStack(spacing: 6) {
+                    Text(dayFormatter.string(from: row.date))
+                        .font(tokens.tickerFont(size: 10))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                    if row.pending {
+                        Text("PENDING")
+                            .font(tokens.tickerFont(size: 9, weight: .semibold))
+                            .padding(.horizontal, 4)
+                            .padding(.vertical, 1)
+                            .background(tokens.foregroundSecondary.color.opacity(0.12))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                            .clipShape(Capsule())
+                    }
+                    Text(row.category.displayLabel)
+                        .font(tokens.tickerFont(size: 10))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                        .lineLimit(1)
+                }
+            }
+            Spacer(minLength: 6)
+            Text((row.amount ?? 0).formatted(.currency(code: row.currency)))
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
+                .foregroundStyle(isInflow ? tokens.gainAccent.color : tokens.foregroundPrimary.color)
+        }
+        .padding(.vertical, 4)
     }
     #endif
 

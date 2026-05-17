@@ -24,6 +24,16 @@ public struct FinanceInvestmentsView: View {
 
     @ViewBuilder
     private var content: some View {
+        #if os(macOS)
+        macContent
+        #else
+        iosContent
+        #endif
+    }
+
+    #if os(macOS)
+    @ViewBuilder
+    private var macContent: some View {
         let tokens = theme.tokens(for: scheme)
         ZStack {
             tokens.background.color.ignoresSafeArea()
@@ -50,6 +60,98 @@ public struct FinanceInvestmentsView: View {
         }
         .navigationTitle("Investments")
     }
+    #endif
+
+    #if os(iOS)
+    private var iosContent: some View {
+        let tokens = theme.tokens(for: scheme)
+        return Group {
+            switch viewModel.state {
+            case .idle, .loading:
+                ZStack { tokens.background.color; ProgressView() }
+            case .empty:
+                ZStack {
+                    tokens.background.color
+                    Text("No holdings")
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+            case .error(let message):
+                ZStack {
+                    tokens.background.color
+                    Text(message)
+                        .font(tokens.tickerFont(size: 11))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+            case .results(let positions):
+                phonePositionsList(positions)
+            }
+        }
+        .background(tokens.background.color.ignoresSafeArea())
+        .navigationTitle("Investments")
+        .navigationBarTitleDisplayMode(.large)
+        .refreshable { await viewModel.refresh() }
+    }
+
+    private func phonePositionsList(_ positions: [InvestmentPosition]) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        // Group by `SecurityKind` so a long stocks list is broken into
+        // ETF / bond / cash sections — easier to scan than one flat list
+        // on a 6.1-inch screen.
+        let grouped = Dictionary(grouping: positions, by: \.kind)
+        let kinds: [SecurityKind] = [.stock, .etf, .bond, .cash, .other]
+            .filter { grouped[$0] != nil }
+        return List {
+            Section {
+                hero(positions: positions)
+                    .listRowBackground(tokens.surface.color)
+                    .listRowInsets(EdgeInsets(top: 14, leading: 16, bottom: 14, trailing: 16))
+            }
+            ForEach(kinds, id: \.self) { kind in
+                Section {
+                    ForEach(grouped[kind] ?? []) { position in
+                        NavigationLink(value: position) {
+                            phonePositionRow(position)
+                        }
+                        .listRowBackground(tokens.surface.color)
+                    }
+                } header: {
+                    Text(kind.rawValue.uppercased())
+                        .font(tokens.tickerFont(size: 10, weight: .semibold))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
+        .scrollContentBackground(.hidden)
+    }
+
+    private func phonePositionRow(_ position: InvestmentPosition) -> some View {
+        let tokens = theme.tokens(for: scheme)
+        let pnl = position.unrealizedPnL ?? .zero
+        let isGain = pnl >= .zero
+        return HStack(alignment: .firstTextBaseline, spacing: 12) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(position.ticker ?? "—")
+                    .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text(position.name ?? position.accountName)
+                    .font(tokens.tickerFont(size: 10))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .lineLimit(1)
+            }
+            Spacer(minLength: 6)
+            VStack(alignment: .trailing, spacing: 2) {
+                Text(position.value.formatted(.currency(code: position.currency)))
+                    .font(.system(size: 14, weight: .medium, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text(pnl.formatted(.currency(code: position.currency)))
+                    .font(tokens.tickerFont(size: 10, weight: .semibold))
+                    .foregroundStyle(isGain ? tokens.gainAccent.color : tokens.lossAccent.color)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+    #endif
 
     private func hero(positions: [InvestmentPosition]) -> some View {
         let tokens = theme.tokens(for: scheme)
