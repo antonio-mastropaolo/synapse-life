@@ -49,7 +49,7 @@ public struct SettingsScene: View {
                         Task { await auth.signOut() }
                     }
                     .controlSize(.regular)
-                    .accessibilityHint("Signs out of Synnapse on this device")
+                    .accessibilityHint("Signs out of Synapse on this device")
                 case .signedOut, .error:
                     Text("Not signed in.")
                         .foregroundStyle(.secondary)
@@ -76,7 +76,7 @@ public struct SettingsScene: View {
                         .foregroundStyle(.red)
                         .accessibilityLabel("API base URL is invalid")
                 }
-                Text("Override the API endpoint Synnapse talks to. Leave blank to use the bundled default.")
+                Text("Override the API endpoint Synapse talks to. Leave blank to use the bundled default.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } header: {

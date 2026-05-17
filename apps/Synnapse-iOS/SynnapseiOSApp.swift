@@ -96,6 +96,23 @@ final class AppModel {
 private struct RootShell: View {
     @Bindable var appModel: AppModel
 
+    private var errorMessage: String? {
+        if case .error(let reason) = appModel.auth.state { return reason }
+        return nil
+    }
+
+    /// Gating the property at file scope keeps release binaries free of
+    /// the bypass closure entirely; `SignInView` then hides the row.
+    private var debugBypassHandler: (() -> Void)? {
+        #if DEBUG
+        return {
+            Task { await appModel.auth.signInForDebugBypass() }
+        }
+        #else
+        return nil
+        #endif
+    }
+
     var body: some View {
         switch appModel.auth.state {
         case .signedIn:
@@ -111,7 +128,9 @@ private struct RootShell: View {
                             break
                         }
                     }
-                }
+                },
+                onTapDebugBypass: debugBypassHandler,
+                errorMessage: errorMessage
             )
             .identity(.editorial)
         case .signingIn:

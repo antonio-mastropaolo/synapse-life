@@ -63,4 +63,38 @@ public final class AuthViewModel {
         try? await store.clear()
         state = .signedOut
     }
+
+    #if DEBUG
+    /// DEBUG-only escape hatch. The unsigned local builds can't present the
+    /// real Apple sheet, and the synapse-v2 server has no
+    /// `/api/auth/apple/exchange` route yet — so the app would otherwise be
+    /// unreachable on a developer machine. This synthesizes a deterministic
+    /// `Session` and routes it through the same `SessionStore` the live
+    /// path uses, so downstream surfaces see a fully-formed signed-in
+    /// state. Never compiled into release builds.
+    public func signInForDebugBypass() async {
+        let session = Session.debugBypass()
+        try? await store.save(session)
+        state = .signedIn(session)
+    }
+    #endif
 }
+
+#if DEBUG
+extension Session {
+    /// Deterministic fixture used by [[signInForDebugBypass]]. Kept on the
+    /// type so tests can assert exact field values without touching
+    /// AuthViewModel internals.
+    public static func debugBypass() -> Session {
+        Session(
+            userId: "debug-user",
+            accessToken: "debug-access",
+            refreshToken: "debug-refresh",
+            // ~100 years out; far enough that no realistic test clock
+            // crosses it. Held in UTC so the value is identical on every
+            // host.
+            expiresAt: Date(timeIntervalSince1970: 4_102_444_800)
+        )
+    }
+}
+#endif

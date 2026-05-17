@@ -15,7 +15,7 @@ struct SynnapseMacApp: App {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
-        WindowGroup("Synnapse") {
+        WindowGroup("Synapse") {
             RootShell(appModel: appModel)
                 .frame(minWidth: 720, minHeight: 480)
                 .task { await appModel.bootstrapIfNeeded() }
@@ -190,6 +190,11 @@ private struct RootShell: View {
         return false
     }
 
+    private var errorMessage: String? {
+        if case .error(let reason) = appModel.auth.state { return reason }
+        return nil
+    }
+
     var body: some View {
         RootView()
             .sheet(isPresented: .constant(!isSignedIn)) {
@@ -203,11 +208,27 @@ private struct RootShell: View {
                                 break
                             }
                         }
-                    }
+                    },
+                    onTapDebugBypass: debugBypassHandler,
+                    errorMessage: errorMessage
                 )
                 .identity(.editorial)
                 .frame(minWidth: 480, minHeight: 360)
                 .interactiveDismissDisabled(true)
             }
+    }
+
+    /// `#if DEBUG` is evaluated at file scope so the property's *existence*
+    /// — not just its value — is gated by build configuration. Release
+    /// builds compile a `nil` for this handler; the `SignInView` then
+    /// hides the bypass row entirely.
+    private var debugBypassHandler: (() -> Void)? {
+        #if DEBUG
+        return {
+            Task { await appModel.auth.signInForDebugBypass() }
+        }
+        #else
+        return nil
+        #endif
     }
 }

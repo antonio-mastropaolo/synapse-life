@@ -81,7 +81,7 @@ public struct LifeTerminalView: View {
             id: "boot",
             timestamp: Date(),
             kind: .boot,
-            text: "SYNNAPSE LIFE TERMINAL — awaiting feed"
+            text: "SYNAPSE LIFE TERMINAL — awaiting feed"
         )]
     }
 

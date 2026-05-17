@@ -26,12 +26,27 @@ public struct SignInView: View {
     /// that the legacy preview path stays callable.
     private let onComplete: ((Result<AppleSignInResultPayload, Error>) -> Void)?
 
+    /// DEBUG-only handler for the secondary "Continue without signing in"
+    /// button. Wired to `AuthViewModel.signInForDebugBypass()` in the app
+    /// shell. Snapshot tests pass nil so the bypass row stays absent in
+    /// reference images.
+    private let onTapDebugBypass: (() -> Void)?
+
+    /// Optional error string surfaced under the buttons. The shell passes
+    /// `AuthViewModel.state`'s `.error(reason)` payload here so the user
+    /// sees what went wrong instead of staring at a silent button.
+    private let errorMessage: String?
+
     public init(
         onTapSignIn: @escaping () -> Void = {},
-        onComplete: ((Result<AppleSignInResultPayload, Error>) -> Void)? = nil
+        onComplete: ((Result<AppleSignInResultPayload, Error>) -> Void)? = nil,
+        onTapDebugBypass: (() -> Void)? = nil,
+        errorMessage: String? = nil
     ) {
         self.onTapSignIn = onTapSignIn
         self.onComplete = onComplete
+        self.onTapDebugBypass = onTapDebugBypass
+        self.errorMessage = errorMessage
     }
 
     public var body: some View {
@@ -41,16 +56,17 @@ public struct SignInView: View {
             VStack(spacing: 24) {
                 Spacer()
                 wordmark(tokens: tokens)
-                VStack(spacing: 6) {
-                    Text("Sign in to continue")
-                        .font(.system(size: 17, weight: .medium))
-                        .foregroundStyle(tokens.foregroundPrimary.color)
-                    Text("Your picks, your inbox, your tools.")
-                        .font(.system(size: 13))
-                        .foregroundStyle(tokens.foregroundSecondary.color)
+                Text("Sign in to continue")
+                    .font(.system(size: 17, weight: .medium))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                VStack(spacing: 12) {
+                    signInButton(tokens: tokens)
+                        .frame(maxWidth: 320)
+                    #if DEBUG
+                    debugBypassRow(tokens: tokens)
+                    #endif
+                    errorRow(tokens: tokens)
                 }
-                signInButton(tokens: tokens)
-                    .frame(maxWidth: 320)
                 Spacer()
                 footer(tokens: tokens)
             }
@@ -62,7 +78,7 @@ public struct SignInView: View {
 
     private func wordmark(tokens: TokenSet) -> some View {
         VStack(spacing: 4) {
-            Text("Synnapse")
+            Text("Synapse")
                 .font(.system(size: 36, weight: .medium))
                 .foregroundStyle(tokens.foregroundPrimary.color)
             Text(theme.identity.rawValue)
@@ -70,6 +86,36 @@ public struct SignInView: View {
                 .foregroundStyle(tokens.foregroundSecondary.color)
         }
     }
+
+    @ViewBuilder
+    private func errorRow(tokens: TokenSet) -> some View {
+        if let message = errorMessage, !message.isEmpty {
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.red)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 320)
+                .accessibilityLabel("Sign-in error: \(message)")
+        }
+    }
+
+    #if DEBUG
+    @ViewBuilder
+    private func debugBypassRow(tokens: TokenSet) -> some View {
+        if let onTapDebugBypass {
+            VStack(spacing: 2) {
+                Button("Continue without signing in (debug)", action: onTapDebugBypass)
+                    .buttonStyle(.borderless)
+                    .foregroundStyle(.secondary)
+                    .font(.caption)
+                    .accessibilityHint("Skips Apple sign-in and seeds a local debug session.")
+                Text("Debug build — bypass available")
+                    .font(.system(size: 9, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.7))
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder
     private func signInButton(tokens: TokenSet) -> some View {

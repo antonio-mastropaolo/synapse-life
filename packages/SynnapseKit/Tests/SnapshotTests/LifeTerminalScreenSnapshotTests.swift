@@ -39,7 +39,7 @@ struct LifeTerminalScreenSnapshotTests {
                 id: "boot",
                 timestamp: Date(timeIntervalSince1970: base - 600),
                 kind: .boot,
-                text: "SYNNAPSE LIFE TERMINAL v1.0 — feed online"
+                text: "SYNAPSE LIFE TERMINAL v1.0 — feed online"
             ),
             LifeEntry(
                 id: "t1",

@@ -1,9 +1,14 @@
-# Synnapse
+# Synapse
 
 Native macOS and iOS personal-finance, life-log, and financial-advisors
 app. Private life only — work surfaces (research, approvals, work
 email, vendor intel) live in the [synapse-v2](https://github.com/antonio-mastropaolo/synapse-v2)
-web app and were intentionally cut from Synnapse on 2026-05-17.
+web app and were intentionally cut from Synapse on 2026-05-17.
+
+The Xcode workspace, target, scheme, and Swift package names still carry
+the `Synnapse` spelling — that's the internal codename and renaming it
+would churn the build graph for no user-visible benefit. The display
+name (`CFBundleDisplayName`) is `Synapse`.
 
 The client talks to the synapse-v2 server over HTTP; the Cockpit Dense
 identity (deep black + amber-phosphor cues) is the default visual
@@ -79,7 +84,10 @@ the CI tagged-release workflow reads.
 ## Milestone state
 
 - M1 — Foundation (Networking, Auth, DesignSystem, app shells, CI). Done.
-- M3 — Sign in with Apple end-to-end. Done.
+- M3 — Sign in with Apple wiring. Client side complete; server
+  `/api/auth/apple/exchange` route is not yet live, so unsigned local
+  builds use the DEBUG-only "Continue without signing in" bypass on the
+  SignInView to reach the surfaces.
 - M5 — Finance (Personal, Accounts, Transactions, Investments). Done.
 - M6 — Life terminal (Metal shader + Canvas fallback). Done.
 - M8 — Advisors streaming chat. Done.
@@ -91,7 +99,7 @@ Cockpit Dense shell from the integration commit is the app-wide chrome.
 Milestones M2, M4, M7, and the Spotlight/Approvals/People/Inbox/
 Sequences/Octagon/Trading-Desk halves of M3/M8/M9 originally shipped
 in this repo (commits up to `e412731`) but were removed on
-2026-05-17 when Synnapse's scope was narrowed to private life only.
+2026-05-17 when Synapse's scope was narrowed to private life only.
 Their git history is preserved; they are not visible to the user in
 the current build.
 

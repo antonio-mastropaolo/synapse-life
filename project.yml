@@ -49,6 +49,8 @@ targets:
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
         INFOPLIST_KEY_NSHumanReadableCopyright: "(c) 2026 Antonio Mastropaolo"
+        INFOPLIST_KEY_CFBundleDisplayName: Synapse
+        INFOPLIST_KEY_CFBundleName: Synapse
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   SynnapseiOS:
@@ -87,6 +89,8 @@ targets:
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_NSHumanReadableCopyright: "(c) 2026 Antonio Mastropaolo"
+        INFOPLIST_KEY_CFBundleDisplayName: Synapse
+        INFOPLIST_KEY_CFBundleName: Synapse
         INFOPLIST_KEY_UIRequiresFullScreen: NO
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

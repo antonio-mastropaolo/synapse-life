@@ -1,4 +1,5 @@
 import SwiftUI
+import Foundation
 
 /// Cockpit Dense shell — the app-wide chrome.
 ///
@@ -116,7 +117,7 @@ private struct CockpitSidebar: View {
                 Rectangle()
                     .fill(tokens.accent.color)
                     .frame(width: 8, height: 8)
-                Text("SYNNAPSE")
+                Text("SYNAPSE")
                     .font(Tokens.headerFont(size: 12).swiftUIFont)
                     .foregroundStyle(tokens.foregroundPrimary.color)
             }
@@ -160,6 +161,16 @@ private struct CockpitSidebar: View {
 private struct CockpitContent: View {
     let tokens: TokenSet
 
+    /// `CFBundleShortVersionString` from the hosting app's Info.plist.
+    /// Falls back to "0.0.0" when the package is exercised outside an app
+    /// bundle (snapshot tests, swift-test runner) so the shell stays
+    /// deterministic for the snapshot suite while still showing the real
+    /// marketing version inside the live app.
+    static var appShortVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String
+            ?? "0.0.0"
+    }
+
     /// Deterministic preview rows. The shell snapshot doesn't depend on
     /// any live VM — it just demonstrates the ledger stripe + signed
     /// deltas the shell guarantees.
@@ -190,7 +201,7 @@ private struct CockpitContent: View {
                     .font(Tokens.headerFont(size: 14).swiftUIFont)
                     .foregroundStyle(tokens.foregroundPrimary.color)
                 Spacer()
-                Text("v0  ·  Cockpit Dense")
+                Text("v\(Self.appShortVersion)  ·  Cockpit Dense")
                     .font(Tokens.tickerFont(size: 10).swiftUIFont)
                     .foregroundStyle(tokens.foregroundSecondary.color)
             }

@@ -299,6 +299,8 @@
 				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -324,6 +326,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
@@ -352,6 +356,8 @@
 				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				ENABLE_HARDENED_RUNTIME = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -433,6 +439,8 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = WCGJPF9TWU;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UIRequiresFullScreen = NO;
