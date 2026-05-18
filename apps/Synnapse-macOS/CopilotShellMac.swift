@@ -2,6 +2,7 @@ import SwiftUI
 import AppKit
 import DesignSystem
 import Features
+import Models
 import Networking
 
 /// macOS Copilot shell — the live shell the app boots into.
@@ -772,6 +773,23 @@ private struct CopilotDetailPane: View {
                 SubscriptionsView(viewModel: subscriptions)
                     .identity(.cockpitInstrument)
                 .id("subscriptions")
+
+            // MY ACCOUNTS drill-down. The sidebar still routes account
+            // taps through the id-only `select(account:)` slot (the
+            // sidebar uses mock account ids that don't resolve against
+            // the live `FinanceAccountsViewModel`). This branch handles
+            // `.accountDetail(id:)` set via the new
+            // `select(accountDetail:)` setter — exercised by tests and
+            // the eventual live-sidebar migration. AccountDetailHost
+            // owns the VM in @State so range-chip taps survive.
+            case .accountDetail(let id):
+                AccountDetailHost(
+                    id: id,
+                    accounts: accounts.accounts,
+                    allTransactions: transactions.rows
+                )
+                .identity(.cockpitInstrument)
+                .id("accountDetail.\(id)")
             }
         }
         .transition(.opacity)

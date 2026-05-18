@@ -55,6 +55,22 @@ public enum RootDestination: Sendable, Equatable, Hashable {
     // family. The Copilot redesign routes the new top-level rows through
     // these surfaces under the hood.
     case finance(FinanceSurface)
+
+    // MARK: - Parameterized leaf — MY ACCOUNTS drill-down
+    //
+    // Reached from a MY ACCOUNTS sidebar row tap. Deliberately omitted
+    // from `canonicalOrder` for the same reason `.ask` and
+    // `.anomalyExplainer` are: it's parameterized and never rendered as
+    // a sidebar row of its own — the account rows themselves are the
+    // entry point, and the detail pane swaps content based on the id.
+    //
+    // The detail pane resolves the id against
+    // `FinanceAccountsViewModel.accounts` and renders an in-depth view
+    // (balance chart, KPI cluster, scoped recent transactions, scoped
+    // recurrings). On a miss, the pane paints an "Account not found"
+    // empty state — no crash, no fabricated data. See
+    // [[AccountDetailView]] for the surface.
+    case accountDetail(id: String)
 }
 
 extension RootDestination {
@@ -164,11 +180,26 @@ public final class RootShellViewModel {
     }
 
     /// Records that the operator clicked a MY ACCOUNTS row. The
-    /// destination is not touched here — the brief specifies "today just
-    /// record the intent in the routing VM, no behavior change". Agent 2
-    /// will follow this id into a Transactions filter once that surface
-    /// is wired up.
+    /// destination is not touched here — preserved from the original
+    /// Copilot integration where the slot was informational only.
+    ///
+    /// New code should call [[select(accountDetail:)]] instead: that
+    /// path sets BOTH the destination and the account id atomically,
+    /// so the detail pane actually swaps to `AccountDetailView`.
+    /// `select(account:)` is kept because [[SidebarSelectionTests]]
+    /// (`accountTapRecordsId`, `topLevelTapClearsAccount`) locks the
+    /// "id-only" contract and removing it would break the suite.
     public func select(account id: String) {
+        selectedAccountId = id
+    }
+
+    /// Drives the MY ACCOUNTS drill-down. Sets BOTH the selection
+    /// (`.accountDetail(id:)`) AND the `selectedAccountId` slot so the
+    /// sidebar row paints its active accent while the detail pane
+    /// swaps to `AccountDetailView`. Top-level row taps subsequently
+    /// clear `selectedAccountId` via [[select(_:)]], same as before.
+    public func select(accountDetail id: String) {
+        selection = .accountDetail(id: id)
         selectedAccountId = id
     }
 
