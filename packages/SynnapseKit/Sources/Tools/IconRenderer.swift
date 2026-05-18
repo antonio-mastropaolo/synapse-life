@@ -1,7 +1,6 @@
 #if os(macOS)
 import Foundation
 import CoreGraphics
-import CoreText
 import ImageIO
 import UniformTypeIdentifiers
 
@@ -9,83 +8,61 @@ import UniformTypeIdentifiers
 /// design language lives in code, not in a binary blob a designer has
 /// to re-export.
 ///
-/// Current design — "Phosphor terminal":
-///   • Near-black background, subtly warmed amber, with horizontal
-///     scan-lines drawn at low alpha.
-///   • Bold Menlo capital "S" in phosphor amber with a soft bloom so
-///     the glyph reads as glowing at every size.
-///   • Small amber cursor block in the lower-right corner — the same
-///     terminal-cursor language the LIFE surface uses.
+/// Current design — "Synaptic pulse": a single confident symbol mark.
+/// Two terminal nodes joined by a swept Bezier in warm amber, with a
+/// small firing-spark mark above the curve's midpoint. Deep ink-navy
+/// gradient base. No typography, no scan-lines — the icon reads at
+/// 16pt the same way it reads at 1024pt.
 ///
-/// The previous "three-node synapse" palette is retained as
-/// `Palette.synapseV1` so the alternate look can be re-rendered
-/// without recovering the file from git history. Switching designs
-/// is a one-line change at the call site in `scripts/make-icons.swift`.
+/// Previous designs are retained on `Palette` so a caller (or a
+/// future user pref toggle) can swap back to "phosphor S" or the
+/// "three-node synapse v1" without restoring the file from git.
 public enum IconRenderer {
 
     public struct Palette: Sendable {
-        public let background: CGColor
-        public let scanLine: CGColor
-        public let glyph: CGColor
-        public let glow: CGColor
-        public let cursor: CGColor
+        public let backgroundTop: CGColor
+        public let backgroundBottom: CGColor
+        public let stroke: CGColor
+        public let nodeFill: CGColor
+        public let nodeCore: CGColor
+        public let sparkFill: CGColor
         public let edge: CGColor
 
-        /// Default — phosphor amber on near-black with subtle scan-lines.
-        public static let phosphor = Palette(
-            background: CGColor(red: 0.040, green: 0.025, blue: 0.015, alpha: 1.0),
-            scanLine:   CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.06),
-            glyph:      CGColor(red: 1.000, green: 0.780, blue: 0.300, alpha: 1.0),
-            glow:       CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.85),
-            cursor:     CGColor(red: 1.000, green: 0.740, blue: 0.250, alpha: 0.92),
-            edge:       CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.55)
-        )
-
-        /// Legacy 2026-05-18 three-node synapse mark. Retained so a
-        /// caller (or a future user pref toggle) can ship that design
-        /// instead of the phosphor one without restoring the file.
-        public static let synapseV1 = Palette(
-            background: CGColor(red: 0.040, green: 0.110, blue: 0.165, alpha: 1.0),
-            scanLine:   CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 0.0),
-            glyph:      CGColor(red: 1.000, green: 0.690, blue: 0.220, alpha: 1.0),
-            glow:       CGColor(red: 1.000, green: 0.960, blue: 0.880, alpha: 1.0),
-            cursor:     CGColor(red: 0.270, green: 0.830, blue: 0.890, alpha: 1.0),
-            edge:       CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 0.65)
+        /// Default — synaptic pulse on deep ink-navy.
+        public static let synapticPulse = Palette(
+            backgroundTop:    CGColor(red: 0.040, green: 0.060, blue: 0.110, alpha: 1.0),
+            backgroundBottom: CGColor(red: 0.090, green: 0.130, blue: 0.190, alpha: 1.0),
+            stroke:           CGColor(red: 1.00,  green: 0.74,  blue: 0.22,  alpha: 1.0),
+            nodeFill:         CGColor(red: 1.00,  green: 0.74,  blue: 0.22,  alpha: 1.0),
+            nodeCore:         CGColor(red: 1.00,  green: 0.96,  blue: 0.85,  alpha: 1.0),
+            sparkFill:        CGColor(red: 1.00,  green: 0.96,  blue: 0.85,  alpha: 1.0),
+            edge:             CGColor(red: 1.00,  green: 1.00,  blue: 1.00,  alpha: 0.18)
         )
     }
 
     public enum RenderError: Error, Sendable {
         case contextCreationFailed
-        case fontCreationFailed
+        case gradientCreationFailed
         case imageEncodeFailed
     }
 
-    /// Renders the icon into a PNG at the given side length. Square,
-    /// opaque, no transparency. Geometry is in fractions of the side
-    /// so 16pt and 1024pt read consistently.
-    public static func renderPNG(side: Int, palette: Palette = .phosphor) throws -> Data {
+    public static func renderPNG(side: Int, palette: Palette = .synapticPulse) throws -> Data {
         let s = CGFloat(side)
-        let bytesPerRow = side * 4
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         guard let ctx = CGContext(
             data: nil,
             width: side,
             height: side,
             bitsPerComponent: 8,
-            bytesPerRow: bytesPerRow,
+            bytesPerRow: side * 4,
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
-        ) else {
-            throw RenderError.contextCreationFailed
-        }
+        ) else { throw RenderError.contextCreationFailed }
 
-        // --- Tile + background ---
+        // --- Tile + gradient background ---
         let inset = s * 0.06
         let cornerRadius = s * 0.22
-        let tile = CGRect(
-            x: inset, y: inset,
-            width: s - inset * 2, height: s - inset * 2
-        )
+        let tile = CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
         let tilePath = CGPath(
             roundedRect: tile,
             cornerWidth: cornerRadius,
@@ -95,82 +72,91 @@ public enum IconRenderer {
         ctx.saveGState()
         ctx.addPath(tilePath)
         ctx.clip()
-        ctx.setFillColor(palette.background)
-        ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
-
-        // --- Scan-lines ---
-        ctx.setStrokeColor(palette.scanLine)
-        ctx.setLineWidth(s * 0.004)
-        var y: CGFloat = s * 0.06
-        while y < s {
-            ctx.move(to: CGPoint(x: 0, y: y))
-            ctx.addLine(to: CGPoint(x: s, y: y))
-            ctx.strokePath()
-            y += s * 0.022
-        }
+        guard let grad = CGGradient(
+            colorsSpace: colorSpace,
+            colors: [palette.backgroundTop, palette.backgroundBottom] as CFArray,
+            locations: [0, 1]
+        ) else { throw RenderError.gradientCreationFailed }
+        ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: s), end: .zero, options: [])
         ctx.restoreGState()
 
-        // --- Edge ---
+        // --- Hairline edge ---
         ctx.addPath(tilePath)
         ctx.setStrokeColor(palette.edge)
-        ctx.setLineWidth(s * 0.006)
+        ctx.setLineWidth(s * 0.004)
         ctx.strokePath()
 
-        // --- Glyph "S" with bloom ---
-        let fontSize = s * 0.62
-        let glyphFont: CTFont = {
-            if let f = CTFontCreateWithName("Menlo-Bold" as CFString, fontSize, nil) as CTFont? {
-                return f
-            }
-            return CTFontCreateWithName("Courier-Bold" as CFString, fontSize, nil)
-        }()
-        let attrs: [CFString: Any] = [
-            kCTFontAttributeName: glyphFont,
-            kCTForegroundColorAttributeName: palette.glyph
-        ]
-        guard let attributed = CFAttributedStringCreate(
-            kCFAllocatorDefault,
-            "S" as CFString,
-            attrs as CFDictionary
-        ) else { throw RenderError.fontCreationFailed }
-        let line = CTLineCreateWithAttributedString(attributed)
-        let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-        let drawX = (s - bounds.width) / 2.0 - bounds.origin.x
-        let drawY = (s - bounds.height) / 2.0 - bounds.origin.y
+        // --- Synaptic pulse symbol ---
+        // Two terminal nodes joined by a single cubic Bezier S-curve.
+        // Co-ordinates are fractions of the side so the geometry is
+        // identical at every output resolution.
+        let leftNode  = CGPoint(x: s * 0.26, y: s * 0.36)
+        let rightNode = CGPoint(x: s * 0.74, y: s * 0.64)
+        let ctrl1     = CGPoint(x: s * 0.45, y: s * 0.20)
+        let ctrl2     = CGPoint(x: s * 0.55, y: s * 0.80)
 
-        // Bloom pass
+        let curve = CGMutablePath()
+        curve.move(to: leftNode)
+        curve.addCurve(to: rightNode, control1: ctrl1, control2: ctrl2)
+
+        // Bloom pass — soft amber halo behind the stroke.
         ctx.saveGState()
-        ctx.setShadow(offset: .zero, blur: s * 0.035, color: palette.glow)
-        ctx.textPosition = CGPoint(x: drawX, y: drawY)
-        CTLineDraw(line, ctx)
+        ctx.setShadow(offset: .zero, blur: s * 0.025, color: palette.stroke.copy(alpha: 0.85))
+        ctx.addPath(curve)
+        ctx.setStrokeColor(palette.stroke)
+        ctx.setLineWidth(s * 0.06)
+        ctx.setLineCap(.round)
+        ctx.strokePath()
         ctx.restoreGState()
 
-        // Crisp top pass
-        ctx.textPosition = CGPoint(x: drawX, y: drawY)
-        CTLineDraw(line, ctx)
+        // Crisp top pass.
+        ctx.addPath(curve)
+        ctx.setStrokeColor(palette.stroke)
+        ctx.setLineWidth(s * 0.06)
+        ctx.setLineCap(.round)
+        ctx.strokePath()
 
-        // --- Cursor block ---
-        let cw = s * 0.04
-        ctx.setFillColor(palette.cursor)
-        ctx.fill(CGRect(x: s * 0.78, y: s * 0.20, width: cw, height: cw))
+        // Terminal nodes — amber disc + warm-white core.
+        let nodeR = s * 0.062
+        let coreR = nodeR * 0.45
+        for node in [leftNode, rightNode] {
+            ctx.setFillColor(palette.nodeFill)
+            ctx.fillEllipse(in: CGRect(
+                x: node.x - nodeR, y: node.y - nodeR,
+                width: nodeR * 2, height: nodeR * 2
+            ))
+            ctx.setFillColor(palette.nodeCore)
+            ctx.fillEllipse(in: CGRect(
+                x: node.x - coreR, y: node.y - coreR,
+                width: coreR * 2, height: coreR * 2
+            ))
+        }
+
+        // Firing-spark — vertical mark above the curve midpoint with a
+        // small dot at the tip. Reads as the synapse pulsing.
+        let sparkBase = CGPoint(x: s * 0.50, y: s * 0.54)
+        let sparkTop  = CGPoint(x: s * 0.50, y: s * 0.42)
+        ctx.move(to: sparkBase)
+        ctx.addLine(to: sparkTop)
+        ctx.setStrokeColor(palette.sparkFill)
+        ctx.setLineWidth(s * 0.020)
+        ctx.setLineCap(.round)
+        ctx.strokePath()
+        let tipR = s * 0.018
+        ctx.setFillColor(palette.sparkFill)
+        ctx.fillEllipse(in: CGRect(
+            x: sparkTop.x - tipR, y: sparkTop.y - tipR,
+            width: tipR * 2, height: tipR * 2
+        ))
 
         // --- Encode ---
-        guard let cgImage = ctx.makeImage() else {
-            throw RenderError.imageEncodeFailed
-        }
+        guard let cgImage = ctx.makeImage() else { throw RenderError.imageEncodeFailed }
         let data = NSMutableData()
         guard let dest = CGImageDestinationCreateWithData(
-            data as CFMutableData,
-            UTType.png.identifier as CFString,
-            1,
-            nil
-        ) else {
-            throw RenderError.imageEncodeFailed
-        }
+            data as CFMutableData, UTType.png.identifier as CFString, 1, nil
+        ) else { throw RenderError.imageEncodeFailed }
         CGImageDestinationAddImage(dest, cgImage, nil)
-        guard CGImageDestinationFinalize(dest) else {
-            throw RenderError.imageEncodeFailed
-        }
+        guard CGImageDestinationFinalize(dest) else { throw RenderError.imageEncodeFailed }
         return data as Data
     }
 }

@@ -24,11 +24,11 @@ import UniformTypeIdentifiers
 
 // Inline copy of IconRenderer so the script can run without a SwiftPM
 // `swift run` step. Mirrors `packages/SynnapseKit/Sources/Tools/IconRenderer.swift`
-// (Palette.phosphor). Keep the two in sync; the canonical version is
-// in the package.
+// (Palette.synapticPulse). Keep the two in sync; the canonical version
+// is in the package.
 enum IconRenderError: Error {
     case contextCreationFailed
-    case fontCreationFailed
+    case gradientCreationFailed
     case imageEncodeFailed
 }
 
@@ -45,72 +45,84 @@ func renderIconPNG(side: Int) throws -> Data {
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
     ) else { throw IconRenderError.contextCreationFailed }
 
-    // Phosphor palette (mirrors IconRenderer.Palette.phosphor)
-    let background = CGColor(red: 0.040, green: 0.025, blue: 0.015, alpha: 1.0)
-    let scanLine   = CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.06)
-    let glyph      = CGColor(red: 1.000, green: 0.780, blue: 0.300, alpha: 1.0)
-    let glow       = CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.85)
-    let cursor     = CGColor(red: 1.000, green: 0.740, blue: 0.250, alpha: 0.92)
-    let edge       = CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.55)
+    // Palette — synaptic pulse on deep ink-navy.
+    let bgTop    = CGColor(red: 0.040, green: 0.060, blue: 0.110, alpha: 1.0)
+    let bgBottom = CGColor(red: 0.090, green: 0.130, blue: 0.190, alpha: 1.0)
+    let stroke   = CGColor(red: 1.00,  green: 0.74,  blue: 0.22,  alpha: 1.0)
+    let nodeCore = CGColor(red: 1.00,  green: 0.96,  blue: 0.85,  alpha: 1.0)
+    let edge     = CGColor(red: 1.00,  green: 1.00,  blue: 1.00,  alpha: 0.18)
 
-    // Rounded-square tile
+    // Tile + gradient
     let inset = s * 0.06
     let cornerRadius = s * 0.22
     let tile = CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
     let tilePath = CGPath(roundedRect: tile, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
-
     ctx.saveGState()
     ctx.addPath(tilePath)
     ctx.clip()
-    ctx.setFillColor(background)
-    ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
-
-    // Scan-lines
-    ctx.setStrokeColor(scanLine)
-    ctx.setLineWidth(s * 0.004)
-    var y: CGFloat = s * 0.06
-    while y < s {
-        ctx.move(to: CGPoint(x: 0, y: y))
-        ctx.addLine(to: CGPoint(x: s, y: y))
-        ctx.strokePath()
-        y += s * 0.022
-    }
+    guard let grad = CGGradient(
+        colorsSpace: colorSpace,
+        colors: [bgTop, bgBottom] as CFArray,
+        locations: [0, 1]
+    ) else { throw IconRenderError.gradientCreationFailed }
+    ctx.drawLinearGradient(grad, start: CGPoint(x: 0, y: s), end: .zero, options: [])
     ctx.restoreGState()
 
-    // Edge accent
+    // Hairline edge
     ctx.addPath(tilePath)
     ctx.setStrokeColor(edge)
-    ctx.setLineWidth(s * 0.006)
+    ctx.setLineWidth(s * 0.004)
     ctx.strokePath()
 
-    // Bold "S" with bloom
-    let fontSize = s * 0.62
-    let glyphFont = CTFontCreateWithName("Menlo-Bold" as CFString, fontSize, nil)
-    let attrs: [CFString: Any] = [
-        kCTFontAttributeName: glyphFont,
-        kCTForegroundColorAttributeName: glyph
-    ]
-    guard let attributed = CFAttributedStringCreate(
-        kCFAllocatorDefault, "S" as CFString, attrs as CFDictionary
-    ) else { throw IconRenderError.fontCreationFailed }
-    let line = CTLineCreateWithAttributedString(attributed)
-    let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-    let drawX = (s - bounds.width) / 2.0 - bounds.origin.x
-    let drawY = (s - bounds.height) / 2.0 - bounds.origin.y
+    // Synaptic pulse — two nodes joined by a swept Bezier
+    let leftNode  = CGPoint(x: s * 0.26, y: s * 0.36)
+    let rightNode = CGPoint(x: s * 0.74, y: s * 0.64)
+    let ctrl1     = CGPoint(x: s * 0.45, y: s * 0.20)
+    let ctrl2     = CGPoint(x: s * 0.55, y: s * 0.80)
 
+    let curve = CGMutablePath()
+    curve.move(to: leftNode)
+    curve.addCurve(to: rightNode, control1: ctrl1, control2: ctrl2)
+
+    // Bloom pass
     ctx.saveGState()
-    ctx.setShadow(offset: .zero, blur: s * 0.035, color: glow)
-    ctx.textPosition = CGPoint(x: drawX, y: drawY)
-    CTLineDraw(line, ctx)
+    ctx.setShadow(offset: .zero, blur: s * 0.025, color: stroke.copy(alpha: 0.85))
+    ctx.addPath(curve)
+    ctx.setStrokeColor(stroke)
+    ctx.setLineWidth(s * 0.06)
+    ctx.setLineCap(.round)
+    ctx.strokePath()
     ctx.restoreGState()
 
-    ctx.textPosition = CGPoint(x: drawX, y: drawY)
-    CTLineDraw(line, ctx)
+    // Crisp top pass
+    ctx.addPath(curve)
+    ctx.setStrokeColor(stroke)
+    ctx.setLineWidth(s * 0.06)
+    ctx.setLineCap(.round)
+    ctx.strokePath()
 
-    // Cursor block
-    let cw = s * 0.04
-    ctx.setFillColor(cursor)
-    ctx.fill(CGRect(x: s * 0.78, y: s * 0.20, width: cw, height: cw))
+    // Terminal nodes
+    let nodeR = s * 0.062
+    let coreR = nodeR * 0.45
+    for node in [leftNode, rightNode] {
+        ctx.setFillColor(stroke)
+        ctx.fillEllipse(in: CGRect(x: node.x - nodeR, y: node.y - nodeR, width: nodeR * 2, height: nodeR * 2))
+        ctx.setFillColor(nodeCore)
+        ctx.fillEllipse(in: CGRect(x: node.x - coreR, y: node.y - coreR, width: coreR * 2, height: coreR * 2))
+    }
+
+    // Firing spark + tip
+    let sparkBase = CGPoint(x: s * 0.50, y: s * 0.54)
+    let sparkTop  = CGPoint(x: s * 0.50, y: s * 0.42)
+    ctx.move(to: sparkBase)
+    ctx.addLine(to: sparkTop)
+    ctx.setStrokeColor(nodeCore)
+    ctx.setLineWidth(s * 0.020)
+    ctx.setLineCap(.round)
+    ctx.strokePath()
+    let tipR = s * 0.018
+    ctx.setFillColor(nodeCore)
+    ctx.fillEllipse(in: CGRect(x: sparkTop.x - tipR, y: sparkTop.y - tipR, width: tipR * 2, height: tipR * 2))
 
     guard let cgImage = ctx.makeImage() else {
         throw IconRenderError.imageEncodeFailed
