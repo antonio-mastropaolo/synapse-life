@@ -26,7 +26,7 @@ public enum RootDestination: Sendable, Equatable, Hashable {
     case investments
     case categories
     case recurrings
-    case subscriptions
+    case memberships
 
     // MARK: - Surviving Synapse-only rows
     case life
@@ -93,7 +93,7 @@ extension RootDestination {
         .investments,
         .categories,
         .recurrings,
-        .subscriptions,
+        .memberships,
         .life,
         .advisors,
         .digest,

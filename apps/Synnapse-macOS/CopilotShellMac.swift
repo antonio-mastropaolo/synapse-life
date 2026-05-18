@@ -249,7 +249,7 @@ private struct CopilotSidebar: View {
         .init(destination: .investments,  label: "Investments",  icon: "chart.pie"),
         .init(destination: .categories,   label: "Categories",   icon: "square.grid.3x3"),
         .init(destination: .recurrings,   label: "Recurrings",   icon: "arrow.triangle.2.circlepath"),
-        .init(destination: .subscriptions, label: "Subscriptions", icon: "rectangle.stack"),
+        .init(destination: .memberships, label: "Memberships", icon: "square.stack.3d.up.fill"),
         .init(destination: .life,         label: "Life",         icon: "terminal"),
         .init(destination: .advisors,     label: "Advisors",     icon: "person.bubble")
     ]
@@ -713,7 +713,8 @@ private struct CopilotDetailPane: View {
                     viewModel: dashboard,
                     openCashFlow: { routing.select(.cashFlow) },
                     openGoals: { routing.select(.goals) },
-                    isDemoData: showsDemoFooter
+                    isDemoData: showsDemoFooter,
+                    goalsStore: goals
                 )
                 .identity(.cockpitInstrument)
                 .id("dashboard")
@@ -786,10 +787,13 @@ private struct CopilotDetailPane: View {
                     .identity(.cockpitInstrument)
                     .id("recurrings")
 
-            case .subscriptions:
+            case .memberships:
+                // MembershipsView is wired in once the Memberships
+                // module lands. Until then the existing Subscriptions
+                // surface stands in so the route doesn't crash.
                 SubscriptionsView(viewModel: subscriptions)
                     .identity(.cockpitInstrument)
-                .id("subscriptions")
+                .id("memberships")
 
             // MY ACCOUNTS drill-down. The sidebar still routes account
             // taps through the id-only `select(account:)` slot (the

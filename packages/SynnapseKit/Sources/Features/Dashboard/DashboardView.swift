@@ -29,6 +29,7 @@ public struct DashboardView: View {
     private var openAnomalyExplainer: ((String) -> Void)?
     private var openConnectFlow: (() -> Void)?
     private var isDemoData: Bool
+    private var goalsStore: GoalsStore?
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
@@ -43,7 +44,8 @@ public struct DashboardView: View {
         openNextBill: (() -> Void)? = nil,
         openAnomalyExplainer: ((String) -> Void)? = nil,
         openConnectFlow: (() -> Void)? = nil,
-        isDemoData: Bool = false
+        isDemoData: Bool = false,
+        goalsStore: GoalsStore? = nil
     ) {
         self.viewModel = viewModel
         self.iconResolver = iconResolver
@@ -54,6 +56,7 @@ public struct DashboardView: View {
         self.openAnomalyExplainer = openAnomalyExplainer
         self.openConnectFlow = openConnectFlow
         self.isDemoData = isDemoData
+        self.goalsStore = goalsStore
     }
 
     public var body: some View {
@@ -104,6 +107,7 @@ public struct DashboardView: View {
                 widgetState: viewModel.widgetState,
                 goalsCurrency: defaultCurrency,
                 isDemoData: isDemoData,
+                goalsStore: goalsStore,
                 openGoals: openGoals,
                 openAnomalyExplainer: openAnomalyExplainer
             )

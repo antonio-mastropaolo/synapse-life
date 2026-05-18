@@ -24,6 +24,11 @@ struct DashboardInspectorView: View {
     /// shell's `showsDemoFooter` boolean.
     var isDemoData: Bool = false
 
+    /// Optional GoalsStore — when supplied, a GoalsBanner stacks at
+    /// the top of the inspector showing up to 3 active goals. Tap
+    /// routes via `openGoals`.
+    var goalsStore: GoalsStore?
+
     var openGoals: (() -> Void)?
     var openAnomalyExplainer: ((String) -> Void)?
 
@@ -34,6 +39,11 @@ struct DashboardInspectorView: View {
         let tokens = theme.tokens(for: scheme)
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                if let goalsStore {
+                    GoalsBanner(store: goalsStore) {
+                        openGoals?()
+                    }
+                }
                 goalsCard(tokens: tokens)
                 // Dense AI panel replaces the previous trio of sparse
                 // cards (single-figure Spending Pulse, single-sentence
