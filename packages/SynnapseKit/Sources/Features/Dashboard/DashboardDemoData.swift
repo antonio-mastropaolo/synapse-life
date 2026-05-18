@@ -41,10 +41,10 @@ public enum DashboardDemoData {
 
         public var displayName: String {
             switch self {
-            case .discoverCC:       return "Discover it Card"
-            case .platinumVisa:     return "Platinum Visa"
-            case .advPlusBanking:   return "Adv Plus Banking"
-            case .payPal:           return "PayPal"
+            case .discoverCC:       return "Sample Credit Card"
+            case .platinumVisa:     return "Sample Travel Visa"
+            case .advPlusBanking:   return "Sample Checking"
+            case .payPal:           return "Sample Wallet"
             }
         }
     }
@@ -110,167 +110,173 @@ public enum DashboardDemoData {
             )
         }
 
-        // --- May 15th (today) — 6 rows ---------------------------------
+        // Every merchant below is an obviously-placeholder string
+        // ("Sample Cafe", "Demo Subscription Service", etc). The app
+        // is in demo mode until the user connects a real account, and
+        // we deliberately avoid real brand names so nothing in the UI
+        // can be mistaken for a real transaction.
+
+        // --- Today — 6 rows ---------------------------------------------
         add(daysAgo: 0, hour: 17, minute: 42,
-            merchant: "PANERA BREAD",
-            description: "Purchase Panera Bread #1042",
+            merchant: "Sample Cafe",
+            description: "Sample purchase · cafe",
             amount: -14.65, category: "RESTAURANTS",
             account: .discoverCC)
         add(daysAgo: 0, hour: 15, minute: 10,
-            merchant: "ANTHROPIC",
-            description: "Recurring · Claude Pro",
+            merchant: "Demo AI Subscription",
+            description: "Sample recurring · AI service",
             amount: -20.00, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
         add(daysAgo: 0, hour: 12, minute: 30,
-            merchant: "AFFIRM * PAY R3H",
-            description: "Affirm payment · order R3H",
+            merchant: "Sample BNPL Payment",
+            description: "Sample buy-now-pay-later payment",
             amount: -125.78, category: "LOANS",
             account: .advPlusBanking)
         add(daysAgo: 0, hour: 11, minute: 5,
-            merchant: "WHOLE FOODS MKT",
-            description: "Purchase Whole Foods #10412",
+            merchant: "Sample Grocery",
+            description: "Sample purchase · grocery",
             amount: -86.42, category: "GROCERIES",
             account: .discoverCC)
         add(daysAgo: 0, hour: 9, minute: 50,
-            merchant: "STARBUCKS",
-            description: "Purchase Starbucks #2310",
+            merchant: "Sample Coffee Shop",
+            description: "Sample purchase · coffee shop",
             amount: -6.75, category: "RESTAURANTS",
             account: .discoverCC, pending: true)
         add(daysAgo: 0, hour: 8, minute: 22,
-            merchant: "NETFLIX.COM",
-            description: "Recurring · Netflix Premium",
+            merchant: "Sample Streaming Service",
+            description: "Sample recurring · streaming",
             amount: -22.99, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
 
-        // --- May 14th — 5 rows ----------------------------------------
+        // --- Yesterday — 5 rows -----------------------------------------
         add(daysAgo: 1, hour: 20, minute: 4,
-            merchant: "CHIPOTLE",
-            description: "Purchase Chipotle #882",
+            merchant: "Sample Fast Casual",
+            description: "Sample purchase · fast casual",
             amount: -16.30, category: "RESTAURANTS",
             account: .discoverCC)
         add(daysAgo: 1, hour: 17, minute: 33,
-            merchant: "AMAZON.COM",
-            description: "Order 112-3490188-001",
+            merchant: "Sample Online Marketplace",
+            description: "Sample order",
             amount: -64.20, category: "SHOPPING",
             account: .platinumVisa)
         add(daysAgo: 1, hour: 14, minute: 12,
-            merchant: "AFFIRM * NETO",
-            description: "Affirm payment · order NETO",
+            merchant: "Sample BNPL Payment",
+            description: "Sample buy-now-pay-later payment",
             amount: -57.40, category: "LOANS",
             account: .advPlusBanking)
         add(daysAgo: 1, hour: 10, minute: 0,
-            merchant: "ACH CREDIT WILLIAM & MARY",
-            description: "ACH CREDIT · WILLIAM & MARY PAYROLL",
+            merchant: "Sample Payroll Deposit",
+            description: "Sample ACH credit · employer payroll",
             amount: 3460.82, category: "INCOME",
             account: .advPlusBanking)
         add(daysAgo: 1, hour: 8, minute: 45,
-            merchant: "SPOTIFY USA",
-            description: "Recurring · Spotify Premium Family",
+            merchant: "Sample Music Subscription",
+            description: "Sample recurring · music streaming",
             amount: -16.99, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
 
-        // --- May 13th — 4 rows ----------------------------------------
+        // --- 2 days ago — 4 rows ----------------------------------------
         add(daysAgo: 2, hour: 19, minute: 1,
-            merchant: "UBER TRIP",
-            description: "Uber · 4.2 mi · 12 min",
+            merchant: "Sample Rideshare",
+            description: "Sample ride · short trip",
             amount: -18.92, category: "TRANSPORT",
             account: .discoverCC)
         add(daysAgo: 2, hour: 15, minute: 28,
-            merchant: "NIKE.COM",
-            description: "Order #N210912",
+            merchant: "Sample Apparel Brand",
+            description: "Sample online order",
             amount: -129.50, category: "CLOTHING",
             account: .platinumVisa)
         add(daysAgo: 2, hour: 11, minute: 18,
-            merchant: "TRADER JOE'S",
-            description: "Purchase TJ's #455",
+            merchant: "Sample Specialty Grocer",
+            description: "Sample purchase · grocery",
             amount: -42.10, category: "GROCERIES",
             account: .advPlusBanking)
         add(daysAgo: 2, hour: 9, minute: 0,
-            merchant: "OPENAI",
-            description: "Recurring · ChatGPT Plus",
+            merchant: "Demo AI Subscription 2",
+            description: "Sample recurring · AI service",
             amount: -20.00, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
 
-        // --- May 12th — 4 rows ----------------------------------------
+        // --- 3 days ago — 4 rows ----------------------------------------
         add(daysAgo: 3, hour: 21, minute: 50,
-            merchant: "AMC THEATRES",
-            description: "AMC #2381 · 2 adult tickets",
+            merchant: "Sample Cinema",
+            description: "Sample purchase · movie tickets",
             amount: -28.40, category: "ENTERTAINMENT",
             account: .discoverCC)
         add(daysAgo: 3, hour: 16, minute: 22,
-            merchant: "ZELLE TO ANTONIO MASTROPAOLO",
-            description: "Zelle payment",
+            merchant: "Sample P2P Transfer",
+            description: "Sample peer-to-peer payment",
             amount: -200.00, category: "TRANSFER",
             account: .advPlusBanking)
         add(daysAgo: 3, hour: 12, minute: 10,
-            merchant: "GOLDS GYM",
-            description: "Recurring · monthly membership",
+            merchant: "Sample Gym Membership",
+            description: "Sample recurring · monthly membership",
             amount: -39.99, category: "PERSONAL CARE",
             account: .platinumVisa)
         add(daysAgo: 3, hour: 8, minute: 35,
-            merchant: "SHAKE SHACK",
-            description: "Purchase Shake Shack #21",
+            merchant: "Sample Burger Place",
+            description: "Sample purchase · burger",
             amount: -19.85, category: "RESTAURANTS",
             account: .discoverCC)
 
-        // --- May 11th — 4 rows ----------------------------------------
+        // --- 4 days ago — 4 rows ----------------------------------------
         add(daysAgo: 4, hour: 18, minute: 12,
-            merchant: "KLARNA *KLARN",
-            description: "Klarna · order 28201",
+            merchant: "Sample Installment Loan",
+            description: "Sample installment payment",
             amount: -45.00, category: "LOANS",
             account: .advPlusBanking)
         add(daysAgo: 4, hour: 14, minute: 4,
-            merchant: "APPLE.COM/BILL",
-            description: "Recurring · iCloud+ 2TB",
+            merchant: "Sample Cloud Storage",
+            description: "Sample recurring · cloud storage",
             amount: -9.99, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
         add(daysAgo: 4, hour: 11, minute: 56,
-            merchant: "ZARA",
-            description: "Purchase Zara #1102",
+            merchant: "Sample Apparel Brand 2",
+            description: "Sample purchase · apparel",
             amount: -76.30, category: "CLOTHING",
             account: .discoverCC)
         add(daysAgo: 4, hour: 8, minute: 0,
-            merchant: "KROGER",
-            description: "Purchase Kroger #882",
+            merchant: "Sample Supermarket",
+            description: "Sample purchase · grocery",
             amount: -94.18, category: "GROCERIES",
             account: .advPlusBanking)
 
-        // --- May 9th (skip May 10) — 3 rows ---------------------------
+        // --- 6 days ago — 3 rows ----------------------------------------
         add(daysAgo: 6, hour: 19, minute: 30,
-            merchant: "SIRIUSXM",
-            description: "Recurring · SiriusXM",
+            merchant: "Sample Audio Subscription",
+            description: "Sample recurring · audio service",
             amount: -16.99, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
         add(daysAgo: 6, hour: 13, minute: 45,
-            merchant: "VENMO CASHOUT",
-            description: "Venmo · cash-out to bank",
+            merchant: "Sample Wallet Cash-Out",
+            description: "Sample transfer · wallet to bank",
             amount: 120.00, category: "TRANSFER",
             account: .payPal)
         add(daysAgo: 6, hour: 9, minute: 22,
-            merchant: "SUPERCUTS",
-            description: "Purchase Supercuts #91",
+            merchant: "Sample Hair Salon",
+            description: "Sample purchase · haircut",
             amount: -28.00, category: "PERSONAL CARE",
             account: .discoverCC)
 
-        // --- May 8th — 4 rows -----------------------------------------
+        // --- 7 days ago — 4 rows ----------------------------------------
         add(daysAgo: 7, hour: 20, minute: 8,
-            merchant: "NYTIMES",
-            description: "Recurring · NYT Cooking + News",
+            merchant: "Sample News Subscription",
+            description: "Sample recurring · news + cooking",
             amount: -25.00, category: "SUBSCRIPTIONS",
             account: .platinumVisa)
         add(daysAgo: 7, hour: 15, minute: 4,
-            merchant: "STEAM PURCHASE",
-            description: "Steam · 1 item",
+            merchant: "Sample Game Store",
+            description: "Sample purchase · digital game",
             amount: -29.99, category: "ENTERTAINMENT",
             account: .discoverCC)
         add(daysAgo: 7, hour: 12, minute: 22,
-            merchant: "ATM FEE",
-            description: "Non-network ATM fee",
+            merchant: "Sample ATM Fee",
+            description: "Sample fee · out-of-network ATM",
             amount: -3.50, category: "FEES",
             account: .advPlusBanking)
         add(daysAgo: 7, hour: 10, minute: 30,
-            merchant: "WEGMANS",
-            description: "Purchase Wegmans #102",
+            merchant: "Sample Supermarket 2",
+            description: "Sample purchase · grocery",
             amount: -58.92, category: "GROCERIES",
             account: .advPlusBanking)
 
@@ -279,20 +285,20 @@ public enum DashboardDemoData {
         // sections; they exist so the footer "N of TOTAL" reads
         // realistically and tests can verify the filter.
         add(daysAgo: 8, hour: 12, minute: 0,
-            merchant: "ADIDAS",
-            description: "Purchase Adidas #312",
+            merchant: "Sample Athletic Brand",
+            description: "Sample purchase · athletic apparel",
             amount: -84.00, category: "CLOTHING",
             account: .discoverCC,
             reviewed: true)
         add(daysAgo: 9, hour: 12, minute: 0,
-            merchant: "UNIQLO",
-            description: "Purchase Uniqlo #44",
+            merchant: "Sample Casual Apparel",
+            description: "Sample purchase · casual apparel",
             amount: -51.20, category: "CLOTHING",
             account: .platinumVisa,
             reviewed: true)
         add(daysAgo: 9, hour: 9, minute: 0,
-            merchant: "BREAD FINANCIAL",
-            description: "Bread Financial payment",
+            merchant: "Sample Credit Card Payment",
+            description: "Sample credit-card payment",
             amount: -110.00, category: "LOANS",
             account: .advPlusBanking,
             reviewed: true)

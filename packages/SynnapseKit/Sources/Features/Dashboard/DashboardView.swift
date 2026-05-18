@@ -27,6 +27,8 @@ public struct DashboardView: View {
     private var openTopCategory: (() -> Void)?
     private var openNextBill: (() -> Void)?
     private var openAnomalyExplainer: ((String) -> Void)?
+    private var openConnectFlow: (() -> Void)?
+    private var isDemoData: Bool
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
@@ -39,7 +41,9 @@ public struct DashboardView: View {
         openGoals: (() -> Void)? = nil,
         openTopCategory: (() -> Void)? = nil,
         openNextBill: (() -> Void)? = nil,
-        openAnomalyExplainer: ((String) -> Void)? = nil
+        openAnomalyExplainer: ((String) -> Void)? = nil,
+        openConnectFlow: (() -> Void)? = nil,
+        isDemoData: Bool = false
     ) {
         self.viewModel = viewModel
         self.iconResolver = iconResolver
@@ -48,6 +52,8 @@ public struct DashboardView: View {
         self.openTopCategory = openTopCategory
         self.openNextBill = openNextBill
         self.openAnomalyExplainer = openAnomalyExplainer
+        self.openConnectFlow = openConnectFlow
+        self.isDemoData = isDemoData
     }
 
     public var body: some View {
@@ -66,6 +72,12 @@ public struct DashboardView: View {
         return HStack(spacing: 0) {
             VStack(spacing: 0) {
                 header(tokens: tokens)
+                if isDemoData {
+                    DashboardDemoBanner(
+                        tokens: tokens,
+                        onConnect: openConnectFlow
+                    )
+                }
                 DashboardHeroRow(
                     widgetState: viewModel.widgetState,
                     currency: defaultCurrency,
@@ -107,6 +119,12 @@ public struct DashboardView: View {
         let tokens = theme.tokens(for: scheme)
         return VStack(spacing: 0) {
             header(tokens: tokens)
+            if isDemoData {
+                DashboardDemoBanner(
+                    tokens: tokens,
+                    onConnect: openConnectFlow
+                )
+            }
             ScrollView(.horizontal, showsIndicators: false) {
                 DashboardHeroRow(
                     widgetState: viewModel.widgetState,
@@ -324,17 +342,17 @@ public enum DashboardPreviewFactory {
         let five     = calendar.date(byAdding: .day, value: 5, to: today)!
         return [
             DashboardWidgetReducer.Upcoming(
-                merchant: "NETFLIX",
+                merchant: "Sample Streaming Service",
                 amount: Decimal(string: "22.99")!,
                 dueDate: tomorrow
             ),
             DashboardWidgetReducer.Upcoming(
-                merchant: "SPOTIFY",
+                merchant: "Sample Music Subscription",
                 amount: Decimal(string: "16.99")!,
                 dueDate: three
             ),
             DashboardWidgetReducer.Upcoming(
-                merchant: "ICLOUD+",
+                merchant: "Sample Cloud Storage",
                 amount: Decimal(string: "9.99")!,
                 dueDate: five
             )
@@ -342,9 +360,10 @@ public enum DashboardPreviewFactory {
     }
 
     /// Default AI narration so the inspector card paints in the demo.
+    /// Phrased generically so it never reads as real spending analysis.
     public static let demoAINarration = DashboardWidgetReducer.AINarration(
-        sentence: "You're tracking $42 below typical for a Friday. Restaurants are the biggest cluster this week.",
-        cta: "Open Restaurants"
+        sentence: "Sample narration — your real spending insights will appear here once accounts are connected.",
+        cta: "Connect accounts"
     )
 
     /// Builds a fully-seeded dashboard with the canonical demo data.

@@ -33,45 +33,50 @@ public enum CopilotTokens {
         public let badgeForeground:    ColorToken
     }
 
+    // 2026-05-18 refresh: moved off the flat gray-black palette to a
+    // teal-tinted three-tier hierarchy (content / sidebar / elevated)
+    // that pairs with the new app-icon gradient. The brand accent
+    // shifts toward the warmer hub-amber so the icon glyph and the
+    // in-app brand chip read as the same hue.
     public static let shell = Shell(
-        // ~#0E0E10 — slightly warmer than pure black so the eye reads it
-        // as a panel, not a void. Sits beneath the content surfaces.
-        contentBackground:   ColorToken(0.055, 0.055, 0.063),
+        // ~#0A1620 — deep teal-tinted near-black. Reads as the room
+        // floor, not pure void. The blue undertone differentiates the
+        // app from generic "dev console dark" and gives the warm
+        // accent more visual snap.
+        contentBackground:   ColorToken(0.040, 0.085, 0.125),
 
-        // ~#17171A — about ~0.04 luminance brighter than the content so
-        // the sidebar reads as the foreground panel without flipping
-        // the polarity that makes dark mode comfortable.
-        sidebarBackground:   ColorToken(0.090, 0.090, 0.100),
+        // ~#13202C — sidebar sits ~0.05 luminance above the content.
+        // Matches the top of the app-icon gradient.
+        sidebarBackground:   ColorToken(0.075, 0.125, 0.170),
 
-        // Near-white for body text, dimmed for section headers/footer.
-        foregroundPrimary:   ColorToken(0.92, 0.92, 0.94),
-        foregroundSecondary: ColorToken(0.62, 0.62, 0.68),
+        // Near-white for body text; cooler dimmed secondary so it
+        // recedes into the teal base rather than clashing.
+        foregroundPrimary:   ColorToken(0.94, 0.95, 0.97),
+        foregroundSecondary: ColorToken(0.58, 0.66, 0.74),
 
-        // Copilot's brand mark reads as a warm muted yellow. We pick a
-        // value that clears 3.0:1 on both surfaces and does not bleed
-        // toward the gain-green of the finance accent.
-        brandAccent:         ColorToken(0.95, 0.78, 0.30),
+        // Brand accent matched to the icon hub (#FFB038 → 1.0, 0.69,
+        // 0.22). Clears 4.5:1 on both surfaces, doesn't bleed into
+        // the gain-green finance accent.
+        brandAccent:         ColorToken(1.000, 0.690, 0.220),
 
-        // Subtle tint behind the active row. Sits at ~0.06 luminance
-        // above the sidebar so the eye picks the row out without the
-        // background overpowering the label.
-        activeRowBackground: ColorToken(0.145, 0.145, 0.160),
+        // Active-row tint with a hint of the hub-amber bleed so the
+        // selected sidebar row pulls the eye like a low-energy glow
+        // rather than a flat gray block.
+        activeRowBackground: ColorToken(0.135, 0.180, 0.225),
 
-        // 1pt rules between the sidebar and the content area, plus the
-        // footer separator. Reads as a hairline at every viewing
-        // distance because the sRGB delta is intentionally small.
-        separator:           ColorToken(1.0, 1.0, 1.0, opacity: 0.08),
+        // Subtle separator — same hairline alpha, neutral hue so it
+        // doesn't compete with the colored tints around it.
+        separator:           ColorToken(1.0, 1.0, 1.0, opacity: 0.09),
 
-        // Search field fill — one step lighter than the sidebar so the
-        // input affordance reads even at idle.
-        searchFieldFill:     ColorToken(0.130, 0.130, 0.145),
+        // Search field one notch above the sidebar, slightly cooler
+        // so the input affordance reads at idle without painting a
+        // hard border.
+        searchFieldFill:     ColorToken(0.110, 0.165, 0.215),
 
-        // Transactions badge fill ("3204" in the reference). A muted
-        // off-white pill against the dark sidebar; we paint the count
-        // in the same primary fg so the contrast is the same as the
-        // row label.
-        badgeFill:           ColorToken(1.0, 1.0, 1.0, opacity: 0.10),
-        badgeForeground:     ColorToken(0.85, 0.85, 0.88)
+        // Transaction-count badge. Stays neutral so the categorical
+        // pill colors don't have to compete with it.
+        badgeFill:           ColorToken(1.0, 1.0, 1.0, opacity: 0.11),
+        badgeForeground:     ColorToken(0.88, 0.91, 0.94)
     )
 }
 

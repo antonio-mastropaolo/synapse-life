@@ -27,59 +27,110 @@ import UniformTypeIdentifiers
 // Keep the two in sync; the canonical version is in the package.
 enum IconRenderError: Error {
     case contextCreationFailed
-    case fontCreationFailed
+    case gradientCreationFailed
     case imageEncodeFailed
 }
 
 func renderIconPNG(side: Int) throws -> Data {
-    let width = side
-    let height = side
+    let s = CGFloat(side)
     let colorSpace = CGColorSpaceCreateDeviceRGB()
     guard let ctx = CGContext(
         data: nil,
-        width: width,
-        height: height,
+        width: side,
+        height: side,
         bitsPerComponent: 8,
-        bytesPerRow: width * 4,
+        bytesPerRow: side * 4,
         space: colorSpace,
         bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
     ) else { throw IconRenderError.contextCreationFailed }
 
-    let background = CGColor(red: 0.00, green: 0.00, blue: 0.00, alpha: 1.0)
-    let amber = CGColor(red: 1.00, green: 0.65, blue: 0.10, alpha: 1.0)
+    // Palette (mirrors IconRenderer.Palette.synapse)
+    let bgTop    = CGColor(red: 0.040, green: 0.110, blue: 0.165, alpha: 1.0)
+    let bgBottom = CGColor(red: 0.085, green: 0.215, blue: 0.290, alpha: 1.0)
+    let hubFill  = CGColor(red: 1.000, green: 0.690, blue: 0.220, alpha: 1.0)
+    let hubCore  = CGColor(red: 1.000, green: 0.960, blue: 0.880, alpha: 1.0)
+    let satA     = CGColor(red: 0.270, green: 0.830, blue: 0.890, alpha: 1.0)
+    let satB     = CGColor(red: 0.945, green: 0.330, blue: 0.560, alpha: 1.0)
+    let connector = CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 0.65)
 
-    ctx.setFillColor(background)
-    ctx.fill(CGRect(x: 0, y: 0, width: width, height: height))
-
-    let inset = CGFloat(side) * 0.06
-    let cornerRadius = CGFloat(side) * 0.18
-    let rect = CGRect(
-        x: inset, y: inset,
-        width: CGFloat(width) - inset * 2,
-        height: CGFloat(height) - inset * 2
+    // Rounded-square tile + clipped gradient fill
+    let inset = s * 0.06
+    let cornerRadius = s * 0.22
+    let tile = CGRect(x: inset, y: inset, width: s - inset * 2, height: s - inset * 2)
+    let tilePath = CGPath(
+        roundedRect: tile,
+        cornerWidth: cornerRadius,
+        cornerHeight: cornerRadius,
+        transform: nil
     )
-    let path = CGPath(roundedRect: rect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
-    ctx.addPath(path)
-    ctx.setStrokeColor(amber)
-    ctx.setLineWidth(CGFloat(side) * 0.012)
+
+    ctx.saveGState()
+    ctx.addPath(tilePath)
+    ctx.clip()
+    guard let gradient = CGGradient(
+        colorsSpace: colorSpace,
+        colors: [bgTop, bgBottom] as CFArray,
+        locations: [0.0, 1.0]
+    ) else { throw IconRenderError.gradientCreationFailed }
+    ctx.drawLinearGradient(
+        gradient,
+        start: CGPoint(x: 0, y: s),
+        end: CGPoint(x: 0, y: 0),
+        options: []
+    )
+    ctx.restoreGState()
+
+    // Hairline edge
+    ctx.addPath(tilePath)
+    ctx.setStrokeColor(connector)
+    ctx.setLineWidth(s * 0.004)
     ctx.strokePath()
 
-    let fontSize = CGFloat(side) * 0.62
-    let glyphFont = CTFontCreateWithName("Menlo-Bold" as CFString, fontSize, nil)
-    let attrs: [CFString: Any] = [
-        kCTFontAttributeName: glyphFont,
-        kCTForegroundColorAttributeName: amber
-    ]
-    guard let attributed = CFAttributedStringCreate(
-        kCFAllocatorDefault, "S" as CFString, attrs as CFDictionary
-    ) else { throw IconRenderError.fontCreationFailed }
+    // Three-node synapse geometry
+    let cx = s / 2
+    let hubRadius = s * 0.13
+    let satRadius = s * 0.07
+    let hubCenter = CGPoint(x: cx, y: s * 0.62)
+    let satAP = CGPoint(x: s * 0.30, y: s * 0.30)
+    let satBP = CGPoint(x: s * 0.70, y: s * 0.30)
 
-    let line = CTLineCreateWithAttributedString(attributed)
-    let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
-    let drawX = (CGFloat(width) - bounds.width) / 2.0 - bounds.origin.x
-    let drawY = (CGFloat(height) - bounds.height) / 2.0 - bounds.origin.y
-    ctx.textPosition = CGPoint(x: drawX, y: drawY)
-    CTLineDraw(line, ctx)
+    // Connectors
+    ctx.setLineCap(.round)
+    ctx.setStrokeColor(connector)
+    ctx.setLineWidth(s * 0.014)
+    for pair in [(hubCenter, satAP), (hubCenter, satBP), (satAP, satBP)] {
+        ctx.move(to: pair.0)
+        ctx.addLine(to: pair.1)
+        ctx.strokePath()
+    }
+
+    // Hub (outer fill + core)
+    ctx.setFillColor(hubFill)
+    ctx.fillEllipse(in: CGRect(
+        x: hubCenter.x - hubRadius,
+        y: hubCenter.y - hubRadius,
+        width: hubRadius * 2,
+        height: hubRadius * 2
+    ))
+    let coreRadius = hubRadius * 0.45
+    ctx.setFillColor(hubCore)
+    ctx.fillEllipse(in: CGRect(
+        x: hubCenter.x - coreRadius,
+        y: hubCenter.y - coreRadius,
+        width: coreRadius * 2,
+        height: coreRadius * 2
+    ))
+
+    // Satellites
+    for (center, color) in [(satAP, satA), (satBP, satB)] {
+        ctx.setFillColor(color)
+        ctx.fillEllipse(in: CGRect(
+            x: center.x - satRadius,
+            y: center.y - satRadius,
+            width: satRadius * 2,
+            height: satRadius * 2
+        ))
+    }
 
     guard let cgImage = ctx.makeImage() else {
         throw IconRenderError.imageEncodeFailed

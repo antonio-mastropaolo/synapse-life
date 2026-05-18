@@ -95,7 +95,8 @@ struct CopilotShellMac: View {
                 smartAlerts: smartAlerts,
                 subscriptions: subscriptions,
                 recurrings: recurrings,
-                chrome: chrome
+                chrome: chrome,
+                showsDemoFooter: showsDemoDataFooter
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(chrome.contentBackground.color)
@@ -401,16 +402,21 @@ private struct CopilotSidebar: View {
         let swatch: Color?
     }
 
+    // Sidebar placeholder rows shown while demo mode is on. Names are
+    // intentionally generic ("Sample Credit Card 1", etc.) so the
+    // sidebar never reads as a real user's institution list — those
+    // appear only after the live FinanceAccountsViewModel migration
+    // wires real-account rows in.
     fileprivate static let mockCreditCards: [MockAccount] = [
-        .init(id: "discover-it",   label: "Discover It Card",  balance: "$1,053", swatch: .orange),
-        .init(id: "paypal-credit", label: "PayPal Credit",     balance: nil,      swatch: .blue),
-        .init(id: "platinum-visa", label: "Platinum Visa",     balance: nil,      swatch: .gray)
+        .init(id: "demo-credit-1", label: "Sample Credit Card",        balance: "$1,053", swatch: .orange),
+        .init(id: "demo-credit-2", label: "Sample Wallet Credit",      balance: nil,      swatch: .blue),
+        .init(id: "demo-credit-3", label: "Sample Travel Visa",        balance: nil,      swatch: .gray)
     ]
 
     fileprivate static let mockDepositories: [MockAccount] = [
-        .init(id: "adv-plus-banking", label: "Adv Plus Banking",  balance: "$1,576", swatch: .red),
-        .init(id: "paypal-balance",   label: "PayPal",            balance: nil,      swatch: .blue),
-        .init(id: "advantage-savings", label: "Advantage Savings", balance: nil,      swatch: .red)
+        .init(id: "demo-bank-1",   label: "Sample Checking",   balance: "$1,576", swatch: .red),
+        .init(id: "demo-bank-2",   label: "Sample Wallet",     balance: nil,      swatch: .blue),
+        .init(id: "demo-bank-3",   label: "Sample Savings",    balance: nil,      swatch: .red)
     ]
 }
 
@@ -649,6 +655,7 @@ private struct CopilotDetailPane: View {
     let subscriptions: SubscriptionsViewModel
     let recurrings: RecurringsViewModel
     let chrome: CopilotTokens.Shell
+    let showsDemoFooter: Bool
 
     var body: some View {
         Group {
@@ -690,7 +697,9 @@ private struct CopilotDetailPane: View {
             case .dashboard:
                 DashboardView(
                     viewModel: dashboard,
-                    openGoals: { routing.select(.goals) }
+                    openCashFlow: { routing.select(.cashFlow) },
+                    openGoals: { routing.select(.goals) },
+                    isDemoData: showsDemoFooter
                 )
                 .identity(.cockpitInstrument)
                 .id("dashboard")
@@ -747,22 +756,14 @@ private struct CopilotDetailPane: View {
             // `message:` to honour the existing `ComingSoonView`
             // signature).
             case .goals:
-                ComingSoonView(
-                    title: "Goals",
-                    subtitle: "Track savings goals with AI-suggested timelines. Shipping in v0.2.",
-                    symbol: "target"
-                )
-                .identity(.cockpitInstrument)
-                .id("goals")
+                GoalsPlaceholderView()
+                    .identity(.cockpitInstrument)
+                    .id("goals")
 
             case .cashFlow:
-                ComingSoonView(
-                    title: "Cash flow",
-                    subtitle: "Monthly income vs expenses with AI budget projections. Shipping in v0.2.",
-                    symbol: "chart.line.uptrend.xyaxis"
-                )
-                .identity(.cockpitInstrument)
-                .id("cashFlow")
+                CashFlowPlaceholderView()
+                    .identity(.cockpitInstrument)
+                    .id("cashFlow")
 
             case .recurrings:
                 RecurringsView(viewModel: recurrings)
