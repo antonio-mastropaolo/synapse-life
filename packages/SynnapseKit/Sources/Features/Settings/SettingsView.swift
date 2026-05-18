@@ -50,6 +50,14 @@ public struct SettingsScene: View {
                         showSignInSheet = false
                     }
                 },
+                onTapDebugBypass: {
+                    #if DEBUG
+                    Task {
+                        await auth.signInForDebugBypass()
+                        showSignInSheet = false
+                    }
+                    #endif
+                },
                 errorMessage: {
                     if case .error(let reason) = auth.state { return reason }
                     return nil
@@ -321,6 +329,14 @@ public struct SettingsForm: View {
                         }
                         showSignInSheet = false
                     }
+                },
+                onTapDebugBypass: {
+                    #if DEBUG
+                    Task {
+                        await auth.signInForDebugBypass()
+                        showSignInSheet = false
+                    }
+                    #endif
                 },
                 errorMessage: {
                     if case .error(let reason) = auth.state { return reason }
