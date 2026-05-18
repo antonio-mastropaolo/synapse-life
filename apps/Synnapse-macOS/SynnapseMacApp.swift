@@ -38,6 +38,7 @@ struct SynnapseMacApp: App {
                     smartAlerts: appModel.smartAlerts,
                     subscriptions: appModel.subscriptions,
                     recurrings: appModel.recurrings,
+                    memberships: appModel.memberships,
                     goals: appModel.goals,
                     showsDemoDataFooter: appModel.usesDemoData
                 )
@@ -184,6 +185,14 @@ final class AppModel {
     /// is pure-logic so `refresh(...)` is synchronous.
     private(set) var subscriptions: SubscriptionsViewModel
 
+    /// Memberships surface — superset of Subscriptions with
+    /// cancellation guides, duplicate clustering, and an AI
+    /// optimisation summary. Hydrated from sample data when demo
+    /// mode is on, refreshed against live transactions in
+    /// `refreshIntelligenceSurfaces()` once the finance snapshot
+    /// is in place.
+    private(set) var memberships: MembershipsStore
+
     /// Recurrings surface — broader than Subscriptions, includes every
     /// detected cadence (weekly transit, bi-weekly payroll, monthly
     /// rent). Paired with [[RecurringStatusStore]] so the user's
@@ -282,6 +291,7 @@ final class AppModel {
         self.smartAlerts = SmartAlertsViewModel()
         self.subscriptions = SubscriptionsViewModel()
         self.recurrings = RecurringsViewModel()
+        self.memberships = MembershipsStore(usesSampleData: useDemo)
         // Goals store seeds three sample goals on first launch when
         // demo mode is on; subsequent launches load from disk.
         self.goals = GoalsStore(usesSampleData: useDemo)
@@ -369,6 +379,11 @@ final class AppModel {
         // is reading from.
         subscriptions.refresh(transactions: tx)
         recurrings.refresh(transactions: tx)
+        // Memberships: same transactions feed, layered with
+        // cancellation guides + optimisation tips. The store keeps
+        // any sample-data hydration intact until the live detector
+        // produces ≥ 1 membership, so demo mode never goes blank.
+        memberships.refresh(transactions: tx)
         // Goals: evaluate any windows whose deadlines have passed.
         // The store decides whether to actually run based on
         // `isEvaluationDue` so multiple foreground events don't

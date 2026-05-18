@@ -56,6 +56,10 @@ struct CopilotShellMac: View {
     let subscriptions: SubscriptionsViewModel
     let recurrings: RecurringsViewModel
 
+    /// Memberships store — drives the `.memberships` destination.
+    /// Owns the detected `[Membership]` set + optimisation summary.
+    let memberships: MembershipsStore
+
     /// Goals store — drives the .goals destination + the weekly
     /// check-in toast overlay attached to the shell root.
     let goals: GoalsStore
@@ -99,6 +103,7 @@ struct CopilotShellMac: View {
                 smartAlerts: smartAlerts,
                 subscriptions: subscriptions,
                 recurrings: recurrings,
+                memberships: memberships,
                 goals: goals,
                 chrome: chrome,
                 showsDemoFooter: showsDemoDataFooter
@@ -667,6 +672,7 @@ private struct CopilotDetailPane: View {
     let smartAlerts: SmartAlertsViewModel
     let subscriptions: SubscriptionsViewModel
     let recurrings: RecurringsViewModel
+    let memberships: MembershipsStore
     let goals: GoalsStore
     let chrome: CopilotTokens.Shell
     let showsDemoFooter: Bool
@@ -788,12 +794,9 @@ private struct CopilotDetailPane: View {
                     .id("recurrings")
 
             case .memberships:
-                // MembershipsView is wired in once the Memberships
-                // module lands. Until then the existing Subscriptions
-                // surface stands in so the route doesn't crash.
-                SubscriptionsView(viewModel: subscriptions)
+                MembershipsView(store: memberships)
                     .identity(.cockpitInstrument)
-                .id("memberships")
+                    .id("memberships")
 
             // MY ACCOUNTS drill-down. The sidebar still routes account
             // taps through the id-only `select(account:)` slot (the
