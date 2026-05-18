@@ -38,6 +38,7 @@ struct SynnapseMacApp: App {
                     smartAlerts: appModel.smartAlerts,
                     subscriptions: appModel.subscriptions,
                     recurrings: appModel.recurrings,
+                    goals: appModel.goals,
                     showsDemoDataFooter: appModel.usesDemoData
                 )
 
@@ -189,6 +190,11 @@ final class AppModel {
     /// Confirm / Ignore decisions survive relaunch.
     private(set) var recurrings: RecurringsViewModel
 
+    /// Goals surface — converts AI tips into tracked weekly goals,
+    /// evaluates them on foreground, surfaces unseen results via a
+    /// toast overlay on the shell root.
+    private(set) var goals: GoalsStore
+
     let lifecycle: AppLifecycleService
 
     let usesDemoData: Bool
@@ -276,6 +282,9 @@ final class AppModel {
         self.smartAlerts = SmartAlertsViewModel()
         self.subscriptions = SubscriptionsViewModel()
         self.recurrings = RecurringsViewModel()
+        // Goals store seeds three sample goals on first launch when
+        // demo mode is on; subsequent launches load from disk.
+        self.goals = GoalsStore(usesSampleData: useDemo)
 
         // Ask viewmodel — bridges the existing LiveAskAPI through the
         // new IntelligenceRouter shape. The router auto-picks the
@@ -360,6 +369,25 @@ final class AppModel {
         // is reading from.
         subscriptions.refresh(transactions: tx)
         recurrings.refresh(transactions: tx)
+        // Goals: evaluate any windows whose deadlines have passed.
+        // The store decides whether to actually run based on
+        // `isEvaluationDue` so multiple foreground events don't
+        // re-fire results on the same day.
+        if goals.isEvaluationDue() {
+            goals.evaluatePendingWindows(transactions: tx)
+            if !goals.unseenResults.isEmpty {
+                let hits = goals.unseenResults.filter { $0.outcome == .hit }.count
+                let total = goals.unseenResults.count
+                Task {
+                    let state = await NotificationGate.shared.requestIfNeeded()
+                    if state == .granted {
+                        await NotificationGate.shared.postWeeklySummary(
+                            hitCount: hits, totalCount: total
+                        )
+                    }
+                }
+            }
+        }
     }
 
     func applyConcealBalancesBridge() {

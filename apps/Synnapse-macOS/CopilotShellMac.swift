@@ -56,6 +56,10 @@ struct CopilotShellMac: View {
     let subscriptions: SubscriptionsViewModel
     let recurrings: RecurringsViewModel
 
+    /// Goals store — drives the .goals destination + the weekly
+    /// check-in toast overlay attached to the shell root.
+    let goals: GoalsStore
+
     /// Surfaced when DEBUG/demo mode is on so the user knows the
     /// figures are fixtures rather than live data.
     var showsDemoDataFooter: Bool = false
@@ -95,11 +99,20 @@ struct CopilotShellMac: View {
                 smartAlerts: smartAlerts,
                 subscriptions: subscriptions,
                 recurrings: recurrings,
+                goals: goals,
                 chrome: chrome,
                 showsDemoFooter: showsDemoDataFooter
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(chrome.contentBackground.color)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            // Weekly check-in toast surfaces whenever the evaluator
+            // has unseen results queued. Tapping OPEN routes to the
+            // Goals surface; the X dismisses without navigating.
+            GoalsToastView(store: goals) {
+                routing.select(.goals)
+            }
         }
         .foregroundStyle(chrome.foregroundPrimary.color)
         .preferredColorScheme(.dark)
@@ -654,6 +667,7 @@ private struct CopilotDetailPane: View {
     let smartAlerts: SmartAlertsViewModel
     let subscriptions: SubscriptionsViewModel
     let recurrings: RecurringsViewModel
+    let goals: GoalsStore
     let chrome: CopilotTokens.Shell
     let showsDemoFooter: Bool
 
@@ -662,7 +676,7 @@ private struct CopilotDetailPane: View {
             switch routing.selection {
             // Live surfaces.
             case .transactions, .finance(.transactions):
-                FinanceTransactionsRedesigned(viewModel: transactions)
+                FinanceTransactionsRedesigned(viewModel: transactions, goals: goals)
                     .identity(.cockpitInstrument)
                     .id("transactions")
 
@@ -756,9 +770,11 @@ private struct CopilotDetailPane: View {
             // `message:` to honour the existing `ComingSoonView`
             // signature).
             case .goals:
-                GoalsPlaceholderView()
-                    .identity(.cockpitInstrument)
-                    .id("goals")
+                GoalsView(store: goals) {
+                    routing.select(.transactions)
+                }
+                .identity(.cockpitInstrument)
+                .id("goals")
 
             case .cashFlow:
                 CashFlowPlaceholderView()

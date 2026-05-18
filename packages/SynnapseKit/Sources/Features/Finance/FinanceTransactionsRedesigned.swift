@@ -27,14 +27,20 @@ import DesignSystem
 public struct FinanceTransactionsRedesigned: View {
 
     @Bindable private var viewModel: FinanceTransactionsViewModel
+    private let goals: GoalsStore?
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
 
     @State private var expandedCategories: Set<String> = []
+    @State private var pendingTip: AITipDescriptor?
 
-    public init(viewModel: FinanceTransactionsViewModel) {
+    public init(
+        viewModel: FinanceTransactionsViewModel,
+        goals: GoalsStore? = nil
+    ) {
         self.viewModel = viewModel
+        self.goals = goals
     }
 
     public var body: some View {
@@ -61,6 +67,13 @@ public struct FinanceTransactionsRedesigned: View {
         }
         .background(tokens.background.color)
         .task { if case .idle = viewModel.state { await viewModel.refresh() } }
+        .sheet(item: $pendingTip) { tip in
+            if let goals {
+                GoalApplySheet(tip: tip, store: goals) {
+                    pendingTip = nil
+                }
+            }
+        }
     }
 
     /// The single category currently shown in exploded mode. We treat
@@ -547,6 +560,21 @@ public struct FinanceTransactionsRedesigned: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             Spacer(minLength: 0)
+            if let tip = applyableTip(for: signal), goals != nil {
+                Button {
+                    pendingTip = tip
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "target")
+                            .font(.system(size: 9, weight: .semibold))
+                        Text("Apply as goal")
+                            .font(.system(size: 10, weight: .semibold))
+                    }
+                    .foregroundStyle(signal.tone)
+                }
+                .buttonStyle(.plain)
+                .accessibilityIdentifier("ai.applyAsGoal.\(signal.title)")
+            }
         }
         .padding(14)
         // Fixed min/max height keeps every tile uniform regardless of
@@ -721,6 +749,57 @@ public struct FinanceTransactionsRedesigned: View {
         }()
 
         return [trend, anomaly, forecast, concentration, pattern, recommendation]
+    }
+
+    /// Translates an `AISignal` into an `AITipDescriptor` so the user
+    /// can convert the tip into a tracked goal. Only certain signal
+    /// titles are "actionable" — e.g., a "no outliers" tile doesn't
+    /// produce a useful goal, so this returns nil. The category hint
+    /// flows through to the goal so the evaluator scopes the right
+    /// transaction slice.
+    private func applyableTip(for signal: AISignal) -> AITipDescriptor? {
+        // Only TREND VS TYPICAL, MERCHANT CONCENTRATION, and AI
+        // SUGGESTS produce useful goals at v1. Other tiles are
+        // observational.
+        let title = signal.title.uppercased()
+        let actionable: Set<String> = [
+            "TREND VS TYPICAL", "MERCHANT CONCENTRATION", "AI SUGGESTS"
+        ]
+        guard actionable.contains(title) else { return nil }
+
+        // Pull the category name from "AI SIGNALS · TRANSPORTATION"
+        // via the wider context — we know the only bucket that
+        // produced these signals is `focusedBucket`. Defensive guard.
+        guard let bucket = focusedBucket else { return nil }
+
+        let kind: GoalKind = {
+            switch title {
+            case "MERCHANT CONCENTRATION": return .capMerchantSpend
+            case "AI SUGGESTS":            return .reduceCategorySpend
+            default:                       return .reduceCategorySpend
+            }
+        }()
+
+        let parsedAmount = AITipDescriptor.parseAmount(from: signal.detail)
+        let goalTitle: String = {
+            switch title {
+            case "MERCHANT CONCENTRATION":
+                return "Reduce concentration on \(topMerchant(for: bucket))"
+            case "AI SUGGESTS":
+                return "Cap \(bucket.name) spend"
+            default:
+                return "Trim \(bucket.name) spend"
+            }
+        }()
+
+        return AITipDescriptor(
+            title: goalTitle,
+            detailText: signal.detail,
+            icon: signal.icon,
+            suggestedKind: kind,
+            categoryHint: bucket.name,
+            parsedTargetAmount: parsedAmount
+        )
     }
 
     private func topMerchant(for bucket: CategoryBucket) -> String {
