@@ -545,10 +545,15 @@ public struct FinanceTransactionsRedesigned: View {
                 .font(.system(size: 12, weight: .regular, design: .default))
                 .foregroundStyle(tokens.foregroundPrimary.color)
                 .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .topLeading)
+            Spacer(minLength: 0)
         }
         .padding(14)
-        .frame(maxWidth: .infinity, alignment: .topLeading)
+        // Fixed min/max height keeps every tile uniform regardless of
+        // copy length — short signals don't shrink and long ones cap
+        // at the same line budget. 132pt fits 4 lines of 12pt body
+        // type comfortably at the typical inspector column width.
+        .frame(maxWidth: .infinity, minHeight: 132, maxHeight: 132, alignment: .topLeading)
         .background(
             RoundedRectangle(cornerRadius: 8, style: .continuous)
                 .fill(tokens.foregroundSecondary.color.opacity(0.05))
