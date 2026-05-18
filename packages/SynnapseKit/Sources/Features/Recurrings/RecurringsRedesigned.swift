@@ -28,6 +28,19 @@ public struct RecurringsRedesigned: View {
     @State private var selection: String?
     @State private var expandedSections: Set<String> = ["detected", "confirmed"]
     @State private var cadenceFilter: CadenceFilter = .all
+    /// The currently-selected day in the 30-day calendar strip. Tap a
+    /// cell to set this; tap the same cell again to clear. When set,
+    /// the calendar card expands inline below the strip with the
+    /// detailed list of charges hitting that day.
+    @State private var selectedCalendarDay: Date?
+
+    /// Local copy of the email-scan state. We pull it from
+    /// `MailReceiptScanner.shared` on appear and after each scan
+    /// kicks off; the scanner posts back into `.ready(...)` when
+    /// the Spotlight query finishes.
+    #if os(macOS)
+    @State private var emailScanState: MailReceiptScanner.Status = .idle
+    #endif
 
     public init(viewModel: RecurringsViewModel) {
         self.viewModel = viewModel
@@ -40,6 +53,9 @@ public struct RecurringsRedesigned: View {
                 header(tokens: tokens)
                 if !viewModel.recurrings.isEmpty {
                     calendarStrip(tokens: tokens)
+                    #if os(macOS)
+                    emailScanSection(tokens: tokens)
+                    #endif
                     aiInsights(tokens: tokens)
                     filterChips(tokens: tokens)
                     sectionedList(tokens: tokens)
@@ -106,11 +122,14 @@ public struct RecurringsRedesigned: View {
                     .tracking(0.9)
                     .foregroundStyle(tokens.foregroundSecondary.color)
                 Spacer()
-                Text("Dots = recurring charges. Color = category.")
+                Text("Tap a day to see its charges.")
                     .font(.system(size: 10, weight: .regular))
                     .foregroundStyle(tokens.foregroundSecondary.color)
             }
             calendarRow(tokens: tokens)
+            if let day = selectedCalendarDay {
+                selectedDayPanel(day: day, tokens: tokens)
+            }
         }
         .padding(20)
         .background(
@@ -128,10 +147,26 @@ public struct RecurringsRedesigned: View {
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(alignment: .bottom, spacing: 4) {
                 ForEach(cells) { cell in
-                    calendarCell(cell, tokens: tokens)
+                    Button {
+                        let cal = Calendar.current
+                        if let selected = selectedCalendarDay,
+                           cal.isDate(selected, inSameDayAs: cell.date) {
+                            selectedCalendarDay = nil
+                        } else {
+                            selectedCalendarDay = cell.date
+                        }
+                    } label: {
+                        calendarCell(cell, tokens: tokens, isSelected: isCellSelected(cell))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }
+    }
+
+    private func isCellSelected(_ cell: CalendarCell) -> Bool {
+        guard let selected = selectedCalendarDay else { return false }
+        return Calendar.current.isDate(selected, inSameDayAs: cell.date)
     }
 
     private struct CalendarCell: Identifiable {
@@ -145,18 +180,26 @@ public struct RecurringsRedesigned: View {
         var totalAmount: Decimal { charges.reduce(0) { $0 + $1.amount } }
     }
 
-    private func calendarCell(_ cell: CalendarCell, tokens: TokenSet) -> some View {
-        VStack(spacing: 4) {
-            // Day label
+    private func calendarCell(_ cell: CalendarCell, tokens: TokenSet, isSelected: Bool) -> some View {
+        let amber = Color(red: 1.0, green: 0.69, blue: 0.22)
+        let bgFill: Color = {
+            if isSelected   { return amber.opacity(0.22) }
+            if cell.isToday { return amber.opacity(0.10) }
+            return Color.clear
+        }()
+        let strokeColor: Color = {
+            if isSelected   { return amber }
+            if cell.isToday { return amber.opacity(0.50) }
+            return Color.clear
+        }()
+        let strokeWidth: CGFloat = isSelected ? 1.5 : 1.0
+        return VStack(spacing: 4) {
             Text(cell.dayLabel)
                 .font(.system(size: 9, weight: .regular, design: .monospaced))
                 .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.7))
             Text(cell.dowLabel)
-                .font(.system(size: 10, weight: cell.isToday ? .bold : .medium, design: .monospaced))
-                .foregroundStyle(cell.isToday
-                    ? Color(red: 1.0, green: 0.69, blue: 0.22)
-                    : tokens.foregroundPrimary.color)
-            // Dot stack
+                .font(.system(size: 10, weight: (cell.isToday || isSelected) ? .bold : .medium, design: .monospaced))
+                .foregroundStyle((cell.isToday || isSelected) ? amber : tokens.foregroundPrimary.color)
             VStack(spacing: 3) {
                 if cell.charges.isEmpty {
                     Circle()
@@ -176,7 +219,6 @@ public struct RecurringsRedesigned: View {
                 }
             }
             .frame(height: 36, alignment: .top)
-            // Amount
             if cell.totalAmount > 0 {
                 Text(formatCompactDollar(cell.totalAmount))
                     .font(.system(size: 9, weight: .semibold, design: .monospaced))
@@ -190,18 +232,123 @@ public struct RecurringsRedesigned: View {
         .frame(width: 32, height: 92)
         .padding(.vertical, 4)
         .background(
-            RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .fill(cell.isToday
-                    ? Color(red: 1.0, green: 0.69, blue: 0.22).opacity(0.10)
-                    : Color.clear)
+            RoundedRectangle(cornerRadius: 6, style: .continuous).fill(bgFill)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                .stroke(cell.isToday
-                    ? Color(red: 1.0, green: 0.69, blue: 0.22).opacity(0.50)
-                    : Color.clear,
-                    lineWidth: 1)
+                .stroke(strokeColor, lineWidth: strokeWidth)
         )
+        .contentShape(Rectangle())
+    }
+
+    // MARK: - Selected day panel
+    //
+    // Renders inline below the calendar strip when a day is selected.
+    // Shows every recurring billing that day with logo, merchant name,
+    // cadence, amount, and the standard Confirm/Ignore action chips.
+
+    private func selectedDayPanel(day: Date, tokens: TokenSet) -> some View {
+        let hits = recurringsHittingDay(day)
+        let total = hits.reduce(Decimal.zero) { $0 + $1.medianAmount }
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar.circle.fill")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(Color(red: 1.0, green: 0.69, blue: 0.22))
+                Text(formatSelectedDay(day))
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text(hits.isEmpty ? "No recurring charges" : "\(hits.count) recurring charge\(hits.count == 1 ? "" : "s")")
+                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+                if !hits.isEmpty {
+                    Text(formatCurrency(total))
+                        .font(.system(size: 14, weight: .semibold, design: .monospaced))
+                        .foregroundStyle(tokens.foregroundPrimary.color)
+                        .monospacedDigit()
+                }
+                Button {
+                    selectedCalendarDay = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 14))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if hits.isEmpty {
+                Text("Nothing scheduled to bill on this day.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .padding(.bottom, 4)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(hits) { r in
+                        selectedDayRow(r, tokens: tokens)
+                        if r.id != hits.last?.id {
+                            Divider().background(tokens.foregroundSecondary.color.opacity(0.10))
+                        }
+                    }
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(tokens.foregroundSecondary.color.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color(red: 1.0, green: 0.69, blue: 0.22).opacity(0.35), lineWidth: 1)
+        )
+    }
+
+    private func selectedDayRow(_ r: DetectedRecurring, tokens: TokenSet) -> some View {
+        let catColor = categoryColor(r.category)
+        let status = viewModel.status(for: r)
+        return HStack(spacing: 12) {
+            MerchantLogoView(
+                merchant: r.merchant,
+                fallbackColor: catColor,
+                size: 28
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                Text(r.merchant)
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text("\(cadenceLabel(r.cadenceDays)) · \(formatCurrency(r.medianAmount)) median · \(r.occurrenceCount) seen")
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+            }
+            Spacer()
+            Text(formatCurrency(r.medianAmount))
+                .font(.system(size: 12, weight: .semibold, design: .monospaced))
+                .foregroundStyle(tokens.foregroundPrimary.color)
+                .monospacedDigit()
+            actionButtons(for: r, status: status, tokens: tokens)
+        }
+        .padding(.vertical, 8)
+    }
+
+    /// All recurrings whose predicted next-30 occurrences include the
+    /// given day (start-of-day comparison).
+    private func recurringsHittingDay(_ day: Date) -> [DetectedRecurring] {
+        let cal = Calendar.current
+        return viewModel.recurrings.filter { r in
+            predictedNextOccurrences(for: r).contains { occ in
+                cal.isDate(occ, inSameDayAs: day)
+            }
+        }
+    }
+
+    private func formatSelectedDay(_ day: Date) -> String {
+        let df = DateFormatter()
+        df.locale = Locale(identifier: "en_US_POSIX")
+        df.dateFormat = "EEEE, MMMM d"
+        return df.string(from: day)
     }
 
     private var calendarCells: [CalendarCell] {
@@ -618,6 +765,257 @@ public struct RecurringsRedesigned: View {
         }
         .padding(.vertical, 40)
     }
+
+    // MARK: - Email scan section (macOS)
+    //
+    // Beyond bank/card data, most recurring charges announce
+    // themselves in the user's email first (Netflix renewal notice,
+    // trial-ending warning, price-change FYI). Synapse scans the
+    // local Spotlight index for messages from known merchants and
+    // surfaces them here so the user can act before the card swings.
+
+    #if os(macOS)
+    @ViewBuilder
+    private func emailScanSection(tokens: TokenSet) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 6) {
+                Image(systemName: "envelope.badge.shield.half.filled.fill")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color(red: 0.27, green: 0.83, blue: 0.89))
+                Text("FROM YOUR EMAIL")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(0.8)
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+                Text("On-device · last 90 days")
+                    .font(.system(size: 9, weight: .regular, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+            }
+            emailScanBody(tokens: tokens)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(tokens.surface.color)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(tokens.foregroundSecondary.color.opacity(0.10), lineWidth: 0.5)
+        )
+        .task {
+            if case .idle = emailScanState {
+                emailScanState = MailReceiptScanner.shared.status
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func emailScanBody(tokens: TokenSet) -> some View {
+        switch emailScanState {
+        case .idle:
+            emailScanCallToAction(tokens: tokens)
+        case .scanning:
+            HStack(spacing: 10) {
+                ProgressView().controlSize(.small)
+                Text("Scanning Spotlight index for receipts from \(MailReceiptScanner.knownDomains.count) brands…")
+                    .font(.system(size: 12, weight: .regular))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+            }
+            .padding(.vertical, 6)
+        case .ready(let hits):
+            if hits.isEmpty {
+                Text("No matching receipts found in your local email index over the last 90 days.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .padding(.vertical, 6)
+            } else {
+                emailScanResults(hits, tokens: tokens)
+            }
+        case .permissionRequired:
+            emailScanPermissionRequired(tokens: tokens)
+        case .error(let message):
+            Text("Scan failed: \(message)")
+                .font(.system(size: 11, weight: .regular))
+                .foregroundStyle(Color.orange)
+        }
+    }
+
+    private func emailScanCallToAction(tokens: TokenSet) -> some View {
+        HStack(alignment: .center, spacing: 12) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Find recurring charges hiding in your email")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text("Synapse can scan your local Spotlight index for receipts from \(MailReceiptScanner.knownDomains.count) known brands. Nothing leaves your machine — we read sender / subject / date only, never the body.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer()
+            Button {
+                Task {
+                    emailScanState = .scanning
+                    await MailReceiptScanner.shared.scan(
+                        domains: MailReceiptScanner.knownDomains
+                    )
+                    emailScanState = MailReceiptScanner.shared.status
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "envelope.arrow.triangle.branch.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("Scan email")
+                        .font(.system(size: 11, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(Color(red: 0.27, green: 0.83, blue: 0.89))
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func emailScanPermissionRequired(tokens: TokenSet) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: "exclamationmark.shield.fill")
+                .font(.system(size: 13, weight: .semibold))
+                .foregroundStyle(Color.orange)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Spotlight access needed")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text("Grant Synapse Full Disk Access in System Settings → Privacy & Security so the scanner can read the local mail index.")
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+            }
+            Spacer()
+            Button {
+                if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles") {
+                    NSWorkspace.shared.open(url)
+                }
+            } label: {
+                Text("Open Settings")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
+                            .fill(Color.orange)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    private func emailScanResults(
+        _ hits: [MailReceiptScanner.EmailReceiptHit],
+        tokens: TokenSet
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Text("\(hits.count) match\(hits.count == 1 ? "" : "es")")
+                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text("from \(Set(hits.map(\.merchant)).count) brand\(Set(hits.map(\.merchant)).count == 1 ? "" : "s")")
+                    .font(.system(size: 11, weight: .regular, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+                Button {
+                    Task {
+                        emailScanState = .scanning
+                        await MailReceiptScanner.shared.scan(
+                            domains: MailReceiptScanner.knownDomains
+                        )
+                        emailScanState = MailReceiptScanner.shared.status
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "arrow.clockwise")
+                        Text("Re-scan")
+                    }
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(Color(red: 0.27, green: 0.83, blue: 0.89))
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.vertical, 4)
+
+            Divider().background(tokens.foregroundSecondary.color.opacity(0.10))
+
+            ForEach(Array(hits.prefix(6))) { hit in
+                emailHitRow(hit, tokens: tokens)
+                Divider().background(tokens.foregroundSecondary.color.opacity(0.08))
+            }
+            if hits.count > 6 {
+                Text("+ \(hits.count - 6) more")
+                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .padding(.vertical, 6)
+            }
+        }
+    }
+
+    private func emailHitRow(
+        _ hit: MailReceiptScanner.EmailReceiptHit,
+        tokens: TokenSet
+    ) -> some View {
+        let tint = emailCategoryTint(hit.category)
+        return HStack(spacing: 12) {
+            MerchantLogoView(
+                merchant: hit.merchant,
+                fallbackColor: tint,
+                size: 26
+            )
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 6) {
+                    Text(hit.merchant)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(tokens.foregroundPrimary.color)
+                    Text(hit.category.displayLabel.uppercased())
+                        .font(.system(size: 8, weight: .bold, design: .monospaced))
+                        .tracking(0.5)
+                        .padding(.horizontal, 4)
+                        .padding(.vertical, 1)
+                        .background(
+                            RoundedRectangle(cornerRadius: 3, style: .continuous)
+                                .fill(tint.opacity(0.18))
+                        )
+                        .foregroundStyle(tint)
+                }
+                Text(hit.subject)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                    .lineLimit(1)
+            }
+            Spacer()
+            Text(formatRelativeDate(hit.date))
+                .font(.system(size: 10, weight: .regular, design: .monospaced))
+                .foregroundStyle(tokens.foregroundSecondary.color)
+        }
+        .padding(.vertical, 8)
+    }
+
+    private func emailCategoryTint(_ cat: MailReceiptScanner.ReceiptCategory) -> Color {
+        switch cat {
+        case .upcomingCharge: return Color(red: 1.00, green: 0.69, blue: 0.22)
+        case .trialEnding:    return Color(red: 0.94, green: 0.33, blue: 0.56)
+        case .priceChange:    return Color(red: 0.93, green: 0.46, blue: 0.34)
+        case .receipt:        return Color(red: 0.34, green: 0.78, blue: 0.50)
+        case .other:          return Color(red: 0.27, green: 0.83, blue: 0.89)
+        }
+    }
+
+    private func formatRelativeDate(_ date: Date) -> String {
+        let f = RelativeDateTimeFormatter()
+        f.unitsStyle = .abbreviated
+        return f.localizedString(for: date, relativeTo: Date())
+    }
+    #endif
 
     // MARK: - Helpers
 
