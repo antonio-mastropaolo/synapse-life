@@ -215,4 +215,153 @@ struct DashboardViewModelTests {
         // 5000 - 250 - 100 = 4650
         #expect(vm.netThisMonth == Decimal(4650))
     }
+
+    // MARK: - Widget state (M9 hero row)
+
+    @Test("widgetState.unreviewed reflects entries and ledger total")
+    func widgetStateUnreviewed() {
+        let vm = makeViewModel([
+            makeEntry(id: "a", daysAgo: 0),
+            makeEntry(id: "b", daysAgo: 0, reviewed: true),
+            makeEntry(id: "c", daysAgo: 1)
+        ], total: 3204)
+        #expect(vm.widgetState.unreviewed.count == 2)
+        #expect(vm.widgetState.unreviewed.total == 3204)
+    }
+
+    @Test("widgetState.netThisWeek is materialised on init")
+    func widgetStateNet() {
+        let vm = makeViewModel([
+            makeEntry(id: "in", daysAgo: 1, amount: 5_000),
+            makeEntry(id: "out", daysAgo: 0, amount: -100)
+        ])
+        #expect(vm.widgetState.netThisWeek.current == Decimal(4900))
+        // No prior-window entries → previous = 0.
+        #expect(vm.widgetState.netThisWeek.previous == Decimal(0))
+    }
+
+    @Test("widgetState reads upcomingBills and aiSuggestion providers")
+    func widgetStateProviders() {
+        let cal = Self.utcCalendar
+        let tomorrow = cal.date(byAdding: .day, value: 1, to: Self.pinnedToday)!
+        let billProvider: () -> [DashboardWidgetReducer.Upcoming] = {
+            [
+                DashboardWidgetReducer.Upcoming(
+                    merchant: "NETFLIX",
+                    amount: Decimal(string: "22.99")!,
+                    dueDate: tomorrow
+                )
+            ]
+        }
+        let aiProvider: () -> DashboardWidgetReducer.AINarration? = {
+            DashboardWidgetReducer.AINarration(sentence: "spending below avg")
+        }
+        let vm = DashboardViewModel(
+            entries: [makeEntry(id: "a", daysAgo: 0)],
+            ledgerTotal: 1,
+            calendar: cal,
+            referenceDate: Self.pinnedToday,
+            locale: Locale(identifier: "en_US_POSIX"),
+            upcomingBillsProvider: billProvider,
+            anomaliesProvider: { [] },
+            aiSuggestionProvider: aiProvider
+        )
+        #expect(vm.widgetState.nextBill?.upcoming.merchant == "NETFLIX")
+        #expect(vm.widgetState.nextBill?.urgency == .tomorrow)
+        #expect(vm.widgetState.aiSuggestion?.sentence == "spending below avg")
+    }
+
+    // MARK: - markAll / skipAll
+
+    @Test("markAll flips every unreviewed entry")
+    func markAll() {
+        let vm = makeViewModel([
+            makeEntry(id: "a", daysAgo: 0),
+            makeEntry(id: "b", daysAgo: 0, reviewed: true),
+            makeEntry(id: "c", daysAgo: 1)
+        ], total: 100)
+        // Sanity: selection is unused; markAll touches every unreviewed
+        // row regardless.
+        let n = vm.markAll()
+        #expect(n == 2)
+        #expect(vm.entries.allSatisfy { $0.reviewed })
+        #expect(vm.sections.isEmpty)
+        #expect(vm.footerCountText == "0 of 100")
+    }
+
+    @Test("skipAll clears selection without flipping review bits")
+    func skipAll() {
+        let vm = makeViewModel([
+            makeEntry(id: "a", daysAgo: 0),
+            makeEntry(id: "b", daysAgo: 0)
+        ])
+        vm.toggleSelection("a")
+        vm.toggleSelection("b")
+        #expect(vm.selectionCount == 2)
+        vm.skipAll()
+        #expect(vm.selectionCount == 0)
+        // Review bits unchanged.
+        #expect(vm.entries.allSatisfy { !$0.reviewed })
+    }
+
+    // MARK: - Inline expansion
+
+    @Test("toggleExpanded sets and clears expandedRowId")
+    func toggleExpanded() {
+        let vm = makeViewModel([
+            makeEntry(id: "a", daysAgo: 0),
+            makeEntry(id: "b", daysAgo: 0)
+        ])
+        #expect(vm.expandedRowId == nil)
+        vm.toggleExpanded("a")
+        #expect(vm.expandedRowId == "a")
+        // Tapping a different row switches the expansion.
+        vm.toggleExpanded("b")
+        #expect(vm.expandedRowId == "b")
+        // Tapping the same row collapses.
+        vm.toggleExpanded("b")
+        #expect(vm.expandedRowId == nil)
+    }
+
+    @Test("recentSameMerchant returns peers excluding the target row")
+    func recentSameMerchantPeers() {
+        // makeEntry seeds merchantName = "Merchant <id>". To get a
+        // peer set we author entries with hand-built transactions
+        // that share the same merchant name.
+        func merchantEntry(id: String, daysAgo: Int, merchant: String) -> DashboardEntry {
+            let day = Self.utcCalendar.date(
+                byAdding: .day, value: -daysAgo, to: Self.pinnedToday
+            )!
+            var c = Self.utcCalendar.dateComponents([.year, .month, .day], from: day)
+            c.hour = 12
+            let date = Self.utcCalendar.date(from: c)!
+            let tx = Transaction(
+                id: id,
+                accountId: "acct_test",
+                accountName: "Test Account",
+                amount: -10,
+                currency: "USD",
+                date: date,
+                name: merchant,
+                merchantName: merchant,
+                category: .knownCategory("RESTAURANTS"),
+                subcategory: nil,
+                pending: false
+            )
+            return DashboardEntry(transaction: tx, reviewed: false, description: nil)
+        }
+        let vm = makeViewModel([
+            merchantEntry(id: "n1", daysAgo: 0, merchant: "NETFLIX"),
+            merchantEntry(id: "n2", daysAgo: 7, merchant: "NETFLIX"),
+            merchantEntry(id: "n3", daysAgo: 14, merchant: "NETFLIX"),
+            merchantEntry(id: "n4", daysAgo: 21, merchant: "NETFLIX"),
+            merchantEntry(id: "k1", daysAgo: 1, merchant: "KROGER")
+        ])
+        let peers = vm.recentSameMerchant(for: "n1", limit: 3)
+        #expect(peers.count == 3)
+        #expect(peers.map(\.id) == ["n2", "n3", "n4"])
+        // Different merchant returns no peers (Kroger only has itself).
+        let krogerPeers = vm.recentSameMerchant(for: "k1")
+        #expect(krogerPeers.isEmpty)
+    }
 }

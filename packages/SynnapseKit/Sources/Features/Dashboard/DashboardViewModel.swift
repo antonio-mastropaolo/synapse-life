@@ -46,17 +46,51 @@ public final class DashboardViewModel {
     /// ("May 15th"). The formatter is constructed once and reused.
     private let headerFormatter: DateFormatter
 
+    /// Inline-expansion state. Exactly one row may be expanded at a
+    /// time — Copilot's pattern. Tapping an already-expanded row
+    /// collapses it.
+    public private(set) var expandedRowId: String?
+
+    // MARK: - Widget providers (M9 hero row)
+
+    /// Upcoming-bills provider. The integrator wires this to
+    /// `RecurringDetector`; the dashboard reads it once on init and
+    /// again on each `load(_:)` so the NEXT BILL hero card stays in
+    /// sync without the dashboard knowing the detector exists.
+    private let upcomingBillsProvider: () -> [DashboardWidgetReducer.Upcoming]
+
+    /// Anomalies provider — top-N flagged rows. The integrator wires
+    /// this to `AnomalyExplainerReducer`. Empty by default; the
+    /// inspector mini-list collapses when empty.
+    private let anomaliesProvider: () -> [DashboardEntry]
+
+    /// AI suggestion provider — single-sentence digest. The
+    /// integrator wires this to `DigestReducer`; nil collapses the
+    /// inspector AI card entirely.
+    private let aiSuggestionProvider: () -> DashboardWidgetReducer.AINarration?
+
+    /// Cached widget state, materialised once per `entries`/provider
+    /// read. The view binds to this so each card avoids re-running
+    /// its reducer on every render. Recomputed in `reproject()`.
+    public private(set) var widgetState: WidgetState = .empty
+
     public init(
         entries: [DashboardEntry] = [],
         ledgerTotal: Int? = nil,
         calendar: Calendar = .current,
         referenceDate: Date = Date(),
-        locale: Locale = .current
+        locale: Locale = .current,
+        upcomingBillsProvider: @escaping () -> [DashboardWidgetReducer.Upcoming] = { [] },
+        anomaliesProvider: @escaping () -> [DashboardEntry] = { [] },
+        aiSuggestionProvider: @escaping () -> DashboardWidgetReducer.AINarration? = { nil }
     ) {
         self.entries = entries
         self.ledgerTotal = ledgerTotal ?? entries.count
         self.calendar = calendar
         self.referenceDate = referenceDate
+        self.upcomingBillsProvider = upcomingBillsProvider
+        self.anomaliesProvider = anomaliesProvider
+        self.aiSuggestionProvider = aiSuggestionProvider
 
         let f = DateFormatter()
         f.calendar = calendar
@@ -125,6 +159,62 @@ public final class DashboardViewModel {
     /// Convenience for the footer "Mark N as reviewed" button.
     public var selectionCount: Int { selection.count }
 
+    /// Mark every un-reviewed entry as reviewed in a single mutation.
+    /// Returns the count of rows touched. Used by the action ribbon's
+    /// "Mark all" secondary affordance — the user has audited their
+    /// inbox and wants to clear it without per-row selection.
+    @discardableResult
+    public func markAll() -> Int {
+        var touched = 0
+        entries = entries.map { entry in
+            guard !entry.reviewed else { return entry }
+            touched += 1
+            var copy = entry
+            copy.reviewed = true
+            return copy
+        }
+        selection = []
+        reproject()
+        return touched
+    }
+
+    /// Clear the active selection without flipping any review bits.
+    /// Maps to the action-ribbon "Skip all" affordance — the user is
+    /// punting on these rows for the session.
+    public func skipAll() {
+        guard !selection.isEmpty else { return }
+        selection = []
+    }
+
+    /// Toggle the inline-expanded row. At most one row is expanded at
+    /// a time; tapping the currently-expanded row collapses it.
+    public func toggleExpanded(_ id: String) {
+        if expandedRowId == id {
+            expandedRowId = nil
+        } else {
+            expandedRowId = id
+        }
+    }
+
+    /// Recent transactions from the same merchant as `entryId`,
+    /// excluding the row itself. Returns at most `limit` rows in
+    /// newest-first order. The inline expansion uses this to paint
+    /// a small peek of prior charges so the user can audit the row
+    /// without leaving the dashboard.
+    public func recentSameMerchant(
+        for entryId: String,
+        limit: Int = 3
+    ) -> [DashboardEntry] {
+        guard let target = entries.first(where: { $0.id == entryId }),
+              let merchant = target.transaction.merchantName
+        else { return [] }
+        return entries
+            .filter { $0.id != entryId
+                && $0.transaction.merchantName == merchant }
+            .prefix(limit)
+            .map { $0 }
+    }
+
     // MARK: - Derived
 
     /// Footer label: "29 of 3204".
@@ -177,6 +267,48 @@ public final class DashboardViewModel {
                 entries: buckets[day] ?? []
             )
         }
+        recomputeWidgetState()
+    }
+
+    /// Materialise the widget hero state from the current `entries`
+    /// and the three injected providers. Called from `reproject()`
+    /// so the cards stay aligned with the list.
+    private func recomputeWidgetState() {
+        let net = DashboardWidgetReducer.netThisWeek(
+            entries: entries,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let unreviewed = DashboardWidgetReducer.unreviewedCount(
+            entries: entries,
+            ledgerTotal: ledgerTotal
+        )
+        let top = DashboardWidgetReducer.topCategoryThisWeek(
+            entries: entries,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let nextBill = DashboardWidgetReducer.nextBill(
+            upcoming: upcomingBillsProvider(),
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let pulse = DashboardWidgetReducer.spendingPulse(
+            entries: entries,
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+        let anomalies = anomaliesProvider()
+        let ai = aiSuggestionProvider()
+        self.widgetState = WidgetState(
+            netThisWeek: net,
+            unreviewed: unreviewed,
+            topCategory: top,
+            nextBill: nextBill,
+            spendingPulse: pulse,
+            anomalies: anomalies,
+            aiSuggestion: ai
+        )
     }
 
     /// "May 15th". Month + day from `headerFormatter`, with the
@@ -202,5 +334,49 @@ public final class DashboardViewModel {
         case 3: return "rd"
         default: return "th"
         }
+    }
+}
+
+/// Materialised hero / inspector state. Kept on the view model so
+/// every card binds to the same memoised value — no `reduce` runs
+/// per render. Recomputed by `reproject()` whenever entries change.
+public struct WidgetState: Equatable, Sendable {
+    public let netThisWeek: DashboardWidgetReducer.NetThisWeek
+    public let unreviewed: DashboardWidgetReducer.UnreviewedCount
+    public let topCategory: DashboardWidgetReducer.TopCategory?
+    public let nextBill: DashboardWidgetReducer.NextBill?
+    public let spendingPulse: DashboardWidgetReducer.SpendingPulse
+    public let anomalies: [DashboardEntry]
+    public let aiSuggestion: DashboardWidgetReducer.AINarration?
+
+    public static let empty = WidgetState(
+        netThisWeek: DashboardWidgetReducer.NetThisWeek(
+            current: 0, previous: 0,
+            sparkline: Array(repeating: 0, count: 7)
+        ),
+        unreviewed: DashboardWidgetReducer.UnreviewedCount(count: 0, total: 0),
+        topCategory: nil,
+        nextBill: nil,
+        spendingPulse: DashboardWidgetReducer.SpendingPulse(today: 0, typical: 0),
+        anomalies: [],
+        aiSuggestion: nil
+    )
+
+    public init(
+        netThisWeek: DashboardWidgetReducer.NetThisWeek,
+        unreviewed: DashboardWidgetReducer.UnreviewedCount,
+        topCategory: DashboardWidgetReducer.TopCategory?,
+        nextBill: DashboardWidgetReducer.NextBill?,
+        spendingPulse: DashboardWidgetReducer.SpendingPulse,
+        anomalies: [DashboardEntry],
+        aiSuggestion: DashboardWidgetReducer.AINarration?
+    ) {
+        self.netThisWeek = netThisWeek
+        self.unreviewed = unreviewed
+        self.topCategory = topCategory
+        self.nextBill = nextBill
+        self.spendingPulse = spendingPulse
+        self.anomalies = anomalies
+        self.aiSuggestion = aiSuggestion
     }
 }
