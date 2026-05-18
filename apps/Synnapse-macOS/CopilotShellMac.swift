@@ -789,7 +789,7 @@ private struct CopilotDetailPane: View {
                     .id("cashFlow")
 
             case .recurrings:
-                RecurringsView(viewModel: recurrings)
+                RecurringsRedesigned(viewModel: recurrings)
                     .identity(.cockpitInstrument)
                     .id("recurrings")
 
