@@ -18,6 +18,11 @@ struct DashboardInspectorView: View {
 
     let widgetState: WidgetState
     let goalsCurrency: String
+    /// When true, the new AI insights panel paints with sample copy
+    /// and stamps each card with a small SAMPLE chip so nothing reads
+    /// as live spending analysis. The integrator wires this from the
+    /// shell's `showsDemoFooter` boolean.
+    var isDemoData: Bool = false
 
     var openGoals: (() -> Void)?
     var openAnomalyExplainer: ((String) -> Void)?
@@ -30,17 +35,12 @@ struct DashboardInspectorView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
                 goalsCard(tokens: tokens)
-                DashboardSpendingPulseCard(
-                    state: widgetState.spendingPulse,
-                    currency: goalsCurrency
-                )
-                DashboardAnomalyMiniList(
-                    anomalies: widgetState.anomalies,
-                    openAnomalyExplainer: openAnomalyExplainer
-                )
-                DashboardAISuggestionCard(
-                    narration: widgetState.aiSuggestion
-                )
+                // Dense AI panel replaces the previous trio of sparse
+                // cards (single-figure Spending Pulse, single-sentence
+                // AI Suggestion, three-row anomaly list) with four
+                // information-rich cards covering retrospective +
+                // forecast + patterns + suggestions.
+                DashboardAIInsightsPanel(isDemoData: isDemoData)
                 Spacer(minLength: 0)
             }
             .padding(16)

@@ -103,10 +103,11 @@ public struct DashboardView: View {
             DashboardInspectorView(
                 widgetState: viewModel.widgetState,
                 goalsCurrency: defaultCurrency,
+                isDemoData: isDemoData,
                 openGoals: openGoals,
                 openAnomalyExplainer: openAnomalyExplainer
             )
-            .frame(width: 280)
+            .frame(width: 320)
             .background(tokens.background.color)
         }
     }
