@@ -445,24 +445,33 @@ private struct CopilotNavRow: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: 10) {
-                // Left-edge accent bar — 2pt wide. Painted with the
-                // brand accent so the active row tells the eye "this
-                // is the live destination" at a glance.
+                // Left-edge accent bar — 2.5pt wide on active rows.
+                // Painted with the brand accent + a subtle bloom so
+                // the active row reads as a live indicator rather than
+                // a flat marker.
                 Rectangle()
                     .fill(isActive ? chrome.brandAccent.color : Color.clear)
-                    .frame(width: 2)
+                    .frame(width: 2.5)
+                    .shadow(
+                        color: isActive
+                            ? chrome.brandAccent.color.opacity(0.55)
+                            : .clear,
+                        radius: 4
+                    )
 
                 Image(systemName: systemImage)
-                    .font(.system(size: 13, weight: .regular))
+                    .font(.system(size: 13, weight: isActive ? .semibold : .regular))
                     .frame(width: 18, alignment: .center)
                     .foregroundStyle(
                         isActive
-                            ? chrome.foregroundPrimary.color
-                            : chrome.foregroundSecondary.color
+                            ? chrome.brandAccent.color
+                            : (hover
+                                ? chrome.foregroundPrimary.color
+                                : chrome.foregroundSecondary.color)
                     )
 
                 Text(label)
-                    .font(.system(size: 13, weight: isActive ? .medium : .regular, design: .default))
+                    .font(.system(size: 13, weight: isActive ? .semibold : .regular, design: .default))
                     .foregroundStyle(
                         isActive || hover
                             ? chrome.foregroundPrimary.color
@@ -473,24 +482,42 @@ private struct CopilotNavRow: View {
 
                 if let badge {
                     Text("\(badge)")
-                        .font(.system(size: 11, weight: .medium, design: .default))
-                        .foregroundStyle(chrome.badgeForeground.color)
+                        .font(.system(size: 11, weight: .semibold, design: .default))
+                        .foregroundStyle(
+                            isActive
+                                ? chrome.brandAccent.color
+                                : chrome.badgeForeground.color
+                        )
                         .padding(.horizontal, 8)
                         .padding(.vertical, 2)
                         .background(
                             Capsule()
-                                .fill(chrome.badgeFill.color)
+                                .fill(isActive
+                                    ? chrome.brandAccent.color.opacity(0.15)
+                                    : chrome.badgeFill.color)
                         )
                         .accessibilityIdentifier("copilot.sidebar.badge.\(label)")
                 }
             }
             .padding(.trailing, 12)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(rowBackground)
+                    .fill(rowBackgroundFill)
+            )
+            .overlay(
+                // Hairline border on active row + a subtle warm bleed.
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .stroke(
+                        isActive
+                            ? chrome.brandAccent.color.opacity(0.18)
+                            : Color.clear,
+                        lineWidth: 1
+                    )
             )
             .contentShape(Rectangle())
+            .animation(DS.Motion.snappy, value: isActive)
+            .animation(DS.Motion.snappy, value: hover)
         }
         .buttonStyle(.plain)
         .onHover { hover = $0; cursor($0) }
@@ -498,10 +525,28 @@ private struct CopilotNavRow: View {
         .accessibilityAddTraits(isActive ? [.isSelected, .isButton] : [.isButton])
     }
 
-    private var rowBackground: Color {
-        if isActive { return chrome.activeRowBackground.color }
-        if hover    { return chrome.activeRowBackground.color.opacity(0.5) }
-        return Color.clear
+    /// Backgound fill responds to active + hover. Active stacks a
+    /// luminance lift on top of a faint amber wash so the row reads
+    /// as "the destination you're on" without overwhelming the
+    /// other rows.
+    private var rowBackgroundFill: some ShapeStyle {
+        let amber = chrome.brandAccent.color
+        if isActive {
+            return AnyShapeStyle(
+                LinearGradient(
+                    colors: [
+                        chrome.activeRowBackground.color,
+                        chrome.activeRowBackground.color.opacity(0.85)
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+            )
+        }
+        if hover {
+            return AnyShapeStyle(amber.opacity(0.06))
+        }
+        return AnyShapeStyle(Color.clear)
     }
 
     private func cursor(_ hovering: Bool) {
@@ -813,8 +858,17 @@ private struct CopilotDetailPane: View {
                 .id("accountDetail.\(id)")
             }
         }
-        .transition(.opacity)
-        .animation(.easeOut(duration: 0.18), value: routing.selection)
+        // Detail-pane route transition. Each destination uses its own
+        // `.id(...)` so SwiftUI rebuilds when the selection changes;
+        // we crossfade with a slight upward slide so the new surface
+        // arrives instead of snapping.
+        .transition(
+            .asymmetric(
+                insertion: .opacity.combined(with: .offset(y: 6)),
+                removal: .opacity
+            )
+        )
+        .animation(DS.Motion.smooth, value: routing.selection)
     }
 }
 

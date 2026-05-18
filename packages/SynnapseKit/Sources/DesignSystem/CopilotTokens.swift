@@ -33,50 +33,50 @@ public enum CopilotTokens {
         public let badgeForeground:    ColorToken
     }
 
-    // 2026-05-18 refresh: moved off the flat gray-black palette to a
-    // teal-tinted three-tier hierarchy (content / sidebar / elevated)
-    // that pairs with the new app-icon gradient. The brand accent
-    // shifts toward the warmer hub-amber so the icon glyph and the
-    // in-app brand chip read as the same hue.
+    // 2026-05-18 polish pass: tightened the value hierarchy and shifted
+    // the active-row state toward an amber-bleed luminance lift so the
+    // selected sidebar row reads as a soft glow rather than a flat
+    // panel. Separator a touch more visible; search field tightens by
+    // half a step so it doesn't compete with the active row.
     public static let shell = Shell(
-        // ~#0A1620 — deep teal-tinted near-black. Reads as the room
+        // ~#091522 — deep teal-tinted near-black. Reads as the room
         // floor, not pure void. The blue undertone differentiates the
         // app from generic "dev console dark" and gives the warm
         // accent more visual snap.
-        contentBackground:   ColorToken(0.040, 0.085, 0.125),
+        contentBackground:   ColorToken(0.035, 0.080, 0.125),
 
-        // ~#13202C — sidebar sits ~0.05 luminance above the content.
+        // ~#152434 — sidebar sits ~0.06 luminance above the content.
         // Matches the top of the app-icon gradient.
-        sidebarBackground:   ColorToken(0.075, 0.125, 0.170),
+        sidebarBackground:   ColorToken(0.080, 0.140, 0.195),
 
         // Near-white for body text; cooler dimmed secondary so it
         // recedes into the teal base rather than clashing.
-        foregroundPrimary:   ColorToken(0.94, 0.95, 0.97),
-        foregroundSecondary: ColorToken(0.58, 0.66, 0.74),
+        foregroundPrimary:   ColorToken(0.96, 0.97, 0.99),
+        foregroundSecondary: ColorToken(0.62, 0.70, 0.78),
 
         // Brand accent matched to the icon hub (#FFB038 → 1.0, 0.69,
         // 0.22). Clears 4.5:1 on both surfaces, doesn't bleed into
         // the gain-green finance accent.
-        brandAccent:         ColorToken(1.000, 0.690, 0.220),
+        brandAccent:         ColorToken(1.000, 0.700, 0.230),
 
-        // Active-row tint with a hint of the hub-amber bleed so the
-        // selected sidebar row pulls the eye like a low-energy glow
-        // rather than a flat gray block.
-        activeRowBackground: ColorToken(0.135, 0.180, 0.225),
+        // Active-row tint now leans warmer so the selected row carries
+        // a hint of the amber accent (a subtle "glow" feel) rather
+        // than a neutral gray block.
+        activeRowBackground: ColorToken(0.180, 0.190, 0.215),
 
-        // Subtle separator — same hairline alpha, neutral hue so it
-        // doesn't compete with the colored tints around it.
-        separator:           ColorToken(1.0, 1.0, 1.0, opacity: 0.09),
+        // Slightly more visible separator — still reads as a hairline
+        // but no longer disappears against the new content tone.
+        separator:           ColorToken(1.0, 1.0, 1.0, opacity: 0.11),
 
-        // Search field one notch above the sidebar, slightly cooler
-        // so the input affordance reads at idle without painting a
-        // hard border.
-        searchFieldFill:     ColorToken(0.110, 0.165, 0.215),
+        // Search field one notch above the sidebar. Slightly more
+        // saturation so the input affordance reads at idle without
+        // painting a hard border.
+        searchFieldFill:     ColorToken(0.115, 0.175, 0.230),
 
         // Transaction-count badge. Stays neutral so the categorical
         // pill colors don't have to compete with it.
-        badgeFill:           ColorToken(1.0, 1.0, 1.0, opacity: 0.11),
-        badgeForeground:     ColorToken(0.88, 0.91, 0.94)
+        badgeFill:           ColorToken(1.0, 1.0, 1.0, opacity: 0.12),
+        badgeForeground:     ColorToken(0.90, 0.93, 0.96)
     )
 }
 
