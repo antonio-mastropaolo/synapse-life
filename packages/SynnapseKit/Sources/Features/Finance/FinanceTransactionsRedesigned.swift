@@ -73,21 +73,30 @@ public struct FinanceTransactionsRedesigned: View {
         }
     }
 
-    // MARK: - 1. Spend Constellation
+    // MARK: - 1. Daily Spend Composition
+    //
+    // Replaced the original scattered-bubble "constellation" with a
+    // sequence of 14 horizontal stacked bars, one per day. Each bar's
+    // total width is proportional to that day's spend (relative to
+    // the heaviest day in the period); each segment in the bar is one
+    // category, sized by spend. Far more legible than bubbles: the
+    // eye reads the rows top-to-bottom and sees both the day's size
+    // AND its composition at a glance.
 
     private func constellationCard(tokens: TokenSet) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 14) {
             HStack {
-                Text("SPEND CONSTELLATION · LAST 14 DAYS")
+                Text("DAILY SPEND · LAST 14 DAYS")
                     .font(.system(size: 10, weight: .semibold, design: .monospaced))
                     .tracking(0.9)
                     .foregroundStyle(tokens.foregroundSecondary.color)
                 Spacer()
-                Text("\(constellationDays.count) days × \(categoryBuckets.count) categories")
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
+                Text("Each row is one day. Width = total spend. Segments = categories.")
+                    .font(.system(size: 10, weight: .regular, design: .default))
                     .foregroundStyle(tokens.foregroundSecondary.color)
             }
-            constellationChart(tokens: tokens)
+            dailyComposition(tokens: tokens)
+            categoryLegend(tokens: tokens)
         }
         .padding(20)
         .background(
@@ -100,74 +109,111 @@ public struct FinanceTransactionsRedesigned: View {
         )
     }
 
-    private func constellationChart(tokens: TokenSet) -> some View {
-        let bands = categoryBuckets
-        let days = constellationDays
-        let cellHeight: CGFloat = 30
-        let leftAxisWidth: CGFloat = 110
-        return VStack(alignment: .leading, spacing: 0) {
-            GeometryReader { geo in
-                let plotWidth = geo.size.width - leftAxisWidth
-                let plotHeight = CGFloat(bands.count) * cellHeight
-                let dayWidth = plotWidth / CGFloat(max(days.count, 1))
-
-                ZStack(alignment: .topLeading) {
-                    // Horizontal band guides
-                    ForEach(Array(bands.enumerated()), id: \.element.name) { idx, band in
-                        let y = CGFloat(idx) * cellHeight
-                        Rectangle()
-                            .fill(band.color.opacity(0.04))
-                            .frame(width: plotWidth, height: cellHeight)
-                            .offset(x: leftAxisWidth, y: y)
-                        // Category label
-                        Text(band.name)
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
-                            .foregroundStyle(band.color)
-                            .frame(width: leftAxisWidth - 8, alignment: .trailing)
-                            .offset(x: 0, y: y + cellHeight / 2 - 6)
-                    }
-
-                    // Bubbles
-                    ForEach(Array(bands.enumerated()), id: \.element.name) { bandIdx, band in
-                        ForEach(band.transactions) { tx in
-                            let dayIdx = days.firstIndex(of: dayKey(tx.date)) ?? 0
-                            let amt = abs((tx.amount as NSDecimalNumber?)?.doubleValue ?? 0)
-                            let r = bubbleRadius(amount: amt)
-                            let cx = leftAxisWidth + CGFloat(dayIdx) * dayWidth + dayWidth / 2
-                            let cy = CGFloat(bandIdx) * cellHeight + cellHeight / 2
-                            Circle()
-                                .fill(band.color.opacity(0.55))
-                                .overlay(
-                                    Circle().stroke(band.color, lineWidth: 1)
-                                )
-                                .frame(width: r * 2, height: r * 2)
-                                .offset(x: cx - r, y: cy - r)
-                        }
-                    }
-                }
-                .frame(height: plotHeight)
-            }
-            .frame(height: CGFloat(bands.count) * cellHeight)
-
-            // X-axis day labels
-            HStack(spacing: 0) {
-                Spacer().frame(width: leftAxisWidth)
-                ForEach(days, id: \.self) { day in
-                    Text(dayShort(day))
-                        .font(.system(size: 8, weight: .regular, design: .monospaced))
+    private func dailyComposition(tokens: TokenSet) -> some View {
+        let rows = dailyComposed
+        let peak = rows.map(\.total).max() ?? 1
+        return VStack(alignment: .leading, spacing: 4) {
+            ForEach(rows) { row in
+                HStack(spacing: 10) {
+                    Text(row.label)
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
                         .tracking(0.4)
-                        .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.7))
-                        .frame(maxWidth: .infinity)
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                        .frame(width: 56, alignment: .trailing)
+
+                    GeometryReader { geo in
+                        let widthScale = geo.size.width
+                        let totalWidth = widthScale * (row.total == 0 ? 0 : row.total / peak)
+                        HStack(spacing: 1) {
+                            ForEach(row.segments) { seg in
+                                let segWidth = totalWidth * (row.total == 0 ? 0 : seg.amount / row.total)
+                                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                    .fill(seg.color)
+                                    .frame(width: max(segWidth, seg.amount > 0 ? 2 : 0))
+                            }
+                            if row.total == 0 {
+                                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                                    .fill(tokens.foregroundSecondary.color.opacity(0.10))
+                                    .frame(width: 6)
+                            }
+                        }
+                        .frame(height: 16)
+                    }
+                    .frame(height: 16)
+
+                    Text(row.total == 0 ? "—" : formatCompactDollar(row.total))
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(row.total == 0 ? tokens.foregroundSecondary.color : tokens.foregroundPrimary.color)
+                        .frame(width: 64, alignment: .trailing)
                 }
             }
-            .padding(.top, 6)
         }
     }
 
-    private func bubbleRadius(amount: Double) -> CGFloat {
-        // Scale so a $5 charge is ~2pt and a $500 charge is ~14pt.
-        let scaled = sqrt(max(amount, 1)) * 0.7
-        return max(2.5, min(scaled, 14))
+    private func categoryLegend(tokens: TokenSet) -> some View {
+        FlowingHStack(spacing: 14) {
+            ForEach(categoryBuckets.prefix(8)) { bucket in
+                HStack(spacing: 5) {
+                    RoundedRectangle(cornerRadius: 2, style: .continuous)
+                        .fill(bucket.color)
+                        .frame(width: 10, height: 10)
+                    Text(bucket.name.capitalized)
+                        .font(.system(size: 10, weight: .medium, design: .default))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+            }
+        }
+    }
+
+    private func formatCompactDollar(_ value: Double) -> String {
+        if value >= 1000 { return String(format: "$%.1fK", value / 1000) }
+        return String(format: "$%.0f", value)
+    }
+
+    private struct DailyRow: Identifiable {
+        let id = UUID()
+        let label: String
+        let total: Double
+        let segments: [DailySegment]
+    }
+
+    private struct DailySegment: Identifiable {
+        let id = UUID()
+        let color: Color
+        let amount: Double
+    }
+
+    private var dailyComposed: [DailyRow] {
+        let cal = Calendar.current
+        let days = constellationDays.reversed()  // newest first reads top-down
+        return days.map { dayKey in
+            // Per-category amount on this day
+            var byCat: [(name: String, color: Color, amount: Double)] = []
+            for bucket in categoryBuckets {
+                let total = bucket.transactions.reduce(0.0) { acc, tx in
+                    let txKey = Self.keyFormatter.string(from: cal.startOfDay(for: tx.date))
+                    if txKey == dayKey {
+                        return acc + abs((tx.amount as NSDecimalNumber?)?.doubleValue ?? 0)
+                    }
+                    return acc
+                }
+                if total > 0 {
+                    byCat.append((bucket.name, bucket.color, total))
+                }
+            }
+            byCat.sort { $0.amount > $1.amount }
+            let segs = byCat.map { DailySegment(color: $0.color, amount: $0.amount) }
+            return DailyRow(
+                label: shortDayLabel(dayKey),
+                total: byCat.reduce(0.0) { $0 + $1.amount },
+                segments: segs
+            )
+        }
+    }
+
+    private func shortDayLabel(_ key: String) -> String {
+        guard let d = Self.keyFormatter.date(from: key) else { return key }
+        return Self.shortDayDow.string(from: d).uppercased()
     }
 
     // MARK: - 2. Category Grid
@@ -494,4 +540,64 @@ public struct FinanceTransactionsRedesigned: View {
         f.dateFormat = "MMM d"
         return f
     }()
+
+    private static let shortDayDow: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "EEE M/d"
+        return f
+    }()
+}
+
+/// Minimal wrapping HStack used for the category-color legend. Lays
+/// children left-to-right, breaks to a new row when the available
+/// width runs out. Substantially simpler than the AnyLayout dance —
+/// we only need it for ~8 small chips. Not @MainActor because the
+/// Layout protocol's methods are nonisolated.
+private struct FlowingHStack: Layout {
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) -> CGSize {
+        let maxWidth = proposal.width ?? .infinity
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        for sub in subviews {
+            let s = sub.sizeThatFits(.unspecified)
+            if x + s.width > maxWidth, x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            x += s.width + spacing
+            rowHeight = max(rowHeight, s.height)
+        }
+        return CGSize(width: maxWidth, height: y + rowHeight)
+    }
+
+    func placeSubviews(
+        in bounds: CGRect,
+        proposal: ProposedViewSize,
+        subviews: Subviews,
+        cache: inout ()
+    ) {
+        var x: CGFloat = bounds.minX
+        var y: CGFloat = bounds.minY
+        var rowHeight: CGFloat = 0
+        for sub in subviews {
+            let s = sub.sizeThatFits(.unspecified)
+            if x + s.width > bounds.maxX, x > bounds.minX {
+                x = bounds.minX
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            sub.place(at: CGPoint(x: x, y: y), proposal: .unspecified)
+            x += s.width + spacing
+            rowHeight = max(rowHeight, s.height)
+        }
+    }
 }
