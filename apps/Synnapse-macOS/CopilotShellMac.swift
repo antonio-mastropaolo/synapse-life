@@ -761,7 +761,9 @@ private struct CopilotDetailPane: View {
                     openCashFlow: { routing.select(.cashFlow) },
                     openGoals: { routing.select(.goals) },
                     isDemoData: showsDemoFooter,
-                    goalsStore: goals
+                    goalsStore: goals,
+                    membershipsStore: memberships,
+                    openMemberships: { routing.select(.memberships) }
                 )
                 .identity(.cockpitInstrument)
                 .id("dashboard")

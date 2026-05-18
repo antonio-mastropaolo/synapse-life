@@ -30,6 +30,8 @@ public struct DashboardView: View {
     private var openConnectFlow: (() -> Void)?
     private var isDemoData: Bool
     private var goalsStore: GoalsStore?
+    private var membershipsStore: MembershipsStore?
+    private var openMemberships: (() -> Void)?
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
@@ -45,7 +47,9 @@ public struct DashboardView: View {
         openAnomalyExplainer: ((String) -> Void)? = nil,
         openConnectFlow: (() -> Void)? = nil,
         isDemoData: Bool = false,
-        goalsStore: GoalsStore? = nil
+        goalsStore: GoalsStore? = nil,
+        membershipsStore: MembershipsStore? = nil,
+        openMemberships: (() -> Void)? = nil
     ) {
         self.viewModel = viewModel
         self.iconResolver = iconResolver
@@ -57,6 +61,8 @@ public struct DashboardView: View {
         self.openConnectFlow = openConnectFlow
         self.isDemoData = isDemoData
         self.goalsStore = goalsStore
+        self.membershipsStore = membershipsStore
+        self.openMemberships = openMemberships
     }
 
     public var body: some View {
@@ -88,6 +94,18 @@ public struct DashboardView: View {
                     openTopCategory: openTopCategory,
                     openNextBill: openNextBill,
                     iconResolver: iconResolver
+                )
+                DashboardHeroRow2(
+                    widgetState: viewModel.widgetState,
+                    currency: defaultCurrency,
+                    monthSpendTotal: monthSpendTotal,
+                    monthDayCount: monthDayCount,
+                    monthSparkline: monthSparkline,
+                    goalsStore: goalsStore,
+                    membershipsStore: membershipsStore,
+                    openGoals: openGoals,
+                    openMemberships: openMemberships,
+                    openSpending: openCashFlow
                 )
                 Divider().background(tokens.foregroundSecondary.color.opacity(0.18))
                 listScrollMac(tokens: tokens)
@@ -131,14 +149,28 @@ public struct DashboardView: View {
                 )
             }
             ScrollView(.horizontal, showsIndicators: false) {
-                DashboardHeroRow(
-                    widgetState: viewModel.widgetState,
-                    currency: defaultCurrency,
-                    openCashFlow: openCashFlow,
-                    openTopCategory: openTopCategory,
-                    openNextBill: openNextBill,
-                    iconResolver: iconResolver
-                )
+                VStack(spacing: 0) {
+                    DashboardHeroRow(
+                        widgetState: viewModel.widgetState,
+                        currency: defaultCurrency,
+                        openCashFlow: openCashFlow,
+                        openTopCategory: openTopCategory,
+                        openNextBill: openNextBill,
+                        iconResolver: iconResolver
+                    )
+                    DashboardHeroRow2(
+                        widgetState: viewModel.widgetState,
+                        currency: defaultCurrency,
+                        monthSpendTotal: monthSpendTotal,
+                        monthDayCount: monthDayCount,
+                        monthSparkline: monthSparkline,
+                        goalsStore: goalsStore,
+                        membershipsStore: membershipsStore,
+                        openGoals: openGoals,
+                        openMemberships: openMemberships,
+                        openSpending: openCashFlow
+                    )
+                }
                 .frame(minWidth: UIScreen.main.bounds.width)
             }
             Divider().background(tokens.foregroundSecondary.color.opacity(0.18))
@@ -329,6 +361,63 @@ public struct DashboardView: View {
     /// as a future setting.
     private var defaultCurrency: String {
         viewModel.entries.first?.transaction.currency ?? "USD"
+    }
+
+    // MARK: - Month aggregates (second hero row)
+    //
+    // Walks the dashboard's entry set to derive the month-to-date spend
+    // total, the number of days elapsed, and a per-day mini-sparkline
+    // for the second hero row's THIS MONTH card. Deterministic against
+    // a pinned reference date so demo snapshots stay stable.
+
+    private var monthEntries: [DashboardEntry] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let comps = cal.dateComponents([.year, .month], from: today)
+        return viewModel.entries.filter { e in
+            let d = e.transaction.date
+            let dc = cal.dateComponents([.year, .month], from: d)
+            return dc.year == comps.year && dc.month == comps.month
+        }
+    }
+
+    private var monthSpendTotal: Decimal {
+        monthEntries.reduce(Decimal.zero) { acc, e in
+            guard let amount = e.transaction.amount, amount < 0, !e.transaction.pending else {
+                return acc
+            }
+            return acc + abs(amount)
+        }
+    }
+
+    private var monthDayCount: Int {
+        let cal = Calendar.current
+        return cal.component(.day, from: Date())
+    }
+
+    /// Per-day spend totals for the current month, oldest first.
+    /// Capped at 12 buckets — the mini-bar chart inside the hero card
+    /// is only 18pt tall, so more bars would just turn into hair.
+    private var monthSparkline: [Double] {
+        let cal = Calendar.current
+        let today = cal.startOfDay(for: Date())
+        let days = monthDayCount
+        var buckets: [Double] = Array(repeating: 0, count: max(days, 1))
+        for e in monthEntries {
+            guard let amount = e.transaction.amount, amount < 0, !e.transaction.pending else {
+                continue
+            }
+            let dayOfMonth = cal.component(.day, from: e.transaction.date)
+            let idx = max(0, min(dayOfMonth - 1, buckets.count - 1))
+            buckets[idx] += abs((amount as NSDecimalNumber).doubleValue)
+            _ = today
+        }
+        // Cap to 12 bars; bucket the trailing 11 days flush, take
+        // earlier days as a mean.
+        if buckets.count <= 12 { return buckets }
+        let recent = Array(buckets.suffix(11))
+        let earlierMean = buckets.dropLast(11).reduce(0, +) / Double(buckets.count - 11)
+        return [earlierMean] + recent
     }
 }
 
