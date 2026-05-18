@@ -44,8 +44,14 @@ public struct FinanceTransactionsRedesigned: View {
                 header(tokens: tokens)
                 if !categoryBuckets.isEmpty {
                     constellationCard(tokens: tokens)
-                    categoryGrid(tokens: tokens)
-                    groupedList(tokens: tokens)
+                    if let focused = focusedBucket {
+                        // Exploded mode: the tapped card takes over the
+                        // grid slot entirely. Closing the panel returns
+                        // to the grid.
+                        expandedPanel(bucket: focused, tokens: tokens)
+                    } else {
+                        categoryGrid(tokens: tokens)
+                    }
                 } else {
                     emptyState(tokens: tokens)
                 }
@@ -55,6 +61,15 @@ public struct FinanceTransactionsRedesigned: View {
         }
         .background(tokens.background.color)
         .task { if case .idle = viewModel.state { await viewModel.refresh() } }
+    }
+
+    /// The single category currently shown in exploded mode. We treat
+    /// the original `expandedCategories` set as a stack-of-one for
+    /// this entry point — taking the first matching bucket so only
+    /// one explodes at a time.
+    private var focusedBucket: CategoryBucket? {
+        guard let name = expandedCategories.first else { return nil }
+        return categoryBuckets.first(where: { $0.name == name })
     }
 
     // MARK: - Header
@@ -216,7 +231,14 @@ public struct FinanceTransactionsRedesigned: View {
         return Self.shortDayDow.string(from: d).uppercased()
     }
 
-    // MARK: - 2. Category Grid
+    // MARK: - 2. Category Grid (expandable)
+    //
+    // The grid is a 4-column LazyVGrid of compact "summary" cards. Tap
+    // a card and that category gets promoted to a full-width row
+    // beneath the cards row it lived in, with the transaction list
+    // rendered inline — same data as the (now-removed) BY CATEGORY
+    // section, just attached to the tile so the eye doesn't have to
+    // jump down the page.
 
     private func categoryGrid(tokens: TokenSet) -> some View {
         let columns = [
@@ -225,11 +247,24 @@ public struct FinanceTransactionsRedesigned: View {
             GridItem(.flexible(), spacing: 12),
             GridItem(.flexible(), spacing: 12)
         ]
-        return VStack(alignment: .leading, spacing: 10) {
-            Text("CATEGORIES · SIZED BY SPEND")
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                .tracking(0.9)
-                .foregroundStyle(tokens.foregroundSecondary.color)
+        return VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                Text("CATEGORIES · TAP A CARD TO EXPLODE IT")
+                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                    .tracking(0.9)
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+                if !expandedCategories.isEmpty {
+                    Button {
+                        expandedCategories.removeAll()
+                    } label: {
+                        Text("Collapse all")
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .foregroundStyle(tokens.foregroundSecondary.color)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
             LazyVGrid(columns: columns, spacing: 12) {
                 ForEach(categoryBuckets) { bucket in
                     categoryCard(bucket: bucket, tokens: tokens)
@@ -240,165 +275,466 @@ public struct FinanceTransactionsRedesigned: View {
 
     private func categoryCard(bucket: CategoryBucket, tokens: TokenSet) -> some View {
         let pct = totalSpend > 0 ? (bucket.total / totalSpend) * 100 : 0
-        return VStack(alignment: .leading, spacing: 8) {
-            HStack(spacing: 6) {
-                Circle()
-                    .fill(bucket.color)
-                    .frame(width: 8, height: 8)
-                Text(bucket.name)
-                    .font(.system(size: 10, weight: .semibold, design: .monospaced))
-                    .tracking(0.6)
-                    .foregroundStyle(tokens.foregroundPrimary.color)
-                    .lineLimit(1)
-                Spacer()
-                Text(String(format: "%.0f%%", NSDecimalNumber(decimal: pct).doubleValue))
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
-                    .foregroundStyle(bucket.color)
+        let isExpanded = expandedCategories.contains(bucket.name)
+        return Button {
+            if isExpanded {
+                _ = expandedCategories.remove(bucket.name)
+            } else {
+                expandedCategories.insert(bucket.name)
             }
-            Text(bucket.total.formatted(.currency(code: "USD")))
-                .font(.system(size: 18, weight: .semibold, design: .monospaced))
-                .foregroundStyle(tokens.foregroundPrimary.color)
-            HStack(alignment: .bottom, spacing: 2) {
-                ForEach(Array(bucket.dailyTotals.enumerated()), id: \.offset) { _, value in
-                    let h = max(2, CGFloat(min(value / max(bucket.peakDaily, 1), 1.0)) * 22)
-                    RoundedRectangle(cornerRadius: 1.5, style: .continuous)
-                        .fill(bucket.color.opacity(0.75))
-                        .frame(height: h)
+        } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 6) {
+                    Circle()
+                        .fill(bucket.color)
+                        .frame(width: 8, height: 8)
+                    Text(bucket.name)
+                        .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                        .tracking(0.6)
+                        .foregroundStyle(tokens.foregroundPrimary.color)
+                        .lineLimit(1)
+                    Spacer()
+                    Text(String(format: "%.0f%%", NSDecimalNumber(decimal: pct).doubleValue))
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .foregroundStyle(bucket.color)
+                }
+                Text(bucket.total.formatted(.currency(code: "USD")))
+                    .font(.system(size: 18, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                HStack(alignment: .bottom, spacing: 2) {
+                    ForEach(Array(bucket.dailyTotals.enumerated()), id: \.offset) { _, value in
+                        let h = max(2, CGFloat(min(value / max(bucket.peakDaily, 1), 1.0)) * 22)
+                        RoundedRectangle(cornerRadius: 1.5, style: .continuous)
+                            .fill(bucket.color.opacity(0.75))
+                            .frame(height: h)
+                    }
+                }
+                .frame(height: 22)
+                HStack(spacing: 4) {
+                    Text("\(bucket.transactions.count) transactions")
+                        .font(.system(size: 9, weight: .regular, design: .monospaced))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                    Spacer()
+                    Image(systemName: isExpanded ? "rectangle.compress.vertical" : "rectangle.expand.vertical")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(bucket.color)
                 }
             }
-            .frame(height: 22)
-            Text("\(bucket.transactions.count) transactions")
-                .font(.system(size: 9, weight: .regular, design: .monospaced))
-                .foregroundStyle(tokens.foregroundSecondary.color)
+            .padding(12)
+            .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
+            .background(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(isExpanded ? bucket.color.opacity(0.10) : tokens.surface.color)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(bucket.color.opacity(isExpanded ? 0.65 : 0.30), lineWidth: isExpanded ? 1.5 : 1)
+            )
+            .contentShape(Rectangle())
         }
-        .padding(12)
-        .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
-        .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(tokens.surface.color)
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(bucket.color.opacity(0.30), lineWidth: 1)
-        )
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("transactions.category.\(bucket.name)")
     }
 
-    // MARK: - 3. Grouped List
+    // MARK: - Expanded panel
+    //
+    // Rendered full-width below the grid. Stats strip on top (count,
+    // avg, largest), transactions list below with real merchant
+    // icons resolved through `MerchantLogoView`.
 
-    private func groupedList(tokens: TokenSet) -> some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("BY CATEGORY")
+    private func expandedPanel(bucket: CategoryBucket, tokens: TokenSet) -> some View {
+        let borderColor: Color = bucket.color.opacity(0.45)
+        return VStack(alignment: .leading, spacing: 14) {
+            // Header
+            HStack(spacing: 10) {
+                Circle().fill(bucket.color).frame(width: 12, height: 12)
+                Text(bucket.name)
+                    .font(.system(size: 16, weight: .semibold, design: .default))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Text("\(bucket.transactions.count) transactions")
+                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+                Text(bucket.total.formatted(.currency(code: "USD")))
+                    .font(.system(size: 16, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(tokens.foregroundPrimary.color)
+                Button {
+                    _ = expandedCategories.remove(bucket.name)
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16, weight: .regular))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                }
+                .buttonStyle(.plain)
+            }
+
+            // ---- Stat strip (compact, top row) ----
+            HStack(spacing: 20) {
+                statTile(label: "Average", value: averageString(for: bucket), tokens: tokens)
+                statTile(label: "Largest", value: largestString(for: bucket), tokens: tokens)
+                statTile(label: "Most active day", value: peakDayString(for: bucket), tokens: tokens)
+                statTile(label: "Share of spend",
+                         value: String(format: "%.0f%%",
+                             totalSpend > 0
+                                 ? NSDecimalNumber(decimal: (bucket.total / totalSpend) * 100).doubleValue
+                                 : 0),
+                         tokens: tokens)
+            }
+
+            // ---- AI signals row ----
+            HStack(spacing: 12) {
+                Image(systemName: "sparkles")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(Color(red: 1.00, green: 0.69, blue: 0.22))
+                Text("AI SIGNALS · \(bucket.name.uppercased())")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(0.8)
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+                Text("SAMPLE")
+                    .font(.system(size: 8, weight: .semibold, design: .monospaced))
+                    .tracking(0.6)
+                    .foregroundStyle(Color.orange)
+                    .padding(.horizontal, 4)
+                    .padding(.vertical, 1)
+                    .background(
+                        RoundedRectangle(cornerRadius: 3, style: .continuous)
+                            .fill(Color.orange.opacity(0.15))
+                    )
+            }
+            aiSignalsGrid(bucket: bucket, tokens: tokens)
+
+            // ---- Transactions list ----
+            Text("TRANSACTIONS")
                 .font(.system(size: 10, weight: .semibold, design: .monospaced))
                 .tracking(0.9)
                 .foregroundStyle(tokens.foregroundSecondary.color)
-
-            VStack(alignment: .leading, spacing: 10) {
-                ForEach(categoryBuckets) { bucket in
-                    categorySection(bucket: bucket, tokens: tokens)
+                .padding(.top, 4)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(bucket.transactions.sorted(by: { $0.date > $1.date })) { tx in
+                    expandedTransactionRow(tx, bucket: bucket, tokens: tokens)
+                    Divider().background(tokens.foregroundSecondary.color.opacity(0.10))
                 }
             }
         }
-    }
-
-    private func categorySection(bucket: CategoryBucket, tokens: TokenSet) -> some View {
-        let isExpanded = expandedCategories.contains(bucket.name)
-        return VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.easeOut(duration: 0.22)) {
-                    if isExpanded {
-                        expandedCategories.remove(bucket.name)
-                    } else {
-                        expandedCategories.insert(bucket.name)
-                    }
-                }
-            } label: {
-                HStack(spacing: 12) {
-                    Circle().fill(bucket.color).frame(width: 10, height: 10)
-                    Text(bucket.name)
-                        .font(.system(size: 13, weight: .semibold, design: .default))
-                        .foregroundStyle(tokens.foregroundPrimary.color)
-                    Text("\(bucket.transactions.count)")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
-                        .foregroundStyle(tokens.foregroundSecondary.color)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 1)
-                        .background(
-                            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                                .fill(bucket.color.opacity(0.15))
-                        )
-                    Spacer()
-                    HStack(alignment: .bottom, spacing: 2) {
-                        ForEach(Array(bucket.dailyTotals.enumerated()), id: \.offset) { _, value in
-                            let h = max(2, CGFloat(min(value / max(bucket.peakDaily, 1), 1.0)) * 14)
-                            RoundedRectangle(cornerRadius: 1, style: .continuous)
-                                .fill(bucket.color.opacity(0.55))
-                                .frame(width: 3, height: h)
-                        }
-                    }
-                    .frame(height: 14)
-                    Text(bucket.total.formatted(.currency(code: "USD")))
-                        .font(.system(size: 13, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(tokens.foregroundPrimary.color)
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(tokens.foregroundSecondary.color)
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 12)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-
-            if isExpanded {
-                VStack(alignment: .leading, spacing: 0) {
-                    ForEach(bucket.transactions.sorted(by: { $0.date > $1.date })) { tx in
-                        transactionRow(tx, bucket: bucket, tokens: tokens)
-                        Divider().background(tokens.foregroundSecondary.color.opacity(0.10))
-                    }
-                }
-                .padding(.bottom, 4)
-            }
-        }
+        .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
                 .fill(tokens.surface.color)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .stroke(tokens.foregroundSecondary.color.opacity(0.10), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .stroke(borderColor, lineWidth: 1)
         )
     }
 
-    private func transactionRow(_ tx: Models.Transaction, bucket: CategoryBucket, tokens: TokenSet) -> some View {
-        HStack(spacing: 12) {
-            RoundedRectangle(cornerRadius: 5, style: .continuous)
-                .fill(bucket.color.opacity(0.20))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 5, style: .continuous)
-                        .stroke(bucket.color.opacity(0.45), lineWidth: 1)
-                )
-                .frame(width: 28, height: 28)
-                .overlay(
-                    Text(String(tx.name.prefix(1)).uppercased())
-                        .font(.system(size: 12, weight: .semibold, design: .default))
-                        .foregroundStyle(bucket.color)
-                )
+    private func statTile(label: String, value: String, tokens: TokenSet) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(label.uppercased())
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .tracking(0.7)
+                .foregroundStyle(tokens.foregroundSecondary.color)
+            Text(value)
+                .font(.system(size: 13, weight: .semibold, design: .monospaced))
+                .foregroundStyle(tokens.foregroundPrimary.color)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private func expandedTransactionRow(_ tx: Models.Transaction, bucket: CategoryBucket, tokens: TokenSet) -> some View {
+        HStack(spacing: 14) {
+            MerchantLogoView(
+                merchant: tx.name,
+                fallbackColor: bucket.color,
+                size: 36
+            )
             VStack(alignment: .leading, spacing: 2) {
                 Text(tx.name)
-                    .font(.system(size: 12, weight: .medium))
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundStyle(tokens.foregroundPrimary.color)
                     .lineLimit(1)
-                Text(Self.shortDate.string(from: tx.date))
-                    .font(.system(size: 10, weight: .regular, design: .monospaced))
-                    .foregroundStyle(tokens.foregroundSecondary.color)
+                HStack(spacing: 6) {
+                    Text(Self.shortDate.string(from: tx.date))
+                        .font(.system(size: 10, weight: .regular, design: .monospaced))
+                        .foregroundStyle(tokens.foregroundSecondary.color)
+                    if tx.pending {
+                        Text("PENDING")
+                            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                            .tracking(0.5)
+                            .foregroundStyle(Color.orange.opacity(0.85))
+                    }
+                }
             }
             Spacer()
             Text((tx.amount ?? 0).formatted(.currency(code: tx.currency)))
-                .font(.system(size: 12, weight: .medium, design: .monospaced))
+                .font(.system(size: 13, weight: .medium, design: .monospaced))
                 .foregroundStyle((tx.amount ?? 0) > 0 ? Color(red: 0.34, green: 0.78, blue: 0.50) : tokens.foregroundPrimary.color)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 8)
+        .padding(.vertical, 10)
+    }
+
+    private var orderedExpanded: [CategoryBucket] {
+        categoryBuckets.filter { expandedCategories.contains($0.name) }
+    }
+
+    private func averageString(for bucket: CategoryBucket) -> String {
+        guard !bucket.transactions.isEmpty else { return "—" }
+        let avg = bucket.total / Decimal(bucket.transactions.count)
+        return avg.formatted(.currency(code: "USD"))
+    }
+
+    private func largestString(for bucket: CategoryBucket) -> String {
+        let largest = bucket.transactions.map { abs($0.amount ?? 0) }.max() ?? 0
+        return largest.formatted(.currency(code: "USD"))
+    }
+
+    private func peakDayString(for bucket: CategoryBucket) -> String {
+        guard let peakIdx = bucket.dailyTotals.indices.max(by: {
+            bucket.dailyTotals[$0] < bucket.dailyTotals[$1]
+        }) else { return "—" }
+        let days = constellationDays
+        guard peakIdx < days.count else { return "—" }
+        guard let d = Self.keyFormatter.date(from: days[peakIdx]) else { return "—" }
+        return Self.shortDate.string(from: d)
+    }
+
+    // MARK: - AI signals
+    //
+    // Six tiles surfaced when a category card explodes. All derived
+    // locally from the bucket + 14-day window for now (deterministic,
+    // free, instant); the integrator can swap any tile to a real LLM
+    // call later by replacing the body of the corresponding helper.
+    // Every tile carries a tone color (good / warning / neutral) so
+    // the eye can scan the grid for red flags.
+
+    private struct AISignal: Identifiable {
+        let id = UUID()
+        let icon: String
+        let title: String
+        let detail: String
+        let tone: Color
+    }
+
+    private func aiSignalsGrid(bucket: CategoryBucket, tokens: TokenSet) -> some View {
+        let cols = [
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12),
+            GridItem(.flexible(), spacing: 12)
+        ]
+        let signals = aiSignals(for: bucket)
+        return LazyVGrid(columns: cols, spacing: 12) {
+            ForEach(signals) { signal in
+                aiSignalTile(signal: signal, tokens: tokens)
+            }
+        }
+    }
+
+    private func aiSignalTile(signal: AISignal, tokens: TokenSet) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: signal.icon)
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(signal.tone)
+                Text(signal.title.uppercased())
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(0.7)
+                    .foregroundStyle(tokens.foregroundSecondary.color)
+                Spacer()
+            }
+            Text(signal.detail)
+                .font(.system(size: 12, weight: .regular, design: .default))
+                .foregroundStyle(tokens.foregroundPrimary.color)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(tokens.foregroundSecondary.color.opacity(0.05))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(signal.tone.opacity(0.30), lineWidth: 1)
+        )
+    }
+
+    private func aiSignals(for bucket: CategoryBucket) -> [AISignal] {
+        let good   = Color(red: 0.34, green: 0.78, blue: 0.50)
+        let warn   = Color(red: 1.00, green: 0.69, blue: 0.22)
+        let neut   = Color(red: 0.27, green: 0.83, blue: 0.89)
+        let alert  = Color(red: 0.94, green: 0.33, blue: 0.56)
+
+        // 1. Trend vs typical baseline (derived from this bucket vs
+        // the median 14-day pace across all categories).
+        let typical = max(totalSpend / Decimal(max(categoryBuckets.count, 1)), 1)
+        let ratio = NSDecimalNumber(decimal: bucket.total / typical).doubleValue
+        let pct = Int((ratio - 1.0) * 100)
+        let trend: AISignal = {
+            if pct > 25 {
+                return AISignal(
+                    icon: "arrow.up.right",
+                    title: "Trend vs typical",
+                    detail: "\(bucket.name) is \(pct)% higher than your typical 14-day baseline. Largest contributor to that delta: \(topMerchant(for: bucket)).",
+                    tone: warn
+                )
+            } else if pct < -15 {
+                return AISignal(
+                    icon: "arrow.down.right",
+                    title: "Trend vs typical",
+                    detail: "\(bucket.name) is \(abs(pct))% lower than your typical pace. Quiet stretch — most categories see at least one charge per 4 days.",
+                    tone: good
+                )
+            } else {
+                return AISignal(
+                    icon: "equal.circle",
+                    title: "Trend vs typical",
+                    detail: "\(bucket.name) is tracking within \(abs(pct))% of your typical baseline. No active deviation.",
+                    tone: neut
+                )
+            }
+        }()
+
+        // 2. Anomaly / outlier.
+        let amounts = bucket.transactions.map {
+            abs((($0.amount as NSDecimalNumber?) ?? 0).doubleValue)
+        }
+        let avg = amounts.isEmpty ? 0 : amounts.reduce(0, +) / Double(amounts.count)
+        let largest = amounts.max() ?? 0
+        let outlierRatio = avg > 0 ? largest / avg : 0
+        let outlierTx = bucket.transactions.max(by: {
+            abs((($0.amount as NSDecimalNumber?) ?? 0).doubleValue) <
+            abs((($1.amount as NSDecimalNumber?) ?? 0).doubleValue)
+        })
+        let anomaly: AISignal = {
+            if outlierRatio >= 1.8, let tx = outlierTx {
+                return AISignal(
+                    icon: "exclamationmark.triangle.fill",
+                    title: "Outlier detected",
+                    detail: "Largest charge (\(tx.name.prefix(28))) is \(String(format: "%.1fx", outlierRatio)) the category's running average. Worth a glance.",
+                    tone: alert
+                )
+            } else {
+                return AISignal(
+                    icon: "checkmark.shield",
+                    title: "No outliers",
+                    detail: "Largest charge is \(String(format: "%.1fx", outlierRatio)) the average — within the normal range for this category.",
+                    tone: good
+                )
+            }
+        }()
+
+        // 3. Forecast: project month-end at current pace.
+        let dailyAvg = NSDecimalNumber(decimal: bucket.total / 14).doubleValue
+        let monthProj = Int(dailyAvg * 30)
+        let forecast = AISignal(
+            icon: "calendar.badge.clock",
+            title: "Month-end projection",
+            detail: "On this 14-day pace, \(bucket.name) lands near $\(formatThousandsInt(monthProj)) by the close of a 30-day window. \(monthProj > 500 ? "Set a budget if this category matters." : "Modest spend — likely stays in range.")",
+            tone: neut
+        )
+
+        // 4. Merchant concentration.
+        let merchants = Dictionary(grouping: bucket.transactions) { tx -> String in
+            String(tx.name.prefix(20))
+        }
+        let largestMerchant = merchants.max(by: { lhs, rhs in
+            lhs.value.reduce(0.0) { $0 + abs((($1.amount as NSDecimalNumber?) ?? 0).doubleValue) }
+            <
+            rhs.value.reduce(0.0) { $0 + abs((($1.amount as NSDecimalNumber?) ?? 0).doubleValue) }
+        })
+        let concentration: AISignal = {
+            guard let (name, txs) = largestMerchant else {
+                return AISignal(
+                    icon: "circle.grid.2x1",
+                    title: "Merchant mix",
+                    detail: "No data available.",
+                    tone: neut
+                )
+            }
+            let mTotal = txs.reduce(0.0) { $0 + abs((($1.amount as NSDecimalNumber?) ?? 0).doubleValue) }
+            let bucketTotalD = NSDecimalNumber(decimal: bucket.total).doubleValue
+            let mPct = bucketTotalD > 0 ? Int(100 * mTotal / bucketTotalD) : 0
+            return AISignal(
+                icon: "circle.grid.2x1",
+                title: "Merchant concentration",
+                detail: "\(mPct)% of this category goes to one merchant: \(name.trimmingCharacters(in: .whitespaces)). \(mPct >= 70 ? "Heavy concentration — worth reviewing the relationship." : "Diversified across multiple merchants.")",
+                tone: mPct >= 70 ? warn : neut
+            )
+        }()
+
+        // 5. Behaviour pattern — day-of-week clustering.
+        let cal = Calendar.current
+        var dowCounts: [Int: Int] = [:]
+        for tx in bucket.transactions {
+            let dow = cal.component(.weekday, from: tx.date)
+            dowCounts[dow, default: 0] += 1
+        }
+        let dominantDOW = dowCounts.max(by: { $0.value < $1.value })
+        let dowLabel: String = {
+            guard let day = dominantDOW?.key else { return "—" }
+            let names = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+            return names[(day - 1 + 7) % 7]
+        }()
+        let dowPct: Int = {
+            guard let d = dominantDOW, !bucket.transactions.isEmpty else { return 0 }
+            return Int(100.0 * Double(d.value) / Double(bucket.transactions.count))
+        }()
+        let pattern = AISignal(
+            icon: "waveform.path.ecg",
+            title: "Day-of-week pattern",
+            detail: dominantDOW == nil
+                ? "Not enough data to detect a cadence yet."
+                : "\(dowPct)% of \(bucket.name) charges land on \(dowLabel). \(dowPct >= 60 ? "Strong weekly cadence — automatable." : "No strong cadence — spend is spread across the week.")",
+            tone: dowPct >= 60 ? neut : Color(red: 0.58, green: 0.66, blue: 0.74)
+        )
+
+        // 6. AI recommendation.
+        let recommendation: AISignal = {
+            if pct > 30 {
+                return AISignal(
+                    icon: "sparkles",
+                    title: "AI suggests",
+                    detail: "Cap \(bucket.name) at $\(formatThousandsInt(Int(NSDecimalNumber(decimal: typical * Decimal(1.2)).doubleValue))) for the next 14 days. Reach the previous average and you free $\(formatThousandsInt(Int(ratio - 1.0) * Int(NSDecimalNumber(decimal: typical).doubleValue))) for goal progress.",
+                    tone: warn
+                )
+            } else if let (name, _) = largestMerchant, outlierRatio >= 1.8 {
+                return AISignal(
+                    icon: "sparkles",
+                    title: "AI suggests",
+                    detail: "Open the largest charge (\(name.trimmingCharacters(in: .whitespaces))) and verify it's expected. Outliers are the cheapest place to recover budget.",
+                    tone: warn
+                )
+            } else {
+                return AISignal(
+                    icon: "sparkles",
+                    title: "AI suggests",
+                    detail: "\(bucket.name) is healthy. No suggested action — keep doing what you're doing.",
+                    tone: good
+                )
+            }
+        }()
+
+        return [trend, anomaly, forecast, concentration, pattern, recommendation]
+    }
+
+    private func topMerchant(for bucket: CategoryBucket) -> String {
+        let grouped = Dictionary(grouping: bucket.transactions) {
+            String($0.name.prefix(20))
+        }
+        let top = grouped.max(by: { lhs, rhs in
+            lhs.value.reduce(0.0) { $0 + abs((($1.amount as NSDecimalNumber?) ?? 0).doubleValue) }
+            <
+            rhs.value.reduce(0.0) { $0 + abs((($1.amount as NSDecimalNumber?) ?? 0).doubleValue) }
+        })?.key ?? "—"
+        return top.trimmingCharacters(in: .whitespaces)
+    }
+
+    private func formatThousandsInt(_ n: Int) -> String {
+        let f = NumberFormatter()
+        f.numberStyle = .decimal
+        f.groupingSeparator = ","
+        return f.string(from: NSNumber(value: n)) ?? "\(n)"
     }
 
     // MARK: - Empty state
