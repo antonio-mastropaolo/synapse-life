@@ -662,7 +662,7 @@ private struct CopilotDetailPane: View {
             switch routing.selection {
             // Live surfaces.
             case .transactions, .finance(.transactions):
-                FinanceTransactionsView(viewModel: transactions)
+                FinanceTransactionsRedesigned(viewModel: transactions)
                     .identity(.cockpitInstrument)
                     .id("transactions")
 
