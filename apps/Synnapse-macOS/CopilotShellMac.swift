@@ -79,7 +79,8 @@ struct CopilotShellMac: View {
                 // Live unreviewed count from the Dashboard VM —
                 // mirrors agent 2's `entries.filter { !$0.reviewed }`
                 // path; the badge clears once the queue is empty.
-                unreviewedCount: dashboard.entries.filter { !$0.reviewed }.count
+                unreviewedCount: dashboard.entries.filter { !$0.reviewed }.count,
+                accounts: accounts
             )
             .frame(width: 248)
             .background(chrome.sidebarBackground.color)
@@ -136,6 +137,10 @@ private struct CopilotSidebar: View {
     /// row's badge. Drives the Copilot-style "you have N to review"
     /// affordance; `0` hides the badge.
     var unreviewedCount: Int = 0
+    /// Live `[FinanceAccount]` source used by the MY ACCOUNTS section.
+    /// Passed through from the shell so the sidebar block reflects the
+    /// same VM the Accounts detail surface reads off.
+    let accounts: FinanceAccountsViewModel
 
     // Search field state — visual only for now. The text is preserved
     // across re-renders so the operator does not lose what they typed
@@ -281,25 +286,11 @@ private struct CopilotSidebar: View {
     // MARK: MY ACCOUNTS
 
     private var myAccountsSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Text("MY ACCOUNTS")
-                .font(.system(size: 10, weight: .semibold, design: .default))
-                .tracking(0.9)
-                .foregroundStyle(chrome.foregroundSecondary.color)
-                .padding(.horizontal, 16)
-                .padding(.top, 6)
-                .padding(.bottom, 6)
-
-            accountSubgroup(
-                title: "Credit cards",
-                accounts: CopilotSidebar.mockCreditCards
-            )
-
-            accountSubgroup(
-                title: "Depository",
-                accounts: CopilotSidebar.mockDepositories
-            )
-        }
+        CopilotSidebarAccounts(
+            accounts: accounts,
+            routing: routing,
+            chrome: chrome
+        )
     }
 
     @ViewBuilder
@@ -687,7 +678,7 @@ private struct CopilotDetailPane: View {
                     .id("transactions")
 
             case .accounts, .finance(.accounts):
-                FinanceAccountsView(viewModel: accounts)
+                FinanceAccountsRedesigned(viewModel: accounts)
                     .identity(.cockpitInstrument)
                     .id("accounts")
 
@@ -735,19 +726,19 @@ private struct CopilotDetailPane: View {
                     .identity(.cockpitInstrument)
                     .id("categories")
 
-            // INTELLIGENCE section (agent 5 / AI++ wedge).
+            // INTELLIGENCE section — redesigned 2026-05-18.
             case .digest:
-                DigestView(viewModel: digest)
+                DigestRedesigned(viewModel: digest)
                     .identity(.cockpitInstrument)
                     .id("digest")
 
             case .forecast:
-                ForecastView(viewModel: forecast)
+                ForecastRedesigned(viewModel: forecast)
                     .identity(.cockpitInstrument)
                     .id("forecast")
 
             case .smartAlerts:
-                SmartAlertsView(viewModel: smartAlerts)
+                SmartAlertsRedesigned(viewModel: smartAlerts)
                     .identity(.cockpitInstrument)
                     .id("smartAlerts")
 
@@ -807,10 +798,11 @@ private struct CopilotDetailPane: View {
             // the eventual live-sidebar migration. AccountDetailHost
             // owns the VM in @State so range-chip taps survive.
             case .accountDetail(let id):
-                AccountDetailHost(
+                AccountDetailRedesignedHost(
                     id: id,
                     accounts: accounts.accounts,
-                    allTransactions: transactions.rows
+                    allTransactions: transactions.rows,
+                    onClose: { routing.select(.accounts) }
                 )
                 .identity(.cockpitInstrument)
                 .id("accountDetail.\(id)")
@@ -852,5 +844,44 @@ private extension Bundle {
     /// build picks up a stale module map.
     var copilotShortVersion: String {
         infoDictionary?["CFBundleShortVersionString"] as? String ?? "0.1.0"
+    }
+}
+
+// MARK: - AccountDetailRedesignedHost
+//
+// Lifecycle wrapper that builds an AccountDetailViewModel from a
+// captured account id + transactions slice, then renders the
+// redesigned per-account drill-down. Mirrors the pattern of the
+// legacy AccountDetailHost in Features/AccountDetail/AccountDetailView.swift
+// but targets AccountDetailRedesigned (which owns the new 64pt hero,
+// AI insights, transactions feed, and sync status card).
+
+@MainActor
+private struct AccountDetailRedesignedHost: View {
+    let id: String
+    let accounts: [FinanceAccount]
+    let allTransactions: [Models.Transaction]
+    let onClose: () -> Void
+
+    @State private var viewModel: AccountDetailViewModel?
+
+    var body: some View {
+        Group {
+            if let vm = viewModel {
+                AccountDetailRedesigned(viewModel: vm, onClose: onClose)
+            } else {
+                AccountDetailRedesignedEmpty(onClose: onClose)
+            }
+        }
+        .task(id: id) {
+            if let account = accounts.first(where: { $0.id == id }) {
+                viewModel = AccountDetailViewModel(
+                    account: account,
+                    allTransactions: allTransactions
+                )
+            } else {
+                viewModel = nil
+            }
+        }
     }
 }

@@ -37,6 +37,7 @@
 		CAEB9E43C7D027B7888EBF67 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = F187A35D3CEA82B2E385A7F0 /* Haptics.swift */; };
 		CEC869AE47EE3F213990C361 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 60A84DD6EADA5FBDC5411AD1 /* DesignSystem */; };
 		DB13E2F975DB6609DAF8C217 /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = DE00E3985CE8BFC656951EE0 /* AppLifecycle */; };
+		E5AA85BE8A0CFB7DCE08F6C9 /* CopilotSidebarAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864FFE8C705EDA9C78C9F873 /* CopilotSidebarAccounts.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -53,6 +54,7 @@
 		6C66AC7FFF36359433613719 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
 		6F2A45A32A29942F0FFFD9F2 /* SynnapseKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynnapseKit; path = packages/SynnapseKit; sourceTree = SOURCE_ROOT; };
 		7BE72D4E4B57B067026EDF50 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
+		864FFE8C705EDA9C78C9F873 /* CopilotSidebarAccounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotSidebarAccounts.swift; sourceTree = "<group>"; };
 		946FB557D2D570F7EF53D7F2 /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
 		CB9EF5D27AA78C9B713BA1A2 /* Synnapse-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synnapse-iOS.entitlements"; sourceTree = "<group>"; };
 		DF8E04278EAA81E93B14977A /* AccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDetailView.swift; sourceTree = "<group>"; };
@@ -139,6 +141,7 @@
 			children = (
 				5085850B5103E8CD1A5D86C7 /* Assets.xcassets */,
 				E41504EF7BEC79AD9A79DA11 /* CopilotShellMac.swift */,
+				864FFE8C705EDA9C78C9F873 /* CopilotSidebarAccounts.swift */,
 				287CEBA7E3EBF7BBCB955218 /* ExportOptions.plist */,
 				264A38AA058647E25DCD0355 /* FinanceShellView.swift */,
 				660C10623B8263E3B14A24B0 /* Synnapse-macOS.entitlements */,
@@ -300,6 +303,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				B955CF502E2F4D156D5B0E38 /* CopilotShellMac.swift in Sources */,
+				E5AA85BE8A0CFB7DCE08F6C9 /* CopilotSidebarAccounts.swift in Sources */,
 				85A2E5413387A3E4BFE10C52 /* FinanceShellView.swift in Sources */,
 				A8C479987B6ADC15773B0B59 /* RootView.swift in Sources */,
 				C32ECF3D63E4E0EB3DB9586A /* SynnapseMacApp.swift in Sources */,
