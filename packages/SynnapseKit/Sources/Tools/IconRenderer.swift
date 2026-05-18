@@ -9,64 +9,61 @@ import UniformTypeIdentifiers
 /// design language lives in code, not in a binary blob a designer has
 /// to re-export.
 ///
-/// Composition: three connected "synapse nodes" arranged in a
-/// downward-pointing triangle (one large hub, two smaller satellites)
-/// on a vertical gradient base. Reads as a stylised neural junction —
-/// on-brand for the project name, and visually distinct from the
-/// previous "amber S on black" placeholder which had no semantic load.
+/// Current design — "Phosphor terminal":
+///   • Near-black background, subtly warmed amber, with horizontal
+///     scan-lines drawn at low alpha.
+///   • Bold Menlo capital "S" in phosphor amber with a soft bloom so
+///     the glyph reads as glowing at every size.
+///   • Small amber cursor block in the lower-right corner — the same
+///     terminal-cursor language the LIFE surface uses.
 ///
-/// The same renderer drives `scripts/make-icons.swift` (which exports
-/// the full @1x / @2x / large.png set into the .appiconset folders).
+/// The previous "three-node synapse" palette is retained as
+/// `Palette.synapseV1` so the alternate look can be re-rendered
+/// without recovering the file from git history. Switching designs
+/// is a one-line change at the call site in `scripts/make-icons.swift`.
 public enum IconRenderer {
 
     public struct Palette: Sendable {
-        public let backgroundTop: CGColor
-        public let backgroundBottom: CGColor
-        public let hubFill: CGColor
-        public let hubCore: CGColor
-        public let satelliteA: CGColor
-        public let satelliteB: CGColor
-        public let connector: CGColor
+        public let background: CGColor
+        public let scanLine: CGColor
+        public let glyph: CGColor
+        public let glow: CGColor
+        public let cursor: CGColor
+        public let edge: CGColor
 
-        /// Default: deep teal-navy base, amber hub, cyan + magenta
-        /// satellites. Keeps the historical amber accent (the LIFE
-        /// terminal heritage) but layers it onto a richer multi-hue
-        /// palette so the icon doesn't read as "single-color dev
-        /// placeholder" any more.
-        public static let synapse = Palette(
-            backgroundTop:    CGColor(red: 0.040, green: 0.110, blue: 0.165, alpha: 1.0),  // #0A1C2A
-            backgroundBottom: CGColor(red: 0.085, green: 0.215, blue: 0.290, alpha: 1.0),  // #163749
-            hubFill:          CGColor(red: 1.000, green: 0.690, blue: 0.220, alpha: 1.0),  // #FFB038 — amber hub
-            hubCore:          CGColor(red: 1.000, green: 0.960, blue: 0.880, alpha: 1.0),  // warm white core glow
-            satelliteA:       CGColor(red: 0.270, green: 0.830, blue: 0.890, alpha: 1.0),  // #45D4E3 — cyan
-            satelliteB:       CGColor(red: 0.945, green: 0.330, blue: 0.560, alpha: 1.0),  // #F1548F — magenta
-            connector:        CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 0.65)
+        /// Default — phosphor amber on near-black with subtle scan-lines.
+        public static let phosphor = Palette(
+            background: CGColor(red: 0.040, green: 0.025, blue: 0.015, alpha: 1.0),
+            scanLine:   CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.06),
+            glyph:      CGColor(red: 1.000, green: 0.780, blue: 0.300, alpha: 1.0),
+            glow:       CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.85),
+            cursor:     CGColor(red: 1.000, green: 0.740, blue: 0.250, alpha: 0.92),
+            edge:       CGColor(red: 1.000, green: 0.680, blue: 0.220, alpha: 0.55)
         )
 
-        /// Legacy single-tone fallback. Retained so anything that
-        /// still references `.cockpitAmber` keeps compiling while the
-        /// new default rolls out.
-        public static let cockpitAmber = Palette(
-            backgroundTop:    CGColor(red: 0.00, green: 0.00, blue: 0.00, alpha: 1.0),
-            backgroundBottom: CGColor(red: 0.04, green: 0.04, blue: 0.04, alpha: 1.0),
-            hubFill:          CGColor(red: 1.00, green: 0.65, blue: 0.10, alpha: 1.0),
-            hubCore:          CGColor(red: 1.00, green: 0.85, blue: 0.45, alpha: 1.0),
-            satelliteA:       CGColor(red: 1.00, green: 0.65, blue: 0.10, alpha: 1.0),
-            satelliteB:       CGColor(red: 1.00, green: 0.65, blue: 0.10, alpha: 1.0),
-            connector:        CGColor(red: 1.00, green: 0.65, blue: 0.10, alpha: 0.65)
+        /// Legacy 2026-05-18 three-node synapse mark. Retained so a
+        /// caller (or a future user pref toggle) can ship that design
+        /// instead of the phosphor one without restoring the file.
+        public static let synapseV1 = Palette(
+            background: CGColor(red: 0.040, green: 0.110, blue: 0.165, alpha: 1.0),
+            scanLine:   CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 0.0),
+            glyph:      CGColor(red: 1.000, green: 0.690, blue: 0.220, alpha: 1.0),
+            glow:       CGColor(red: 1.000, green: 0.960, blue: 0.880, alpha: 1.0),
+            cursor:     CGColor(red: 0.270, green: 0.830, blue: 0.890, alpha: 1.0),
+            edge:       CGColor(red: 1.000, green: 1.000, blue: 1.000, alpha: 0.65)
         )
     }
 
     public enum RenderError: Error, Sendable {
         case contextCreationFailed
-        case gradientCreationFailed
+        case fontCreationFailed
         case imageEncodeFailed
     }
 
     /// Renders the icon into a PNG at the given side length. Square,
     /// opaque, no transparency. Geometry is in fractions of the side
-    /// so every output (16pt, 1024pt) reads consistently.
-    public static func renderPNG(side: Int, palette: Palette = .synapse) throws -> Data {
+    /// so 16pt and 1024pt read consistently.
+    public static func renderPNG(side: Int, palette: Palette = .phosphor) throws -> Data {
         let s = CGFloat(side)
         let bytesPerRow = side * 4
         let colorSpace = CGColorSpaceCreateDeviceRGB()
@@ -82,7 +79,7 @@ public enum IconRenderer {
             throw RenderError.contextCreationFailed
         }
 
-        // -- Background: rounded-square tile with vertical gradient --
+        // --- Tile + background ---
         let inset = s * 0.06
         let cornerRadius = s * 0.22
         let tile = CGRect(
@@ -95,85 +92,69 @@ public enum IconRenderer {
             cornerHeight: cornerRadius,
             transform: nil
         )
-
         ctx.saveGState()
         ctx.addPath(tilePath)
         ctx.clip()
+        ctx.setFillColor(palette.background)
+        ctx.fill(CGRect(x: 0, y: 0, width: s, height: s))
 
-        guard let gradient = CGGradient(
-            colorsSpace: colorSpace,
-            colors: [palette.backgroundTop, palette.backgroundBottom] as CFArray,
-            locations: [0.0, 1.0]
-        ) else {
-            throw RenderError.gradientCreationFailed
+        // --- Scan-lines ---
+        ctx.setStrokeColor(palette.scanLine)
+        ctx.setLineWidth(s * 0.004)
+        var y: CGFloat = s * 0.06
+        while y < s {
+            ctx.move(to: CGPoint(x: 0, y: y))
+            ctx.addLine(to: CGPoint(x: s, y: y))
+            ctx.strokePath()
+            y += s * 0.022
         }
-        ctx.drawLinearGradient(
-            gradient,
-            start: CGPoint(x: 0, y: s),
-            end: CGPoint(x: 0, y: 0),
-            options: []
-        )
         ctx.restoreGState()
 
-        // Subtle outer hairline so the icon retains a defined edge
-        // even when the OS composites it on a light Finder background.
+        // --- Edge ---
         ctx.addPath(tilePath)
-        ctx.setStrokeColor(palette.connector)
-        ctx.setLineWidth(s * 0.004)
+        ctx.setStrokeColor(palette.edge)
+        ctx.setLineWidth(s * 0.006)
         ctx.strokePath()
 
-        // -- Geometry of the three nodes --
-        //
-        // Triangle composition: hub at upper-center, two satellites
-        // bottom-left / bottom-right. The hub is ~26% diameter; each
-        // satellite is ~14% diameter. Connectors are 1.4% line width.
-        let cx = s / 2
-        let hubRadius = s * 0.13
-        let satRadius = s * 0.07
+        // --- Glyph "S" with bloom ---
+        let fontSize = s * 0.62
+        let glyphFont: CTFont = {
+            if let f = CTFontCreateWithName("Menlo-Bold" as CFString, fontSize, nil) as CTFont? {
+                return f
+            }
+            return CTFontCreateWithName("Courier-Bold" as CFString, fontSize, nil)
+        }()
+        let attrs: [CFString: Any] = [
+            kCTFontAttributeName: glyphFont,
+            kCTForegroundColorAttributeName: palette.glyph
+        ]
+        guard let attributed = CFAttributedStringCreate(
+            kCFAllocatorDefault,
+            "S" as CFString,
+            attrs as CFDictionary
+        ) else { throw RenderError.fontCreationFailed }
+        let line = CTLineCreateWithAttributedString(attributed)
+        let bounds = CTLineGetBoundsWithOptions(line, .useOpticalBounds)
+        let drawX = (s - bounds.width) / 2.0 - bounds.origin.x
+        let drawY = (s - bounds.height) / 2.0 - bounds.origin.y
 
-        let hubCenter = CGPoint(x: cx, y: s * 0.62)
-        let satA = CGPoint(x: s * 0.30, y: s * 0.30)  // bottom-left
-        let satB = CGPoint(x: s * 0.70, y: s * 0.30)  // bottom-right
+        // Bloom pass
+        ctx.saveGState()
+        ctx.setShadow(offset: .zero, blur: s * 0.035, color: palette.glow)
+        ctx.textPosition = CGPoint(x: drawX, y: drawY)
+        CTLineDraw(line, ctx)
+        ctx.restoreGState()
 
-        // -- Connectors first (so the nodes paint over the endpoints) --
-        ctx.setLineCap(.round)
-        ctx.setStrokeColor(palette.connector)
-        ctx.setLineWidth(s * 0.014)
-        for pair in [(hubCenter, satA), (hubCenter, satB), (satA, satB)] {
-            ctx.move(to: pair.0)
-            ctx.addLine(to: pair.1)
-            ctx.strokePath()
-        }
+        // Crisp top pass
+        ctx.textPosition = CGPoint(x: drawX, y: drawY)
+        CTLineDraw(line, ctx)
 
-        // -- Hub: outer fill, then warm core --
-        ctx.setFillColor(palette.hubFill)
-        ctx.fillEllipse(in: CGRect(
-            x: hubCenter.x - hubRadius,
-            y: hubCenter.y - hubRadius,
-            width: hubRadius * 2,
-            height: hubRadius * 2
-        ))
-        let coreRadius = hubRadius * 0.45
-        ctx.setFillColor(palette.hubCore)
-        ctx.fillEllipse(in: CGRect(
-            x: hubCenter.x - coreRadius,
-            y: hubCenter.y - coreRadius,
-            width: coreRadius * 2,
-            height: coreRadius * 2
-        ))
+        // --- Cursor block ---
+        let cw = s * 0.04
+        ctx.setFillColor(palette.cursor)
+        ctx.fill(CGRect(x: s * 0.78, y: s * 0.20, width: cw, height: cw))
 
-        // -- Satellites --
-        for (center, color) in [(satA, palette.satelliteA), (satB, palette.satelliteB)] {
-            ctx.setFillColor(color)
-            ctx.fillEllipse(in: CGRect(
-                x: center.x - satRadius,
-                y: center.y - satRadius,
-                width: satRadius * 2,
-                height: satRadius * 2
-            ))
-        }
-
-        // -- Encode --
+        // --- Encode ---
         guard let cgImage = ctx.makeImage() else {
             throw RenderError.imageEncodeFailed
         }
