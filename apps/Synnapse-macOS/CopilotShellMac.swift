@@ -678,9 +678,14 @@ private struct CopilotDetailPane: View {
                     .id("transactions")
 
             case .accounts, .finance(.accounts):
-                FinanceAccountsRedesigned(viewModel: accounts)
-                    .identity(.cockpitInstrument)
-                    .id("accounts")
+                FinanceAccountsRedesigned(
+                    viewModel: accounts,
+                    onSelectAccount: { account in
+                        routing.select(accountDetail: account.id)
+                    }
+                )
+                .identity(.cockpitInstrument)
+                .id("accounts")
 
             case .investments, .finance(.investments):
                 FinanceInvestmentsView(viewModel: investments)

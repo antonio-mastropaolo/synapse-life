@@ -37,8 +37,19 @@ public struct FinanceAccountsRedesigned: View {
     /// Controls the "coming soon" alert wired to every Add-account CTA.
     @State private var showAddAccountAlert: Bool = false
 
-    public init(viewModel: FinanceAccountsViewModel) {
+    /// Owner-supplied callback fired when the operator taps an account
+    /// row. The shell wires this to `routing.select(accountDetail:)`
+    /// so the row tap → detail-pane swap actually navigates. When
+    /// nil (previews / snapshots) the row just updates the VM's
+    /// `selected` slot.
+    private let onSelectAccount: ((FinanceAccount) -> Void)?
+
+    public init(
+        viewModel: FinanceAccountsViewModel,
+        onSelectAccount: ((FinanceAccount) -> Void)? = nil
+    ) {
         self.viewModel = viewModel
+        self.onSelectAccount = onSelectAccount
     }
 
     public var body: some View {
@@ -290,7 +301,10 @@ public struct FinanceAccountsRedesigned: View {
             section: section,
             tokens: tokens,
             isStale: isStale(account),
-            onSelect: { viewModel.selected = account }
+            onSelect: {
+                viewModel.selected = account
+                onSelectAccount?(account)
+            }
         )
     }
 
