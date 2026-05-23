@@ -161,6 +161,64 @@ final class ToolCallRegistryTests: XCTestCase {
         }
     }
 
+    @MainActor
+    func test_dispatch_recurrings_returnsRowsFromStore() async throws {
+        let container = try PersistenceContainerFactory.ephemeralContainer()
+        let txStore = TransactionStore(modelContainer: container)
+        let acctStore = AccountStore(modelContainer: container)
+        let invStore = InvestmentStore(modelContainer: container)
+        let recStore = RecurringStore(modelContainer: container)
+
+        let when = Date(timeIntervalSince1970: 1_779_840_000)
+        _ = try await recStore.upsert(Recurring(
+            id: "recurring.netflix",
+            merchant: "Netflix",
+            category: "subscriptions",
+            medianAmount: Decimal(string: "15.49")!,
+            cadenceDays: 30,
+            lastSeen: when.addingTimeInterval(-30 * 86_400),
+            predictedNext: when,
+            occurrenceCount: 5,
+            confidence: 0.92,
+            transactionIds: ["t1", "t2", "t3", "t4", "t5"],
+            isIncome: false
+        ))
+
+        let registry = ToolCallRegistry(
+            accountStore: acctStore,
+            transactionStore: txStore,
+            investmentStore: invStore,
+            recurringStore: recStore
+        )
+        let json = try await registry.dispatch("get_recurrings", args: [:])
+        let obj = try JSONSerialization.jsonObject(
+            with: json.data(using: .utf8)!
+        ) as! [String: Any]
+        XCTAssertEqual(obj["count"] as? Int, 1)
+        let rows = obj["recurrings"] as! [[String: Any]]
+        XCTAssertEqual(rows.first?["merchant"] as? String, "Netflix")
+        XCTAssertEqual(rows.first?["category"] as? String, "subscriptions")
+        XCTAssertEqual(rows.first?["cadenceDays"] as? Int, 30)
+    }
+
+    @MainActor
+    func test_dispatch_recurrings_throwsWhenNoStore() async throws {
+        let container = try PersistenceContainerFactory.ephemeralContainer()
+        let registry = ToolCallRegistry(
+            accountStore: AccountStore(modelContainer: container),
+            transactionStore: TransactionStore(modelContainer: container),
+            investmentStore: InvestmentStore(modelContainer: container)
+        )
+        do {
+            _ = try await registry.dispatch("get_recurrings", args: [:])
+            XCTFail("expected throw")
+        } catch LLMError.toolNotImplemented {
+            // expected — degrades gracefully when no RecurringStore is wired.
+        } catch {
+            XCTFail("unexpected error: \(error)")
+        }
+    }
+
     func test_defaultTools_listsFourTools() {
         let tools = ToolCallRegistry.defaultTools()
         XCTAssertEqual(tools.count, 4)

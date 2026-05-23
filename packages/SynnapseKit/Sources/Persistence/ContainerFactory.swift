@@ -29,7 +29,8 @@ public enum PersistenceContainerFactory {
         PersistedTransaction.self,
         PersistedInvestmentPosition.self,
         PersistedAuditLog.self,
-        PersistedNotification.self
+        PersistedNotification.self,
+        PersistedRecurring.self
     ])
 
     /// Build a `ModelContainer` for the requested configuration. Throws

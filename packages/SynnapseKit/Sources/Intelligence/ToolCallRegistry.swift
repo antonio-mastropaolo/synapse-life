@@ -5,25 +5,28 @@ import Persistence
 /// Maps `LLMToolCall` names onto the local SwiftData stores and returns
 /// the result as a JSON string the model can ingest in its next turn.
 ///
-/// Only `get_accounts` and `get_transactions(start, end, category?)` are
-/// implemented in this pass. `get_investments` is registered as a tool
-/// descriptor but throws `LLMError.toolNotImplemented`. `get_recurrings`
-/// is also registered as a descriptor but has no backing store yet
-/// (Persistence layer doesn't ship a `RecurringStore`); it likewise
-/// throws so the router can degrade gracefully.
+/// `get_accounts`, `get_transactions(start, end, category?)`, and
+/// `get_recurrings` are wired to their backing stores. `get_recurrings`
+/// requires a `RecurringStore`; when one isn't supplied it throws
+/// `LLMError.toolNotImplemented` so the router degrades gracefully rather
+/// than crashing. `get_investments` is registered as a tool descriptor but
+/// still throws `LLMError.toolNotImplemented`.
 public actor ToolCallRegistry {
     private let accountStore: AccountStore
     private let transactionStore: TransactionStore
     private let investmentStore: InvestmentStore
+    private let recurringStore: RecurringStore?
 
     public init(
         accountStore: AccountStore,
         transactionStore: TransactionStore,
-        investmentStore: InvestmentStore
+        investmentStore: InvestmentStore,
+        recurringStore: RecurringStore? = nil
     ) {
         self.accountStore = accountStore
         self.transactionStore = transactionStore
         self.investmentStore = investmentStore
+        self.recurringStore = recurringStore
     }
 
     /// Default tool descriptors exposed to the model. The four-tool set
@@ -69,7 +72,7 @@ public actor ToolCallRegistry {
         case "get_investments":
             throw LLMError.toolNotImplemented("get_investments")
         case "get_recurrings":
-            throw LLMError.toolNotImplemented("get_recurrings")
+            return try await encodeRecurrings()
         default:
             throw LLMError.toolNotImplemented(name)
         }
@@ -124,6 +127,28 @@ public actor ToolCallRegistry {
             return row
         }
         return try Self.jsonString(["transactions": encoded, "count": encoded.count])
+    }
+
+    private func encodeRecurrings() async throws -> String {
+        guard let recurringStore else {
+            throw LLMError.toolNotImplemented("get_recurrings")
+        }
+        let rows = try await recurringStore.all()
+        let encoded = rows.map { r -> [String: Any] in
+            [
+                "id": r.id,
+                "merchant": r.merchant,
+                "category": r.category,
+                "medianAmount": NSDecimalNumber(decimal: r.medianAmount).doubleValue,
+                "cadenceDays": r.cadenceDays,
+                "lastSeen": Self.isoDayString(r.lastSeen),
+                "predictedNext": Self.isoDayString(r.predictedNext),
+                "occurrenceCount": r.occurrenceCount,
+                "confidence": r.confidence,
+                "isIncome": r.isIncome
+            ]
+        }
+        return try Self.jsonString(["recurrings": encoded, "count": encoded.count])
     }
 
     private static func jsonString(_ value: Any) throws -> String {

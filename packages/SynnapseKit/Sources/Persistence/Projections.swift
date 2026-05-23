@@ -198,6 +198,68 @@ extension PersistedInvestmentPosition {
     }
 }
 
+extension PersistedRecurring {
+
+    public static func from(
+        _ dto: Recurring,
+        syncedAt: Date = Date()
+    ) -> PersistedRecurring {
+        PersistedRecurring(
+            id: dto.id,
+            merchant: dto.merchant,
+            category: dto.category,
+            medianAmount: dto.medianAmount,
+            cadenceDays: dto.cadenceDays,
+            lastSeen: dto.lastSeen,
+            predictedNext: dto.predictedNext,
+            occurrenceCount: dto.occurrenceCount,
+            confidence: dto.confidence,
+            transactionIds: dto.transactionIds,
+            isIncome: dto.isIncome,
+            lastSyncedAt: syncedAt
+        )
+    }
+
+    public func toDTO() -> Recurring {
+        Recurring(
+            id: id,
+            merchant: merchant,
+            category: category,
+            medianAmount: medianAmount,
+            cadenceDays: cadenceDays,
+            lastSeen: lastSeen,
+            predictedNext: predictedNext,
+            occurrenceCount: occurrenceCount,
+            confidence: confidence,
+            transactionIds: transactionIds,
+            isIncome: isIncome
+        )
+    }
+
+    /// In-place content update from a detector re-run. Returns `true` if any
+    /// surfaced field changed (the store reports this so a caller can decide
+    /// whether the change is worth surfacing).
+    @discardableResult
+    public func update(from dto: Recurring, syncedAt: Date = Date()) -> Bool {
+        var changed = false
+        if merchant != dto.merchant               { merchant = dto.merchant; changed = true }
+        if category != dto.category               { category = dto.category; changed = true }
+        if medianAmountRaw != dto.medianAmount.description {
+            medianAmountRaw = dto.medianAmount.description
+            changed = true
+        }
+        if cadenceDays != dto.cadenceDays         { cadenceDays = dto.cadenceDays; changed = true }
+        if lastSeen != dto.lastSeen               { lastSeen = dto.lastSeen; changed = true }
+        if predictedNext != dto.predictedNext     { predictedNext = dto.predictedNext; changed = true }
+        if occurrenceCount != dto.occurrenceCount { occurrenceCount = dto.occurrenceCount; changed = true }
+        if confidence != dto.confidence           { confidence = dto.confidence; changed = true }
+        if transactionIds != dto.transactionIds   { transactionIds = dto.transactionIds; changed = true }
+        if isIncome != dto.isIncome               { isIncome = dto.isIncome; changed = true }
+        lastSyncedAt = syncedAt
+        return changed
+    }
+}
+
 extension PersistedNotification {
 
     public static func from(

@@ -48,6 +48,9 @@ public final class AppCore {
     /// Durable proactive feed (Phase 4). The analyzer's nightly pass upserts
     /// into this; the Dashboard inbox reads `recent()` from it.
     public let notifications: ProactiveNotificationStore
+    /// Detected recurring charges (Phase 3 — G3). The detector re-derivation
+    /// upserts into this; the agent's `get_recurrings` tool reads from it.
+    public let recurringStore: RecurringStore
 
     /// Hybrid LLM router (Phase 3). Local on-device path + redacted remote
     /// path. Its LLM clients currently throw `notImplemented` and the router
@@ -168,6 +171,7 @@ public final class AppCore {
         self.investmentStore = InvestmentStore(modelContainer: container)
         self.auditLog = AuditLogStore(modelContainer: container)
         self.notifications = ProactiveNotificationStore(modelContainer: container)
+        self.recurringStore = RecurringStore(modelContainer: container)
 
         // Hybrid LLM router. Backends are Phase 3 shells today; the router
         // falls back to a deterministic stub so callers never break.

@@ -47,7 +47,8 @@ struct ContainerFactoryTests {
         #expect(entityNames.contains("PersistedInvestmentPosition"))
         #expect(entityNames.contains("PersistedAuditLog"))
         #expect(entityNames.contains("PersistedNotification"))
-        #expect(entityNames.count == 5)
+        #expect(entityNames.contains("PersistedRecurring"))
+        #expect(entityNames.count == 6)
     }
 
     @Test

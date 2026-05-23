@@ -39,6 +39,7 @@ struct CrashFreeLaunchTests {
         _ = core.investmentStore
         _ = core.auditLog
         _ = core.notifications
+        _ = core.recurringStore
         _ = core.llmRouter
     }
 
