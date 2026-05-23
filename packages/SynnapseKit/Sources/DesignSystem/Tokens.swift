@@ -81,14 +81,12 @@ public struct TokenSet: Sendable, Equatable {
         self.foregroundPrimary = foregroundPrimary
         self.foregroundSecondary = foregroundSecondary
         self.accent = accent
-        // M9 a11y win: dropped from (0.20, 0.78, 0.50) — that value sat at
-        // 2.14:1 against the off-white default background, well under the
-        // 3.0:1 floor for a non-text UI element. The new value reads as the
-        // same "gain green" but clears WCAG AA. Allowlist entries in
-        // [[AccessibilityAuditTests]] for "[light] background ↔ gainAccent"
-        // were removed at the same time.
-        self.gainAccent = gainAccent ?? ColorToken(0.05, 0.55, 0.30)
-        self.lossAccent = lossAccent ?? ColorToken(0.92, 0.32, 0.32)
+        // Default gain/loss derive from Apple's system green/red so any
+        // identity that does not override them still reads as money. The
+        // green clears the 3.0:1 non-text floor on both the light paper
+        // background and the dark graphite background.
+        self.gainAccent = gainAccent ?? ColorToken(0.20, 0.56, 0.36)
+        self.lossAccent = lossAccent ?? ColorToken(0.85, 0.27, 0.27)
         self.ledgerStripe = ledgerStripe ?? ColorToken(surface.red, surface.green, surface.blue, opacity: 0.55)
         self.life = life
     }
@@ -97,42 +95,48 @@ public struct TokenSet: Sendable, Equatable {
 public enum Tokens {
 
     // MARK: - Default identity
+    //
+    // Apple-system neutral. Light leans on a paper-white canvas with a
+    // faintly lifted surface so cards read as floating panes under soft
+    // depth. Dark is a true neutral graphite — not blue-black — matching
+    // the current system look. The accent is one restrained system blue,
+    // brightened in dark to stay legible on the graphite base.
 
     public static let defaultLight = TokenSet(
-        background:         ColorToken(0.99, 0.99, 0.99),
-        surface:            ColorToken(0.96, 0.96, 0.97),
+        background:         ColorToken(0.97, 0.97, 0.98),
+        surface:            ColorToken(1.00, 1.00, 1.00),
         foregroundPrimary:  ColorToken(0.07, 0.07, 0.09),
-        foregroundSecondary: ColorToken(0.30, 0.30, 0.34),
-        accent:             ColorToken(0.16, 0.34, 0.78)
+        foregroundSecondary: ColorToken(0.36, 0.37, 0.41),
+        accent:             ColorToken(0.00, 0.40, 0.84)
     )
 
     public static let defaultDark = TokenSet(
-        background:         ColorToken(0.06, 0.06, 0.07),
-        surface:            ColorToken(0.10, 0.10, 0.12),
-        foregroundPrimary:  ColorToken(0.95, 0.95, 0.97),
-        foregroundSecondary: ColorToken(0.70, 0.70, 0.74),
-        accent:             ColorToken(0.55, 0.74, 1.00)
+        background:         ColorToken(0.07, 0.07, 0.08),
+        surface:            ColorToken(0.12, 0.12, 0.13),
+        foregroundPrimary:  ColorToken(0.96, 0.96, 0.97),
+        foregroundSecondary: ColorToken(0.66, 0.67, 0.71),
+        accent:             ColorToken(0.39, 0.65, 1.00)
     )
 
     // MARK: - Terminal Amber (LIFE identity)
     //
     // Strict three colors per the synapse-v2 LIFE redesign (commit 58987c2).
-    //   peak amber #FF7A00  → phosphorBright + foregroundPrimary + accent
-    //   dim amber  #B35400  → phosphorDim + foregroundSecondary
-    //   ink        #080604  → terminalInk + background + surface
+    //   peak amber  → phosphorBright + foregroundPrimary + accent
+    //   dim amber   → phosphorDim + foregroundSecondary
+    //   ink         → terminalInk + background + surface
     //
     // Anything outside this trio would violate the visual contract. Light
     // and dark resolve to the same set on purpose — terminal mode is the
-    // identity, not a theme variant.
+    // identity, not a theme variant. The amber identity is a deliberate
+    // product choice for the Life surface and stays distinct; the values
+    // here are refreshed toward a warmer, cleaner phosphor while holding
+    // the three-color contract and WCAG.
 
-    private static let phosBright = ColorToken(1.00, 0.478, 0.000)
-    // M9 a11y win: bumped from (0.700, 0.329, 0.000) — was 4.01:1 against
-    // the ink background, just under the 4.5:1 normal-text bar. New value
-    // is ~#C46400 and clears 4.5:1 while preserving the "dim phosphor"
-    // read. Allowlist entries in [[AccessibilityAuditTests]] for the
-    // terminal phosphorDim findings were removed at the same time.
-    private static let phosDim    = ColorToken(0.770, 0.392, 0.000)
-    private static let phosInk    = ColorToken(0.031, 0.024, 0.016)
+    private static let phosBright = ColorToken(1.00, 0.553, 0.114)
+    // Dim phosphor must clear 4.5:1 normal-text against the ink ground.
+    // ~#C76A12 keeps the "stale value" read while staying above the bar.
+    private static let phosDim    = ColorToken(0.780, 0.416, 0.071)
+    private static let phosInk    = ColorToken(0.027, 0.022, 0.016)
 
     public static let terminalAmberLight = TokenSet(
         background:         phosInk,
@@ -150,40 +154,49 @@ public enum Tokens {
     public static let terminalAmberDark = terminalAmberLight
 
     // MARK: - Cockpit Instrument
+    //
+    // The app-wide shell identity. Dark by design (the finance instrument
+    // language), but refreshed away from the old teal-tinted void toward a
+    // refined neutral graphite that reads as current system dark. A single
+    // restrained accent — a soft system-leaning teal-blue — carries
+    // interactive emphasis. Finance gain/loss accents are tuned to read on
+    // the graphite backplate without fighting the accent.
 
     public static let cockpitInstrumentLight = TokenSet(
-        background:         ColorToken(0.02, 0.02, 0.03),
-        surface:            ColorToken(0.06, 0.06, 0.08),
-        foregroundPrimary:  ColorToken(0.85, 0.92, 1.00),
-        foregroundSecondary: ColorToken(0.55, 0.65, 0.78),
-        accent:             ColorToken(0.20, 0.85, 0.65),
-        // Finance accents tuned to read on top of the dark instrument
-        // backplate. Green is shifted slightly cyan so it pairs with the
-        // accent without becoming the accent. Red is muted vs the typical
-        // SF Red so it does not overpower the panel.
-        gainAccent:         ColorToken(0.30, 0.86, 0.62),
-        lossAccent:         ColorToken(0.96, 0.42, 0.40),
-        ledgerStripe:       ColorToken(0.10, 0.11, 0.14, opacity: 0.55)
+        background:         ColorToken(0.055, 0.058, 0.066),
+        surface:            ColorToken(0.105, 0.110, 0.122),
+        foregroundPrimary:  ColorToken(0.93, 0.94, 0.96),
+        foregroundSecondary: ColorToken(0.62, 0.64, 0.69),
+        accent:             ColorToken(0.32, 0.68, 0.96),
+        // Gain green sits cooler so it pairs with the accent without
+        // becoming it. Loss is a refined system red, muted just enough to
+        // not overpower the panel. Both clear 3.0:1 on the graphite ground.
+        gainAccent:         ColorToken(0.31, 0.80, 0.55),
+        lossAccent:         ColorToken(0.95, 0.42, 0.42),
+        ledgerStripe:       ColorToken(0.155, 0.160, 0.175, opacity: 0.55)
     )
 
     public static let cockpitInstrumentDark = cockpitInstrumentLight
 
     // MARK: - Editorial
+    //
+    // Warm-paper identity, modernized: slightly less saturated cream, a
+    // refined crimson accent that holds 3.0:1 on the paper ground.
 
     public static let editorialLight = TokenSet(
-        background:         ColorToken(0.98, 0.97, 0.94),
-        surface:            ColorToken(0.94, 0.92, 0.88),
-        foregroundPrimary:  ColorToken(0.10, 0.08, 0.06),
-        foregroundSecondary: ColorToken(0.30, 0.27, 0.22),
-        accent:             ColorToken(0.60, 0.10, 0.10)
+        background:         ColorToken(0.98, 0.97, 0.95),
+        surface:            ColorToken(1.00, 0.99, 0.97),
+        foregroundPrimary:  ColorToken(0.11, 0.09, 0.07),
+        foregroundSecondary: ColorToken(0.36, 0.32, 0.27),
+        accent:             ColorToken(0.66, 0.13, 0.13)
     )
 
     public static let editorialDark = TokenSet(
-        background:         ColorToken(0.10, 0.08, 0.06),
-        surface:            ColorToken(0.14, 0.12, 0.10),
-        foregroundPrimary:  ColorToken(0.96, 0.94, 0.90),
-        foregroundSecondary: ColorToken(0.74, 0.70, 0.62),
-        accent:             ColorToken(0.95, 0.60, 0.55)
+        background:         ColorToken(0.10, 0.09, 0.07),
+        surface:            ColorToken(0.15, 0.13, 0.11),
+        foregroundPrimary:  ColorToken(0.97, 0.95, 0.91),
+        foregroundSecondary: ColorToken(0.74, 0.70, 0.63),
+        accent:             ColorToken(0.96, 0.62, 0.57)
     )
 
     // MARK: - Cockpit Dense shell typography
