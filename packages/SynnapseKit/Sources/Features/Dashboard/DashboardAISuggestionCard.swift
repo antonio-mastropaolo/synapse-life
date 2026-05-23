@@ -51,13 +51,14 @@ struct DashboardAISuggestionCard: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(tokens.surface.color)
+                DS.Surface.card,
+                in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .stroke(borderGradient(tokens: tokens), lineWidth: 1)
             )
+            .elevation(DS.Elevation.card)
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(
                 "Assistant: \(narration.sentence)" +

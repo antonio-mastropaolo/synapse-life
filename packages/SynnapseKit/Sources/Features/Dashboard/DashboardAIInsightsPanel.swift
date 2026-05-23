@@ -317,13 +317,14 @@ struct DashboardAIInsightsPanel: View {
         .padding(14)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(tokens.surface.color)
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(tokens.foregroundSecondary.color.opacity(0.10), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
         )
+        .elevation(DS.Elevation.card)
     }
 
     private static let demoForecast: [Double] = [

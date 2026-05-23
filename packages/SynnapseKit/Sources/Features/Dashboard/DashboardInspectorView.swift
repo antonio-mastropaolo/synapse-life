@@ -89,9 +89,14 @@ struct DashboardInspectorView: View {
             .padding(14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(tokens.surface.color)
+                DS.Surface.card,
+                in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                    .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
+            )
+            .elevation(DS.Elevation.card)
         }
         .buttonStyle(.plain)
         .accessibilityElement(children: .combine)
