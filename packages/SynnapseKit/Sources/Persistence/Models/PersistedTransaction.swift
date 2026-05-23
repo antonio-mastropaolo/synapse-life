@@ -6,8 +6,12 @@ import Models
 ///
 /// `categoryRaw` is the server's category string verbatim (or `nil` when
 /// unknown). The `category` computed property projects it back into a
-/// `TransactionCategory` for the UI. Decimal `amount` is persisted natively;
-/// the sign convention matches the wire format (negative = outflow).
+/// `TransactionCategory` for the UI. `amount` is persisted as a canonical
+/// decimal String (`amountRaw`) rather than a native SwiftData `Decimal`,
+/// because SwiftData routes `Decimal` through `Double` on the way to SQLite
+/// and silently drops precision past ~15 significant figures. The String
+/// round-trip via `Decimal.description` / `Decimal(string:)` is base-10 and
+/// exact. The sign convention matches the wire format (negative = outflow).
 @Model
 public final class PersistedTransaction {
 
@@ -16,8 +20,16 @@ public final class PersistedTransaction {
     public var accountId: String?
     public var accountName: String?
 
+    /// Canonical decimal String backing for `amount`; `nil` when no amount.
+    public var amountRaw: String?
+
     /// Signed amount: negative = debit (outflow), positive = credit (inflow).
-    public var amount: Decimal?
+    /// Projected through `amountRaw` to dodge SwiftData's `Decimal`-via-`Double`
+    /// precision loss.
+    public var amount: Decimal? {
+        get { amountRaw.flatMap { Decimal(string: $0) } }
+        set { amountRaw = newValue.map { $0.description } }
+    }
 
     public var currency: String
 
@@ -55,7 +67,7 @@ public final class PersistedTransaction {
         self.id = id
         self.accountId = accountId
         self.accountName = accountName
-        self.amount = amount
+        self.amountRaw = amount.map { $0.description }
         self.currency = currency
         self.date = date
         self.name = name

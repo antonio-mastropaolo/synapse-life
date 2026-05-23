@@ -38,18 +38,26 @@ public actor InvestmentStore {
     }
 
     public func all() throws -> [InvestmentPosition] {
-        let descriptor = FetchDescriptor<PersistedInvestmentPosition>(
-            sortBy: [SortDescriptor(\.value, order: .reverse)]
-        )
-        return try modelContext.fetch(descriptor).map { $0.toDTO() }
+        let descriptor = FetchDescriptor<PersistedInvestmentPosition>()
+        return Self.byValueDescending(try modelContext.fetch(descriptor).map { $0.toDTO() })
     }
 
     public func forAccount(_ accountId: String) throws -> [InvestmentPosition] {
         let descriptor = FetchDescriptor<PersistedInvestmentPosition>(
-            predicate: #Predicate { $0.accountId == accountId },
-            sortBy: [SortDescriptor(\.value, order: .reverse)]
+            predicate: #Predicate { $0.accountId == accountId }
         )
-        return try modelContext.fetch(descriptor).map { $0.toDTO() }
+        return Self.byValueDescending(try modelContext.fetch(descriptor).map { $0.toDTO() })
+    }
+
+    /// `value` is persisted as a decimal String to preserve exactness, so it
+    /// can't be a SwiftData `SortDescriptor` key path (those need a stored,
+    /// SQL-mappable column, and a String sort would order "9" after "100").
+    /// Position counts per portfolio are small, so we sort the projected DTOs
+    /// numerically in memory instead.
+    private static func byValueDescending(
+        _ positions: [InvestmentPosition]
+    ) -> [InvestmentPosition] {
+        positions.sorted { $0.value > $1.value }
     }
 
     public func count() throws -> Int {

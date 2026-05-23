@@ -6,7 +6,10 @@ import Models
 ///
 /// `kindRaw` stores the `AccountKind.rawValue` so SwiftData doesn't have to
 /// know about the custom enum. The `.kind` computed property projects back.
-/// Decimal money values are persisted natively to preserve exactness.
+/// Money values are persisted as canonical decimal Strings (`*Raw`) rather
+/// than native SwiftData `Decimal`, which routes through `Double` and drops
+/// precision past ~15 significant figures. The String round-trip via
+/// `Decimal.description` / `Decimal(string:)` is base-10 and exact.
 @Model
 public final class PersistedFinanceAccount {
 
@@ -24,9 +27,27 @@ public final class PersistedFinanceAccount {
     public var kindRaw: String
 
     public var currency: String
-    public var currentBalance: Decimal?
-    public var availableBalance: Decimal?
-    public var limitAmount: Decimal?
+
+    /// Canonical decimal String backings; see the type doc for why.
+    public var currentBalanceRaw: String?
+    public var availableBalanceRaw: String?
+    public var limitAmountRaw: String?
+
+    public var currentBalance: Decimal? {
+        get { currentBalanceRaw.flatMap { Decimal(string: $0) } }
+        set { currentBalanceRaw = newValue.map { $0.description } }
+    }
+
+    public var availableBalance: Decimal? {
+        get { availableBalanceRaw.flatMap { Decimal(string: $0) } }
+        set { availableBalanceRaw = newValue.map { $0.description } }
+    }
+
+    public var limitAmount: Decimal? {
+        get { limitAmountRaw.flatMap { Decimal(string: $0) } }
+        set { limitAmountRaw = newValue.map { $0.description } }
+    }
+
     public var balanceCapturedAt: Date?
 
     /// Wall-clock instant at which this row was last written from a server
@@ -57,9 +78,9 @@ public final class PersistedFinanceAccount {
         self.mask = mask
         self.kindRaw = kindRaw
         self.currency = currency
-        self.currentBalance = currentBalance
-        self.availableBalance = availableBalance
-        self.limitAmount = limitAmount
+        self.currentBalanceRaw = currentBalance.map { $0.description }
+        self.availableBalanceRaw = availableBalance.map { $0.description }
+        self.limitAmountRaw = limitAmount.map { $0.description }
         self.balanceCapturedAt = balanceCapturedAt
         self.lastSyncedAt = lastSyncedAt
     }

@@ -7,6 +7,12 @@ import Models
 /// The DTO's natural key is `(accountId, securityId)`; we synthesise the
 /// composite as the row's id so SwiftData's `.unique` attribute can enforce
 /// it and so the projection layer can round-trip identity.
+///
+/// Money / quantity values are persisted as canonical decimal Strings (`*Raw`)
+/// rather than native SwiftData `Decimal`, which routes through `Double` and
+/// drops precision past ~15 significant figures — a real hazard here because
+/// share quantities and unit prices carry more than cents of precision. The
+/// String round-trip via `Decimal.description` / `Decimal(string:)` is exact.
 @Model
 public final class PersistedInvestmentPosition {
 
@@ -23,12 +29,43 @@ public final class PersistedInvestmentPosition {
     /// values fall through to `.other`.
     public var kindRaw: String
 
-    public var quantity: Decimal
-    public var price: Decimal
-    public var value: Decimal
-    public var costBasis: Decimal?
-    public var unrealizedPnL: Decimal?
-    public var unrealizedPnLPct: Decimal?
+    /// Canonical decimal String backings; see the type doc for why.
+    public var quantityRaw: String
+    public var priceRaw: String
+    public var valueRaw: String
+    public var costBasisRaw: String?
+    public var unrealizedPnLRaw: String?
+    public var unrealizedPnLPctRaw: String?
+
+    public var quantity: Decimal {
+        get { Decimal(string: quantityRaw) ?? .zero }
+        set { quantityRaw = newValue.description }
+    }
+
+    public var price: Decimal {
+        get { Decimal(string: priceRaw) ?? .zero }
+        set { priceRaw = newValue.description }
+    }
+
+    public var value: Decimal {
+        get { Decimal(string: valueRaw) ?? .zero }
+        set { valueRaw = newValue.description }
+    }
+
+    public var costBasis: Decimal? {
+        get { costBasisRaw.flatMap { Decimal(string: $0) } }
+        set { costBasisRaw = newValue.map { $0.description } }
+    }
+
+    public var unrealizedPnL: Decimal? {
+        get { unrealizedPnLRaw.flatMap { Decimal(string: $0) } }
+        set { unrealizedPnLRaw = newValue.map { $0.description } }
+    }
+
+    public var unrealizedPnLPct: Decimal? {
+        get { unrealizedPnLPctRaw.flatMap { Decimal(string: $0) } }
+        set { unrealizedPnLPctRaw = newValue.map { $0.description } }
+    }
 
     public var currency: String
 
@@ -57,12 +94,12 @@ public final class PersistedInvestmentPosition {
         self.ticker = ticker
         self.positionName = positionName
         self.kindRaw = kindRaw
-        self.quantity = quantity
-        self.price = price
-        self.value = value
-        self.costBasis = costBasis
-        self.unrealizedPnL = unrealizedPnL
-        self.unrealizedPnLPct = unrealizedPnLPct
+        self.quantityRaw = quantity.description
+        self.priceRaw = price.description
+        self.valueRaw = value.description
+        self.costBasisRaw = costBasis.map { $0.description }
+        self.unrealizedPnLRaw = unrealizedPnL.map { $0.description }
+        self.unrealizedPnLPctRaw = unrealizedPnLPct.map { $0.description }
         self.currency = currency
         self.lastSyncedAt = lastSyncedAt
     }

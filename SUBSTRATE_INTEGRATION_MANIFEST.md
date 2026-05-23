@@ -17,16 +17,16 @@ stub, and the exact next moves.
 | Phase | Status | Test count this session |
 |------|--------|------|
 | Phase 0 — App Store unblockers | **complete** | KeychainStoreTests green |
-| Phase 1 — SwiftData persistence | **complete (canary aside)** | 16 / 17 pass |
+| Phase 1 — SwiftData persistence | **complete** | 17 / 17 pass |
 | Phase 2 — Plaid proxy connector (no LinkKit SDK) | **network layer live** | 18 / 18 pass |
 | Phase 3 — Intelligence scaffold (no real LLM) | **scaffold only** | 37 / 37 pass |
 | Phase 4 — Native sensors + agentic flows | not started | — |
 | Phase 5 — Monetization + observability + submission | not started | — |
 
-**Overall: 71 / 72 substrate tests pass.** The 1 failure is a deliberate
-canary — see "Known gaps" below. (Full repo `swift test` also shows
-pre-existing macOS snapshot-rendering mismatches in the Dashboard/Finance
-view suites; those are host-environment baselines, unrelated to substrate.)
+**Overall: 72 / 72 substrate tests pass.** The G1 Decimal canary is now
+fixed (see below). (Full repo `swift test` still shows pre-existing macOS
+snapshot-rendering mismatches in the Dashboard view suites; those are
+host-environment baselines, unrelated to substrate.)
 
 ## What landed (file-level)
 
@@ -202,21 +202,24 @@ Replaces the empty `Sources/Persistence/Placeholder.swift` (deleted) with:
 
 ## Known gaps (start here next session)
 
-### G1 — SwiftData drops `Decimal` precision past ~15 sig figs
+### G1 — SwiftData `Decimal` precision — RESOLVED
 
-`Tests/PersistenceTests/DecimalRoundTripTests.swift:104` documents the
-failure mode. Fixture `0.30000000000000004` reads back as `0.3` after a
-round trip. All cents-precision USD and 12-digit trillions round-trip
-exactly, so today's wire-format Plaid amounts are fine — but the
-canary will bite the moment any non-currency math (crypto ticks at 8
-decimals, basis points, futures prices) lands.
+Was: SwiftData routed `Decimal` through `Double` on the way to SQLite,
+so `0.30000000000000004` read back as `0.3`.
 
-**Fix:** in each of `PersistedFinanceAccount` / `PersistedTransaction` /
-`PersistedInvestmentPosition`, change the `Decimal` and `Decimal?`
-fields to `String` and `String?`. Use `Decimal.description` on write
-and `Decimal(string:)` on read inside the `toDTO()` projection. Don't
-change the DTO types in `Models/*`. Update the canary fixture to
-assert exactness across all 20 cases.
+**Fixed** by persisting money/quantity as canonical decimal Strings.
+Each of `PersistedFinanceAccount` / `PersistedTransaction` /
+`PersistedInvestmentPosition` now stores a `…Raw: String`/`String?`
+backing and exposes the `Decimal`/`Decimal?` value through a computed
+property (`Decimal.description` on write, `Decimal(string:)` on read) —
+the same stored-raw + computed-projection pattern already used for
+`kindRaw`/`categoryRaw`. `Projections.swift` and the store actors are
+unchanged because they only touch the Decimal-typed API. `Models/*`
+DTOs are untouched. One follow-on edit: `InvestmentStore.all()` /
+`forAccount()` can no longer use `SortDescriptor(\.value)` (computed key
+paths aren't SQL-mappable, and a String sort misorders magnitudes), so
+they now sort the projected DTOs numerically in memory. The 20-fixture
+canary `allFixturesRoundTripExactly` passes; PersistenceTests 17/17.
 
 ### G2 — Namespace collision: two `IntelligenceRouter`s
 
