@@ -373,16 +373,22 @@ renders an urgency-first strip above the review queue on both platforms (guarded
 by non-empty, so snapshot fixtures render unchanged). Verified live on macOS
 (new-recurring signals with predicted dates).
 
+**Background refresh — DONE (pending device verification).** `AppCore.runScheduledRefresh`
+re-runs the analyzer, persists recurrings, prunes aged notifications, and returns
+the new-or-changed count; `registerBackgroundRefresh` wires it to a
+`NotificationGate.postProactiveSummary`. `ProactiveRefreshScheduler` uses
+`BGTaskScheduler` (iOS) / `NSBackgroundActivityScheduler` (macOS) at a 12h
+cadence; both shells register at launch. iOS Info.plist declares
+`UIBackgroundModes` + `BGTaskSchedulerPermittedIdentifiers`. Background *firing*
+needs on-device confirmation (out of `swift test` reach).
+
+**Proactive strip interactivity — DONE.** Per-row dismiss persists via
+`AppCore.dismissSignal` (`notifications.setDismissed`, survives re-runs). macOS
+tap routes by kind (bill/new-recurring → Recurrings, anomaly → Transactions);
+iOS tap-to-jump is deferred (needs cross-tab selection plumbing).
+
 **Still open (app-target work):**
-- **Nightly `BGTaskScheduler`** task running `ProactiveAnalyzer.analyze` →
-  `notifications.upsertAll` + `recurringStore.upsertAll(...)` + local
-  notifications (+ `Info.plist` task IDs). The foreground path
-  (`refreshProactiveFeed` / `persistRecurrings`) already does the store writes;
-  the background task is the same calls on a schedule plus the local-notification
-  fire.
-- **Proactive strip interactivity** — tap-to-jump (route the signal's
-  `subjectId` to its surface) and swipe-to-dismiss (`notifications.setDismissed`).
-  Render-only today.
+- iOS proactive tap-to-jump (cross-tab routing).
 
 ### G5 — Phase 2 LinkKit SDK + server routes not added
 
