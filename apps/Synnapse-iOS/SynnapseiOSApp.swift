@@ -22,7 +22,10 @@ struct SynnapseiOSApp: App {
             // surfaced from Settings (under the More tab), not a
             // startup blocker.
             RootTabView(core: core)
-                .task { await core.bootstrap() }
+                .task {
+                    core.registerBackgroundRefresh()
+                    await core.bootstrap()
+                }
                 .onOpenURL { url in
                     // Deep links route through `AppLifecycleService`.
                     // Unrecognised URLs return nil from `parse(url:)` and
@@ -77,10 +80,15 @@ private struct RootTabView: View {
 
     var body: some View {
         TabView(selection: $selection) {
-            DashboardTab(viewModel: core.dashboard)
-                .identity(.cockpitInstrument)
-                .tabItem { Label("Dashboard", systemImage: "square.grid.2x2") }
-                .tag(Tab.dashboard)
+            DashboardTab(
+                viewModel: core.dashboard,
+                onProactiveDismiss: { signal in
+                    Task { await core.dismissSignal(id: signal.id) }
+                }
+            )
+            .identity(.cockpitInstrument)
+            .tabItem { Label("Dashboard", systemImage: "square.grid.2x2") }
+            .tag(Tab.dashboard)
 
             TransactionsTab(
                 viewModel: core.financeTransactions,
@@ -120,12 +128,19 @@ private struct RootTabView: View {
 /// wired — the row's primary affordance is selection, not navigation).
 private struct DashboardTab: View {
     @Bindable var viewModel: DashboardViewModel
+    /// Persisted dismiss for proactive-feed rows. Tap-to-jump is omitted on
+    /// iOS for now — routing to another tab's surface from the Dashboard tab
+    /// needs cross-tab selection plumbing that isn't in place yet.
+    var onProactiveDismiss: ((ProactiveSignal) -> Void)?
 
     var body: some View {
         NavigationStack {
-            DashboardView(viewModel: viewModel)
-                .navigationTitle("Dashboard")
-                .navigationBarTitleDisplayMode(.inline)
+            DashboardView(
+                viewModel: viewModel,
+                dismissProactiveSignal: onProactiveDismiss
+            )
+            .navigationTitle("Dashboard")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

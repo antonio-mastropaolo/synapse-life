@@ -88,6 +88,37 @@ struct CrashFreeLaunchTests {
         #expect(core.dashboard.proactiveSignals.count == again.count)
     }
 
+    @Test("dismissSignal drops the row from the feed and persists the dismissal")
+    func dismissSignalPersists() async throws {
+        let core = AppCore(useDemoData: true)
+        await core.bootstrap()
+        let first = try #require(core.dashboard.proactiveSignals.first)
+        let before = core.dashboard.proactiveSignals.count
+
+        await core.dismissSignal(id: first.id)
+        // Dropped from the surfaced feed immediately.
+        #expect(core.dashboard.proactiveSignals.contains { $0.id == first.id } == false)
+        #expect(core.dashboard.proactiveSignals.count == before - 1)
+
+        // A re-run must not resurrect it — the store preserves `dismissed`.
+        await core.refreshProactiveFeed()
+        #expect(core.dashboard.proactiveSignals.contains { $0.id == first.id } == false)
+    }
+
+    @Test("runScheduledRefresh surfaces signals and is idempotent on re-run")
+    func scheduledRefreshRuns() async throws {
+        let core = AppCore(useDemoData: true)
+        await core.bootstrap()
+        // The background entry point re-runs the analyzer; the first nightly
+        // pass after a fresh bootstrap finds nothing new (bootstrap already
+        // populated the store), so a clean re-run reports zero changes.
+        let changed = await core.runScheduledRefresh()
+        #expect(changed == 0)
+        // The feed is still populated and the recurrings store still holds rows.
+        #expect(!core.dashboard.proactiveSignals.isEmpty)
+        #expect(try await core.recurringStore.count() > 0)
+    }
+
     @Test("hydrateRecurringsFromStore paints the VM from persisted rows")
     func hydrateFromStore() async throws {
         let core = AppCore(useDemoData: true)

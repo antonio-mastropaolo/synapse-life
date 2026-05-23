@@ -62,6 +62,25 @@ public actor NotificationGate {
         try? await UNUserNotificationCenter.current().add(req)
     }
 
+    /// One-shot summary fired after a proactive-feed refresh surfaced new or
+    /// changed signals. The nightly background task calls this so the user
+    /// learns about an upcoming bill / anomaly without opening the app.
+    public func postProactiveSummary(newCount: Int) async {
+        guard newCount > 0 else { return }
+        let content = UNMutableNotificationContent()
+        content.title = "New in your inbox"
+        let noun = newCount == 1 ? "insight" : "insights"
+        content.body = "\(newCount) new \(noun) — a bill, a new subscription, or unusual spending. Open Synapse to review."
+        content.sound = .default
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let req = UNNotificationRequest(
+            identifier: "synnapse.proactive.summary.\(UUID().uuidString)",
+            content: content,
+            trigger: trigger
+        )
+        try? await UNUserNotificationCenter.current().add(req)
+    }
+
     /// Idempotent: schedules the recurring Sunday-11am reminder once
     /// per app lifetime. Identifier-based de-duping means re-calls
     /// are safe.

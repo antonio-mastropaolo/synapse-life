@@ -68,6 +68,10 @@ struct CopilotShellMac: View {
     /// figures are fixtures rather than live data.
     var showsDemoDataFooter: Bool = false
 
+    /// Dismiss a proactive-feed signal. Wired by the shell to
+    /// `AppCore.dismissSignal` so the dismissal persists to the store.
+    var onProactiveDismiss: (ProactiveSignal) -> Void = { _ in }
+
     var body: some View {
         let chrome = CopilotTokens.shell
 
@@ -107,7 +111,8 @@ struct CopilotShellMac: View {
                 memberships: memberships,
                 goals: goals,
                 chrome: chrome,
-                showsDemoFooter: showsDemoDataFooter
+                showsDemoFooter: showsDemoDataFooter,
+                onProactiveDismiss: onProactiveDismiss
             )
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(chrome.contentBackground.color)
@@ -712,6 +717,7 @@ private struct CopilotDetailPane: View {
     let goals: GoalsStore
     let chrome: CopilotTokens.Shell
     let showsDemoFooter: Bool
+    var onProactiveDismiss: (ProactiveSignal) -> Void = { _ in }
 
     var body: some View {
         Group {
@@ -763,7 +769,16 @@ private struct CopilotDetailPane: View {
                     isDemoData: showsDemoFooter,
                     goalsStore: goals,
                     membershipsStore: memberships,
-                    openMemberships: { routing.select(.memberships) }
+                    openMemberships: { routing.select(.memberships) },
+                    openProactiveSignal: { signal in
+                        switch signal.kind {
+                        case .upcomingBill, .newRecurring:
+                            routing.select(.recurrings)
+                        case .anomalousSpend:
+                            routing.select(.transactions)
+                        }
+                    },
+                    dismissProactiveSignal: { onProactiveDismiss($0) }
                 )
                 .identity(.cockpitInstrument)
                 .id("dashboard")

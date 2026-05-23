@@ -63,6 +63,11 @@ public final class AppCore {
     /// Deep-link router + state restoration.
     public let lifecycle: AppLifecycleService
 
+    /// Periodic background-refresh scheduler (Phase 4). The shell registers it
+    /// once at launch via `registerBackgroundRefresh()`; the platform task runs
+    /// `runScheduledRefresh()` and fires a local notification on new signals.
+    public let backgroundRefresh = ProactiveRefreshScheduler()
+
     // MARK: - Substrate (Phase 1 persistence + Phase 3 intelligence)
 
     /// The SwiftData container the persistence stores read/write through.
@@ -330,17 +335,57 @@ public final class AppCore {
     /// `BGTaskScheduler` pass; both write to the same store so the inbox shows
     /// the same set whether it was refreshed live or overnight. Store failures
     /// are swallowed so a transient write never breaks a launch.
-    public func refreshProactiveFeed() async {
-        guard case .ready(let snap) = financePersonal.state else { return }
+    @discardableResult
+    public func refreshProactiveFeed() async -> Int {
+        guard case .ready(let snap) = financePersonal.state else { return 0 }
         let snapshot = AlertsSnapshot(
             accounts: snap.accounts,
             transactions: financePersonal.recentTransactions
         )
         let signals = ProactiveAnalyzer.analyze(snapshot: snapshot)
-        _ = try? await notifications.upsertAll(signals)
+        let changed = (try? await notifications.upsertAll(signals)) ?? 0
         if let recent = try? await notifications.recent() {
             dashboard.setProactiveSignals(recent)
         }
+        return changed
+    }
+
+    /// Background-refresh entry point shared by the iOS `BGTaskScheduler` task
+    /// and the macOS `NSBackgroundActivityScheduler` activity. Re-runs the
+    /// analyzer, persists the recurring detections, prunes aged notifications,
+    /// and returns the count of new-or-changed signals so the caller can decide
+    /// whether to fire a local notification. Pure store work — no UI assumptions
+    /// beyond the `@MainActor` VMs it already owns.
+    @discardableResult
+    public func runScheduledRefresh() async -> Int {
+        let changed = await refreshProactiveFeed()
+        await persistRecurrings()
+        try? await notifications.prune()
+        return changed
+    }
+
+    /// Register the platform background-refresh task (idempotent). The handler
+    /// runs `runScheduledRefresh()` and, when it surfaced new signals and the
+    /// user has granted permission, posts a local notification. The shell calls
+    /// this once at launch.
+    public func registerBackgroundRefresh() {
+        backgroundRefresh.register { [weak self] in
+            guard let self else { return }
+            let changed = await self.runScheduledRefresh()
+            guard changed > 0 else { return }
+            let state = await NotificationGate.shared.requestIfNeeded()
+            if state == .granted {
+                await NotificationGate.shared.postProactiveSummary(newCount: changed)
+            }
+        }
+    }
+
+    /// Dismiss one proactive signal: drop it from the surfaced feed immediately,
+    /// then persist `setDismissed` so a re-run (foreground or nightly) never
+    /// resurrects it. The store's `upsert` deliberately preserves `dismissed`.
+    public func dismissSignal(id: String) async {
+        dashboard.dismissProactiveSignal(id: id)
+        _ = try? await notifications.setDismissed(id: id, true)
     }
 
     /// Refresh the AI++ wedge + detection surfaces against the current finance

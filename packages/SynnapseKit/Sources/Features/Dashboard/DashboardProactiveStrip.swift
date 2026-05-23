@@ -20,6 +20,7 @@ struct DashboardProactiveStrip: View {
     /// returns urgency-first, so the top slice is the most important.
     var limit: Int = 3
     var onTap: ((ProactiveSignal) -> Void)?
+    var onDismiss: ((ProactiveSignal) -> Void)?
 
     var body: some View {
         let shown = Array(signals.prefix(limit))
@@ -71,6 +72,20 @@ struct DashboardProactiveStrip: View {
                 Image(systemName: icon(for: signal.kind))
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.7))
+                if onDismiss != nil {
+                    Button {
+                        onDismiss?(signal)
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(tokens.foregroundSecondary.color.opacity(0.6))
+                            .frame(width: 22, height: 22)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Dismiss")
+                    .accessibilityIdentifier("dashboard.proactiveStrip.dismiss")
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 8)

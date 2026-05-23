@@ -139,6 +139,13 @@ public final class DashboardViewModel {
         proactiveSignals = signals
     }
 
+    /// Optimistically drop one signal from the surfaced feed. `AppCore` calls
+    /// this for instant UI feedback, then persists `setDismissed` to the store
+    /// so the dismissal survives relaunch.
+    public func dismissProactiveSignal(id: String) {
+        proactiveSignals.removeAll { $0.id == id }
+    }
+
     public func toggleSelection(_ id: String) {
         if selection.contains(id) {
             selection.remove(id)

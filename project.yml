@@ -75,13 +75,21 @@ targets:
         product: Features
       - package: SynnapseKit
         product: AppLifecycle
+    # Explicit Info.plist so the Phase 4 background-refresh task can declare
+    # its permitted identifier (no INFOPLIST_KEY_ build-setting form exists for
+    # BGTaskSchedulerPermittedIdentifiers). The INFOPLIST_KEY_* settings below
+    # still inject into this plist at build time.
+    info:
+      path: apps/Synnapse-iOS/Info.plist
+      properties:
+        UIBackgroundModes: [fetch, processing]
+        BGTaskSchedulerPermittedIdentifiers: [tech.synnapse.refresh.proactive]
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: tech.synnapse.ios
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
-        GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
         CODE_SIGN_ENTITLEMENTS: apps/Synnapse-iOS/Synnapse-iOS.entitlements
         DEVELOPMENT_TEAM: WCGJPF9TWU

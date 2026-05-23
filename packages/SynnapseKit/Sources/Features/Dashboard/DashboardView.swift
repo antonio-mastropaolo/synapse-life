@@ -32,6 +32,8 @@ public struct DashboardView: View {
     private var goalsStore: GoalsStore?
     private var membershipsStore: MembershipsStore?
     private var openMemberships: (() -> Void)?
+    private var openProactiveSignal: ((ProactiveSignal) -> Void)?
+    private var dismissProactiveSignal: ((ProactiveSignal) -> Void)?
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
@@ -49,7 +51,9 @@ public struct DashboardView: View {
         isDemoData: Bool = false,
         goalsStore: GoalsStore? = nil,
         membershipsStore: MembershipsStore? = nil,
-        openMemberships: (() -> Void)? = nil
+        openMemberships: (() -> Void)? = nil,
+        openProactiveSignal: ((ProactiveSignal) -> Void)? = nil,
+        dismissProactiveSignal: ((ProactiveSignal) -> Void)? = nil
     ) {
         self.viewModel = viewModel
         self.iconResolver = iconResolver
@@ -63,6 +67,8 @@ public struct DashboardView: View {
         self.goalsStore = goalsStore
         self.membershipsStore = membershipsStore
         self.openMemberships = openMemberships
+        self.openProactiveSignal = openProactiveSignal
+        self.dismissProactiveSignal = dismissProactiveSignal
     }
 
     public var body: some View {
@@ -110,7 +116,9 @@ public struct DashboardView: View {
                 if !viewModel.proactiveSignals.isEmpty {
                     DashboardProactiveStrip(
                         signals: viewModel.proactiveSignals,
-                        tokens: tokens
+                        tokens: tokens,
+                        onTap: openProactiveSignal,
+                        onDismiss: dismissProactiveSignal
                     )
                 }
                 Divider().background(tokens.foregroundSecondary.color.opacity(0.18))
@@ -182,7 +190,9 @@ public struct DashboardView: View {
             if !viewModel.proactiveSignals.isEmpty {
                 DashboardProactiveStrip(
                     signals: viewModel.proactiveSignals,
-                    tokens: tokens
+                    tokens: tokens,
+                    onTap: openProactiveSignal,
+                    onDismiss: dismissProactiveSignal
                 )
             }
             Divider().background(tokens.foregroundSecondary.color.opacity(0.18))

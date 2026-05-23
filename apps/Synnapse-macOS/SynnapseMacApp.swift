@@ -45,7 +45,10 @@ struct SynnapseMacApp: App {
                     recurrings: core.recurrings,
                     memberships: core.memberships,
                     goals: core.goals,
-                    showsDemoDataFooter: core.usesDemoData
+                    showsDemoDataFooter: core.usesDemoData,
+                    onProactiveDismiss: { signal in
+                        Task { await core.dismissSignal(id: signal.id) }
+                    }
                 )
 
                 if isAskPresented {
@@ -71,7 +74,10 @@ struct SynnapseMacApp: App {
             }
             .animation(.easeOut(duration: 0.18), value: isAskPresented)
             .frame(minWidth: 1080, minHeight: 720)
-            .task { await core.bootstrap() }
+            .task {
+                core.registerBackgroundRefresh()
+                await core.bootstrap()
+            }
             .onOpenURL { url in
                 core.lifecycle.handle(url: url)
             }
