@@ -47,10 +47,19 @@ targets:
         ENABLE_HARDENED_RUNTIME: YES
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.productivity
+        INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.finance
         INFOPLIST_KEY_NSHumanReadableCopyright: "(c) 2026 Antonio Mastropaolo"
         INFOPLIST_KEY_CFBundleDisplayName: Synapse
         INFOPLIST_KEY_CFBundleName: Synapse
+        # Touch ID on Macs that have it unlocks the financial surfaces via
+        # the shared BiometricGate. The string is required or the system
+        # biometric sheet refuses to present.
+        INFOPLIST_KEY_NSFaceIDUsageDescription: "Synapse uses Touch ID to unlock your financial data so only you can see it."
+        # The app talks to its backend over standard HTTPS (TLS) only and
+        # ships no custom or proprietary cryptography, so it qualifies for
+        # the export-compliance exemption. Declaring this here suppresses
+        # the per-upload export-compliance prompt.
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
   SynnapseiOS:
@@ -77,13 +86,32 @@ targets:
         product: AppLifecycle
     # Explicit Info.plist so the Phase 4 background-refresh task can declare
     # its permitted identifier (no INFOPLIST_KEY_ build-setting form exists for
-    # BGTaskSchedulerPermittedIdentifiers). The INFOPLIST_KEY_* settings below
-    # still inject into this plist at build time.
+    # BGTaskSchedulerPermittedIdentifiers). Because this is an explicit plist
+    # (not GENERATE_INFOPLIST_FILE), Apple-required keys that would otherwise
+    # ride in via INFOPLIST_KEY_* build settings have to be written here
+    # directly — hence the usage string, export-compliance flag, and app
+    # category live in this block.
     info:
       path: apps/Synnapse-iOS/Info.plist
       properties:
         UIBackgroundModes: [fetch, processing]
         BGTaskSchedulerPermittedIdentifiers: [tech.synnapse.refresh.proactive]
+        # Finance app, not productivity — drives App Store category and the
+        # Mac/iOS Launchpad grouping.
+        LSApplicationCategoryType: public.app-category.finance
+        # Face ID unlocks the financial surfaces via the shared
+        # BiometricGate. Required or the system biometric sheet refuses
+        # to present and the unlock flow crashes on Face ID devices.
+        NSFaceIDUsageDescription: "Synapse uses Face ID to unlock your financial data so only you can see it."
+        # Standard HTTPS (TLS) transport only, no custom cryptography, so
+        # the app qualifies for the export-compliance exemption. Suppresses
+        # the per-upload export-compliance prompt.
+        ITSAppUsesNonExemptEncryption: false
+        # An explicit (empty) launch-screen dict gives a clean system-drawn
+        # launch surface. The INFOPLIST_KEY_UILaunchScreen_Generation build
+        # setting does not apply to an explicit Info.plist, so the key has
+        # to live here or the app falls back to a legacy launch mode.
+        UILaunchScreen: {}
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: tech.synnapse.ios
@@ -100,5 +128,4 @@ targets:
         INFOPLIST_KEY_CFBundleDisplayName: Synapse
         INFOPLIST_KEY_CFBundleName: Synapse
         INFOPLIST_KEY_UIRequiresFullScreen: NO
-        INFOPLIST_KEY_UILaunchScreen_Generation: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
