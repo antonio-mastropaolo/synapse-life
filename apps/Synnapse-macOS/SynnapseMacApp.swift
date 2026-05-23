@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import AppKit
 import Auth
 import Features
@@ -74,6 +75,10 @@ struct SynnapseMacApp: App {
             .onOpenURL { url in
                 core.lifecycle.handle(url: url)
             }
+            // Inject the shared SwiftData container so a future widget /
+            // share-extension and any `@Query`-driven descendant read the
+            // same store the persistence actors write through.
+            .modelContainer(core.modelContainer)
         }
         .windowStyle(.hiddenTitleBar)
         .defaultSize(width: 1280, height: 800)

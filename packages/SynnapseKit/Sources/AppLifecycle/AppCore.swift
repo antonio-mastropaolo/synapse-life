@@ -320,7 +320,27 @@ public final class AppCore {
 
         refreshSurfaces()
         await persistRecurrings()
+        await refreshProactiveFeed()
         applyConcealBalancesBridge()
+    }
+
+    /// Run the `ProactiveAnalyzer` against the current finance snapshot, persist
+    /// the signals (dedup-on-id via the store), and load the durable feed into
+    /// the Dashboard inbox. This is the foreground mirror of the nightly
+    /// `BGTaskScheduler` pass; both write to the same store so the inbox shows
+    /// the same set whether it was refreshed live or overnight. Store failures
+    /// are swallowed so a transient write never breaks a launch.
+    public func refreshProactiveFeed() async {
+        guard case .ready(let snap) = financePersonal.state else { return }
+        let snapshot = AlertsSnapshot(
+            accounts: snap.accounts,
+            transactions: financePersonal.recentTransactions
+        )
+        let signals = ProactiveAnalyzer.analyze(snapshot: snapshot)
+        _ = try? await notifications.upsertAll(signals)
+        if let recent = try? await notifications.recent() {
+            dashboard.setProactiveSignals(recent)
+        }
     }
 
     /// Refresh the AI++ wedge + detection surfaces against the current finance

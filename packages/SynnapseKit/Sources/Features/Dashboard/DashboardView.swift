@@ -107,6 +107,12 @@ public struct DashboardView: View {
                     openMemberships: openMemberships,
                     openSpending: openCashFlow
                 )
+                if !viewModel.proactiveSignals.isEmpty {
+                    DashboardProactiveStrip(
+                        signals: viewModel.proactiveSignals,
+                        tokens: tokens
+                    )
+                }
                 Divider().background(tokens.foregroundSecondary.color.opacity(0.18))
                 listScrollMac(tokens: tokens)
                 Divider().background(tokens.foregroundSecondary.color.opacity(0.18))
@@ -172,6 +178,12 @@ public struct DashboardView: View {
                     )
                 }
                 .frame(minWidth: UIScreen.main.bounds.width)
+            }
+            if !viewModel.proactiveSignals.isEmpty {
+                DashboardProactiveStrip(
+                    signals: viewModel.proactiveSignals,
+                    tokens: tokens
+                )
             }
             Divider().background(tokens.foregroundSecondary.color.opacity(0.18))
             listScrollIOS(tokens: tokens)

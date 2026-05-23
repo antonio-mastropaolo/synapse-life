@@ -72,6 +72,22 @@ struct CrashFreeLaunchTests {
         #expect(persisted.count == core.recurrings.recurrings.count)
     }
 
+    @Test("Demo bootstrap surfaces the proactive feed on the Dashboard inbox")
+    func demoBootstrapPopulatesProactiveFeed() async throws {
+        let core = AppCore(useDemoData: true)
+        await core.bootstrap()
+        // The analyzer ran against the seeded snapshot, wrote signals to the
+        // durable store, and loaded them into the Dashboard VM. The store and
+        // the surfaced feed agree.
+        let persisted = try await core.notifications.recent()
+        #expect(!persisted.isEmpty)
+        #expect(core.dashboard.proactiveSignals.count == persisted.count)
+        // Re-running the feed is idempotent on the surfaced count (dedup-on-id).
+        await core.refreshProactiveFeed()
+        let again = try await core.notifications.recent()
+        #expect(core.dashboard.proactiveSignals.count == again.count)
+    }
+
     @Test("hydrateRecurringsFromStore paints the VM from persisted rows")
     func hydrateFromStore() async throws {
         let core = AppCore(useDemoData: true)

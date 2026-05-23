@@ -51,6 +51,14 @@ public final class DashboardViewModel {
     /// collapses it.
     public private(set) var expandedRowId: String?
 
+    /// Proactive feed (Phase 4) the inbox surfaces above the review queue:
+    /// upcoming bills, brand-new recurrings, anomalous spend. Sourced from the
+    /// durable `ProactiveNotificationStore` via `AppCore` and set through
+    /// `setProactiveSignals`. Empty by default so existing call sites (and the
+    /// snapshot fixtures) render the dashboard exactly as before — the strip
+    /// only appears once the analyzer has surfaced something.
+    public private(set) var proactiveSignals: [ProactiveSignal] = []
+
     // MARK: - Widget providers (M9 hero row)
 
     /// Upcoming-bills provider. The integrator wires this to
@@ -123,6 +131,14 @@ public final class DashboardViewModel {
     /// Flip the selection for a single row. The toggle is idempotent
     /// against a missing entry (no crash if the id has been removed
     /// between user tap and dispatch).
+    /// Replace the proactive feed. Called by `AppCore` after a
+    /// `ProactiveAnalyzer` pass writes to the store and reads back
+    /// `notifications.recent()`. Pure assignment — no reprojection needed since
+    /// the feed renders independently of the transaction sections.
+    public func setProactiveSignals(_ signals: [ProactiveSignal]) {
+        proactiveSignals = signals
+    }
+
     public func toggleSelection(_ id: String) {
         if selection.contains(id) {
             selection.remove(id)

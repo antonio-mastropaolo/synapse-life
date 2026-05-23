@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 import Auth
 import Features
 import Networking
@@ -28,6 +29,9 @@ struct SynnapseiOSApp: App {
                     // are silently dropped — matches the macOS shell.
                     core.lifecycle.handle(url: url)
                 }
+                // Inject the shared SwiftData container so descendants and a
+                // future widget read the store the persistence actors write.
+                .modelContainer(core.modelContainer)
         }
     }
 }
