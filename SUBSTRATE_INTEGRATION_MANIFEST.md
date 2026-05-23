@@ -19,7 +19,7 @@ stub, and the exact next moves.
 | Phase 0 — App Store unblockers | **complete** | KeychainStoreTests green |
 | Phase 1 — SwiftData persistence | **complete** | 17 / 17 pass |
 | Phase 2 — Plaid proxy connector (no LinkKit SDK) | **network layer live** | 18 / 18 pass |
-| Phase 3 — Intelligence scaffold (no real LLM) | **scaffold only** | 37 / 37 pass |
+| Phase 3 — Intelligence scaffold (no real LLM) | **scaffold + get_recurrings wired (G3)** | 37 / 37 pass |
 | Phase 4 — Native sensors + agentic flows | **analyzer + durable feed** | 11 / 11 pass |
 | Phase 5 — Monetization + observability + submission | not started | — |
 
@@ -297,15 +297,38 @@ import both modules unqualified. The eventual delete-and-repoint of the
 Features router onto `LLMRouter` is real Phase 3 work, gated on G6 (a live
 LLM client + an Ask-shaped streaming bridge). IntelligenceTests 37/37.
 
-### G3 — `RecurringStore` missing
+### G3 — `RecurringStore` missing — RESOLVED
 
-`ToolCallRegistry.defaultTools()` registers `get_recurrings` but
-`dispatch("get_recurrings", …)` throws `LLMError.toolNotImplemented`.
-Adding it needs three steps: a `Recurring` Sendable DTO in `Models/`,
-a `PersistedRecurring` `@Model` + projection, and a
-`@ModelActor RecurringStore`. The `Features/Recurrings/` module
-already infers recurring transactions in memory — that detector is
-the seed for the persisted store.
+`get_recurrings` now answers from a durable store end to end:
+
+- `Sources/Models/Recurring.swift` — Sendable DTO. `category` is the
+  `CategoryID` slug as a plain `String` (Models can't import the
+  `Features`-level enum; the slug round-trips via `CategoryID.from(slug:)`).
+  `isIncome` flag; income rows get a distinct id namespace
+  (`recurring.income.<slug>` vs `recurring.<slug>`) so a recurring credit
+  never collides with a recurring debit of the same merchant.
+- `Sources/Persistence/Models/PersistedRecurring.swift` — sixth `@Model`.
+  `medianAmount` persists as a canonical decimal `String` (`medianAmountRaw`),
+  same exact-round-trip pattern as `PersistedTransaction.amount` (G1).
+- `Sources/Persistence/Stores/RecurringStore.swift` — `@ModelActor`.
+  `upsert`/`upsertAll` (changed-flag), `all()` (soonest `predictedNext`
+  first), `upcoming(within:now:)`, `get`, `count`, `deleteAll`.
+- `Sources/Features/Recurrings/RecurringProjection.swift` — the
+  `DetectedRecurring -> Recurring` bridge (collapses `CategoryID` to its
+  slug, supplies the `isIncome` id namespace).
+- `ToolCallRegistry` gained an optional `recurringStore`. `get_recurrings`
+  encodes `store.all()` as JSON, or throws `toolNotImplemented` when no store
+  is wired (graceful degrade). `AppCore` constructs `recurringStore` and
+  `CrashFreeLaunchTests` touches it.
+
+Tests: RecurringStore 6, RecurringProjection 2, registry `get_recurrings` 2,
+`ContainerFactory` schema-count canary bumped 5 → 6. Full suite 537; only the
+6 pre-existing macOS Dashboard snapshot baselines remain red.
+
+**Follow-on (not started):** nothing wires the detector re-derivation into the
+store yet — a `RecurringStore.upsertAll(detected.map { $0.asRecurring() })`
+call belongs in the same nightly `BGTaskScheduler` task that runs the
+`ProactiveAnalyzer` (app-target work, see G4's "still open" note).
 
 ### G4 — `AppCore` substrate wiring — DONE (package seam); app-target adoption remains
 
@@ -357,10 +380,10 @@ parses.
 
 ## How to continue
 
-Status after Session 2 (2026-05-23): **G1, G2, G4 (package seam) all
+Status after Session 3 (2026-05-23): **G1, G2, G3, G4 (package seam) all
 resolved; Phase 2 connector network layer + Phase 4 ProactiveAnalyzer +
 durable feed all landed.** Everything to date is package-only and green
-under `swift test` (529 tests; the only reds are 6 pre-existing macOS
+under `swift test` (537 tests; the only reds are 6 pre-existing macOS
 snapshot baselines, unrelated to substrate).
 
 1. Read this manifest. Skim the plan at
@@ -375,8 +398,6 @@ snapshot baselines, unrelated to substrate).
      `BGTaskScheduler` task runs `ProactiveAnalyzer.analyze` →
      `notifications.upsertAll` + local notifications (+ `Info.plist` task
      IDs). See G4's "still open" note.
-   - **G3 (RecurringStore)** — package-only, unblocked, test-first. Wire
-     `get_recurrings` end to end; the `Features/Recurrings` detector seeds it.
    - **G6 (Apple FoundationModels)** — the on-device half is unblocked
      (no creds); the remote half waits on synapse-v2 `/api/llm/proxy`.
    - **G5 (real Plaid)** and **G6 remote** — operator-blocked (Plaid
@@ -391,12 +412,14 @@ snapshot baselines, unrelated to substrate).
 ```bash
 cd packages/SynnapseKit
 swift build                                   # full graph, currently clean
-swift test                                    # all suites, 529 tests; 6 reds
+swift test                                    # all suites, 537 tests; 6 reds
                                               #   are pre-existing macOS snapshot
                                               #   baselines (not substrate)
-swift test --filter PersistenceTests          # 23/23 (G1 canary now green)
+swift test --filter PersistenceTests          # 29/29 (incl. RecurringStore + G1 canary)
+swift test --filter RecurringStore            # 6/6 (G3)
 swift test --filter ConnectorsTests           # 18/18
-swift test --filter IntelligenceTests         # 37/37
+swift test --filter ToolCallRegistry          # 7/7 (incl. get_recurrings)
+swift test --filter RecurringProjection       # 2/2 (G3 bridge)
 swift test --filter AppLifecycleTests         # 23/23 (substrate wiring)
 swift test --filter ProactiveAnalyzer         # 5/5
 ```
