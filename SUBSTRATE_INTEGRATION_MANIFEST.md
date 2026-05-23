@@ -18,13 +18,15 @@ stub, and the exact next moves.
 |------|--------|------|
 | Phase 0 — App Store unblockers | **complete** | KeychainStoreTests green |
 | Phase 1 — SwiftData persistence | **complete (canary aside)** | 16 / 17 pass |
-| Phase 2 — Plaid scaffold (no real SDK) | **scaffold only** | 9 / 9 pass |
+| Phase 2 — Plaid proxy connector (no LinkKit SDK) | **network layer live** | 18 / 18 pass |
 | Phase 3 — Intelligence scaffold (no real LLM) | **scaffold only** | 37 / 37 pass |
 | Phase 4 — Native sensors + agentic flows | not started | — |
 | Phase 5 — Monetization + observability + submission | not started | — |
 
-**Overall: 62 / 63 tests pass.** The 1 failure is a deliberate canary —
-see "Known gaps" below.
+**Overall: 71 / 72 substrate tests pass.** The 1 failure is a deliberate
+canary — see "Known gaps" below. (Full repo `swift test` also shows
+pre-existing macOS snapshot-rendering mismatches in the Dashboard/Finance
+view suites; those are host-environment baselines, unrelated to substrate.)
 
 ## What landed (file-level)
 
@@ -127,9 +129,23 @@ Replaces the empty `Sources/Persistence/Placeholder.swift` (deleted) with:
   delta after. 1 checking + 1 credit account. AAPL + VOO positions.
 - `Sources/Connectors/Plaid/LivePlaidConnector.swift` — `actor`
   pointing at the synapse-v2 server-side endpoints
-  (`/api/connectors/plaid/...`). Every method currently throws
-  `PlaidConnectorError.notImplemented` after asserting the URL
-  constructs correctly. This is the seam Phase 2 fills.
+  (`/api/connectors/plaid/...`). All six methods now make real
+  `APIClient.send` POST calls, encode the request body as JSON, forward
+  `X-Plaid-Environment`, decode the proxy envelope into native `Models`
+  DTOs, and map `APIError` → `PlaidConnectorError`. The `notImplemented`
+  case is no longer thrown by the live connector. (Updated this session.)
+- `Sources/Connectors/Plaid/PlaidWire.swift` — new. Request bodies
+  (`PlaidLinkTokenRequest` / `PlaidExchangeRequest` / `PlaidSyncRequest` /
+  `PlaidItemRequest`) and response envelopes (`PlaidLinkTokenEnvelope`
+  with dual epoch/ISO-8601 expiration decode, `PlaidItemEnvelope`,
+  `PlaidSyncEnvelope`, `PlaidInvestmentsEnvelope` + `PlaidHoldingRow`,
+  `PlaidOKEnvelope`). Decoding reuses the native `ServerTransactionRow` /
+  `FinanceAccountsResponse` so the Plaid path projects identically to the
+  legacy `/api/finance/*` path.
+- `Tests/ConnectorsTests/LivePlaidConnectorTests.swift` — new. 9 tests
+  over `URLProtocolStub`: per-method envelope decode + path/method
+  assertions, dual expiration formats, signed-amount + removed-id
+  projection, 503 → `.server(status:)`, malformed body → `.decoding`.
 - `Sources/Connectors/Plaid/PlaidSync.swift` — `actor PlaidSync`.
   Wires `PlaidConnector` → `AccountStore` + `TransactionStore` +
   `InvestmentStore` + `AuditLogStore`. Cursor-paginates while
@@ -229,16 +245,24 @@ construct the four store actors against it, construct
 `IntelligenceRouter`, surface them as `public let ...` on `AppCore`,
 and inject into the SwiftUI environment from `apps/Shared/RootView.swift`.
 
-### G5 — Phase 2 Plaid SDK not added
+### G5 — Phase 2 LinkKit SDK + server routes not added
 
-`LivePlaidConnector` throws `notImplemented`. Needs the user's Plaid
-`client_id` + `secret` (stored server-side in synapse-v2, not in the
-iOS app) plus two new synapse-v2 endpoints:
-`POST /api/connectors/plaid/link-token/create` and
-`POST /api/connectors/plaid/item/public-token/exchange`. The iOS-side
-work is to add `.package(url:)` for Plaid LinkKit in `Package.swift`
-and to swap the `notImplemented` throws for real `URLSession` calls
-via `APIClient`.
+The iOS-side network layer is **done**: `LivePlaidConnector` makes real
+`APIClient.send` calls against `/api/connectors/plaid/*` and is tested
+against `URLProtocolStub`. Two things remain, both needing the operator:
+
+1. **synapse-v2 server routes.** The six proxy endpoints don't exist yet
+   server-side. The contract is pinned iOS-side (see `PlaidWire.swift`
+   envelopes); the server must hold the Plaid `client_id` + `secret`,
+   store access tokens in its own Keychain, and answer the six paths the
+   connector calls (`link-token/create`, `item/public-token/exchange`,
+   `transactions/sync`, `accounts/get`, `investments/get`, `item/remove`).
+   Block on operator credentials before building these.
+2. **LinkKit presentation.** `PlaidLinkController`
+   (`UIViewControllerRepresentable`) to present Link and hand the
+   one-shot `public_token` back to `exchangePublicToken`. Needs the Plaid
+   LinkKit `.package(url:)` in `Package.swift`. The connector is ready to
+   consume whatever LinkKit returns.
 
 ### G6 — Phase 3 real LLM calls not wired
 

@@ -2,87 +2,128 @@ import Foundation
 import Models
 import Networking
 
-/// Live Plaid connector that will, in Phase 2, route every call through the
-/// synapse-v2 backend (`/api/connectors/plaid/*`). The server holds the
-/// client_id + secret; the client only ever sees the link token and item
-/// references. Today this is a scaffold: each method asserts the URL it
-/// would call and then throws `.notImplemented` so the seam is provably
-/// wired without pulling in the real SDK.
+/// Live Plaid connector. Every call routes through the synapse-v2 backend
+/// (`/api/connectors/plaid/*`); the server holds the client_id + secret and
+/// the long-lived access tokens, so the client only ever sees the short-lived
+/// link token and opaque item references. The connector inherits the standard
+/// `APIClient` bearer/refresh + retry policy — it adds no `URLSession` calls of
+/// its own.
 public actor LivePlaidConnector: PlaidConnector {
 
     private let client: APIClient
     private let environment: PlaidEnvironment
+    private let encoder: JSONEncoder
 
-    /// `client` is the standard Synapse `APIClient` — every call inherits
-    /// the bearer/refresh path and the retry policy. `environment` is the
-    /// Plaid environment the *server* is pointed at; the client just
-    /// records it so the UI can show "(sandbox)" and so tests can assert.
+    /// `client` is the standard Synapse `APIClient`. `environment` is the Plaid
+    /// environment the *server* is pointed at; the client forwards it as a
+    /// header so the proxy can assert the two agree, and records it so the UI
+    /// can show "(sandbox)".
     public init(client: APIClient, environment: PlaidEnvironment) {
         self.client = client
         self.environment = environment
+        self.encoder = JSONEncoder()
     }
 
-    /// Phase 2 will fill these in. For now we construct the endpoint so
-    /// the path is exercised (and a typo surfaces in tests) before
-    /// throwing.
     public func createLinkToken(userId: String) async throws -> PlaidLinkToken {
-        _ = try await assertEndpoint(path: "api/connectors/plaid/link-token/create")
-        throw PlaidConnectorError.notImplemented
+        let env: PlaidLinkTokenEnvelope = try await post(
+            path: "api/connectors/plaid/link-token/create",
+            body: PlaidLinkTokenRequest(userId: userId)
+        )
+        return PlaidLinkToken(token: env.linkToken, expiration: env.expiration)
     }
 
     public func exchangePublicToken(_ publicToken: String) async throws -> PlaidItem {
-        _ = try await assertEndpoint(path: "api/connectors/plaid/item/public-token/exchange")
-        throw PlaidConnectorError.notImplemented
+        let env: PlaidItemEnvelope = try await post(
+            path: "api/connectors/plaid/item/public-token/exchange",
+            body: PlaidExchangeRequest(publicToken: publicToken)
+        )
+        return PlaidItem(
+            id: env.itemId,
+            institutionId: env.institutionId,
+            institutionName: env.institutionName,
+            accessTokenRef: env.accessTokenRef
+        )
     }
 
     public func syncTransactions(
         itemId: String,
         cursor: String?
     ) async throws -> PlaidSyncDelta {
-        _ = try await assertEndpoint(path: "api/connectors/plaid/transactions/sync")
-        throw PlaidConnectorError.notImplemented
+        let env: PlaidSyncEnvelope = try await post(
+            path: "api/connectors/plaid/transactions/sync",
+            body: PlaidSyncRequest(itemId: itemId, cursor: cursor)
+        )
+        return PlaidSyncDelta(
+            added: env.added.map(Transaction.fromServerRow),
+            modified: env.modified.map(Transaction.fromServerRow),
+            removedIds: env.removed,
+            nextCursor: env.nextCursor,
+            hasMore: env.hasMore
+        )
     }
 
     public func fetchAccounts(itemId: String) async throws -> [FinanceAccount] {
-        _ = try await assertEndpoint(path: "api/connectors/plaid/accounts/get")
-        throw PlaidConnectorError.notImplemented
+        let env: FinanceAccountsResponse = try await post(
+            path: "api/connectors/plaid/accounts/get",
+            body: PlaidItemRequest(itemId: itemId)
+        )
+        return env.accounts
     }
 
     public func fetchInvestments(itemId: String) async throws -> [InvestmentPosition] {
-        _ = try await assertEndpoint(path: "api/connectors/plaid/investments/get")
-        throw PlaidConnectorError.notImplemented
+        let env: PlaidInvestmentsEnvelope = try await post(
+            path: "api/connectors/plaid/investments/get",
+            body: PlaidItemRequest(itemId: itemId)
+        )
+        return env.holdings.map { $0.toPosition() }
     }
 
     public func removeItem(itemId: String) async throws {
-        _ = try await assertEndpoint(path: "api/connectors/plaid/item/remove")
-        throw PlaidConnectorError.notImplemented
-    }
-
-    /// Constructs (but does not send) the endpoint that the Phase 2
-    /// implementation will use. Surfaces a `.invalidURL` if the relative
-    /// path can't be composed against the client's base URL — Phase 2
-    /// will replace the throw at the call site with a real `client.send`.
-    @discardableResult
-    private func assertEndpoint(path: String) async throws -> URL {
-        let base = await client.baseURLForExternalUse
-        let endpoint = Endpoint<PlaidEmptyResponse>(method: .post, path: path)
-        do {
-            return try endpoint.url(relativeTo: base)
-        } catch {
-            throw PlaidConnectorError.invalidURL
-        }
-    }
-
-    /// Exposed for tests so they can prove the seam reaches the right
-    /// path without firing the network.
-    public func resolveEndpointURL(path: String) async throws -> URL {
-        try await assertEndpoint(path: path)
+        let _: PlaidOKEnvelope = try await post(
+            path: "api/connectors/plaid/item/remove",
+            body: PlaidItemRequest(itemId: itemId)
+        )
     }
 
     public nonisolated var environmentForExternalUse: PlaidEnvironment { environment }
-}
 
-/// Placeholder decode target — never actually decoded today because every
-/// `LivePlaidConnector` method throws before `client.send` runs. Phase 2
-/// replaces this with the per-endpoint response types.
-struct PlaidEmptyResponse: Decodable, Sendable {}
+    /// POST `body` as JSON to `path` and decode the proxy envelope. Translates
+    /// `APIError` into the connector's `PlaidConnectorError` vocabulary so
+    /// callers never have to reason about two error types.
+    private func post<Body: Encodable, R: Decodable & Sendable>(
+        path: String,
+        body: Body
+    ) async throws -> R {
+        let data: Data
+        do {
+            data = try encoder.encode(body)
+        } catch {
+            throw PlaidConnectorError.transport
+        }
+        let endpoint = Endpoint<R>(
+            method: .post,
+            path: path,
+            headers: [
+                "Content-Type": "application/json",
+                "X-Plaid-Environment": environment.rawValue,
+            ],
+            body: data
+        )
+        do {
+            return try await client.send(endpoint)
+        } catch let apiError as APIError {
+            throw Self.map(apiError)
+        } catch {
+            throw PlaidConnectorError.transport
+        }
+    }
+
+    private static func map(_ error: APIError) -> PlaidConnectorError {
+        switch error {
+        case .server(let status): return .server(status: status)
+        case .decoding: return .decoding
+        case .badURL: return .invalidURL
+        case .unauthorized, .transport, .cancelled: return .transport
+        }
+    }
+}
