@@ -193,9 +193,14 @@ public struct MembershipsView: View {
         .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(tokens.foregroundPrimary.color.opacity(0.03))
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
+        )
+        .elevation(DS.Elevation.card)
     }
 
     // MARK: - Filtering

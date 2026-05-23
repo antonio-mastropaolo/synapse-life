@@ -57,13 +57,18 @@ struct MembershipRow: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                DS.Surface.card,
+                in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .fill(rowBackground(tokens: tokens))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .stroke(rowBorder(tokens: tokens), lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                    .strokeBorder(rowBorder(tokens: tokens), lineWidth: 1)
             )
+            .elevation(DS.Elevation.card)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

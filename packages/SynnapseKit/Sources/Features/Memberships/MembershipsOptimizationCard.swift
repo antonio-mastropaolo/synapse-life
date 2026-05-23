@@ -36,13 +36,18 @@ struct MembershipsOptimizationCard: View {
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .fill(accent.opacity(0.06))
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .stroke(accent.opacity(0.30), lineWidth: 1)
         )
+        .elevation(DS.Elevation.card)
         .accessibilityIdentifier("memberships.optimization.card")
     }
 
