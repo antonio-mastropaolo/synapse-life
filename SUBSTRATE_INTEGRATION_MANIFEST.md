@@ -387,8 +387,20 @@ needs on-device confirmation (out of `swift test` reach).
 tap routes by kind (bill/new-recurring → Recurrings, anomaly → Transactions);
 iOS tap-to-jump is deferred (needs cross-tab selection plumbing).
 
+**iOS proactive tap-to-jump — DONE.** A tap flips the `TabView` selection to
+Transactions (the surface holding the underlying charge); deep-routing to the
+Recurrings sub-screen under More is deferred. macOS routes by kind via the sidebar.
+
+**App Store / Liquid Glass redesign — landed on `main`.** The DesignSystem token
+refresh (palette + type + depth/material, all identities, WCAG-clean) plus a
+surface pass adopting the `glassCard`/material treatment on the Dashboard hero
+rows and the proactive strip. Snapshots rebaselined on this host.
+
 **Still open (app-target work):**
-- iOS proactive tap-to-jump (cross-tab routing).
+- On-device verification of background-task *firing* (`BGTaskScheduler` /
+  `NSBackgroundActivityScheduler`) — out of `swift test` reach.
+- Optional: extend the glass-material treatment to the remaining card surfaces
+  (Finance hub, inspector, Memberships) for full visual consistency.
 
 ### G5 — Phase 2 LinkKit SDK + server routes not added
 
