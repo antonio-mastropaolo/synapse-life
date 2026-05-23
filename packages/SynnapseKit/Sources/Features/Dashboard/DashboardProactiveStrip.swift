@@ -45,6 +45,17 @@ struct DashboardProactiveStrip: View {
                 row(signal)
             }
         }
+        .padding(.vertical, 4)
+        .background(
+            DS.Surface.chrome,
+            in: RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
+        )
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
         .accessibilityIdentifier("dashboard.proactiveStrip")
     }
 

@@ -185,13 +185,14 @@ struct DashboardHeroRow2: View {
             }
         }
         .background(
-            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
-                .fill(tokens.surface.color)
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         )
         .overlay(
             RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
-                .stroke(tokens.foregroundSecondary.color.opacity(0.14), lineWidth: DS.Stroke.hairline)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
         )
+        .elevation(DS.Elevation.card)
         .opacity(appeared ? 1 : 0)
         .offset(y: appeared ? 0 : 8)
     }

@@ -118,16 +118,7 @@ struct DashboardHeroRow: View {
         let appeared = reduceMotion ? true : hasAppeared[index]
         content()
             .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(tokens.surface.color)
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .stroke(tokens.foregroundSecondary.color.opacity(0.14),
-                            lineWidth: 0.5)
-            )
+            .glassCard(radius: DS.Radius.card, padding: 14)
             .opacity(appeared ? 1 : 0)
             .offset(y: appeared ? 0 : 8)
     }
