@@ -330,7 +330,7 @@ store yet — a `RecurringStore.upsertAll(detected.map { $0.asRecurring() })`
 call belongs in the same nightly `BGTaskScheduler` task that runs the
 `ProactiveAnalyzer` (app-target work, see G4's "still open" note).
 
-### G4 — `AppCore` substrate wiring — DONE (package seam); app-target adoption remains
+### G4 — `AppCore` substrate wiring — DONE (package seam + macOS shell); iOS remains
 
 `AppCore` now builds a `ModelContainer` (in-memory for demo/test;
 `.live(appGroupIdentifier: "group.tech.synnapse")` with an ephemeral
@@ -342,14 +342,31 @@ surfaced as `public let` and exercised by `CrashFreeLaunchTests`.
 `AppLifecycle` gained `Persistence` + `Intelligence` deps; the `@ModelActor`
 init is accessible cross-module, so no extra factory was needed.
 
-**Still open (app-target work, not in the package):** the shells
-(`SynnapseiOSApp.AppModel` / `SynnapseMacApp.AppModel`) build their own VMs
-and don't yet consume `AppCore`'s stores; they need to (a) adopt the
-container via `.modelContainer(...)`, (b) read the proactive feed into the
-Dashboard inbox, and (c) register a nightly `BGTaskScheduler` task that runs
-`ProactiveAnalyzer.analyze` → `notifications.upsertAll` and fires local
-notifications. Those touch `apps/*` + `Info.plist` and are the next
-increment.
+**macOS shell adoption — DONE.** `SynnapseMacApp` no longer hand-builds an
+`AppModel`; it instantiates `AppCore` directly. `AppCore` was promoted to the
+full cockpit superset (dashboard, categories, digest, forecast, smartAlerts,
+intelligenceAsk, subscriptions, memberships, recurrings, goals, lifecycle) and
+now owns the bootstrap orchestration (`refreshSurfaces()`). Recurrings is
+durable end to end: `bootstrap()` hydrates the Recurrings VM from
+`recurringStore` (cold-start read via the new `Recurring.asDetected()` reverse
+bridge + `RecurringsViewModel.hydrate`), refreshes the detector, then writes
+the detections back through (`persistRecurrings()`) so `get_recurrings` reads
+real data. Verified: `SynnapseMac` builds, launches, and the Recurrings surface
+renders through `AppCore` (DETECTED 7, persisted).
+
+**Still open (app-target work):**
+- **iOS shell** still uses its own `AppModel`; repoint it onto `AppCore` (needs
+  a simulator to verify — `swift test` can't cover it). The iOS `AppModel` adds
+  a `commandBar` + `LifeViewModel` + a `financeAPI` handle that `AppCore`
+  doesn't expose yet.
+- **`.modelContainer(...)` injection** into the SwiftUI environment (so a future
+  widget / share-extension reads the same store) — `AppCore` holds the
+  container but the scenes don't yet inject it.
+- **Dashboard inbox reads `notifications.recent()`** — not yet wired to the
+  proactive feed.
+- **Nightly `BGTaskScheduler`** task running `ProactiveAnalyzer.analyze` →
+  `notifications.upsertAll` + `recurringStore.upsertAll(...)` + local
+  notifications (+ `Info.plist` task IDs).
 
 ### G5 — Phase 2 LinkKit SDK + server routes not added
 
