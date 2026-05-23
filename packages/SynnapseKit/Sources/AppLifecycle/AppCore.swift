@@ -22,6 +22,7 @@ public final class AppCore {
 
     public let baseURL: URL
     public let auth: AuthViewModel
+    public let biometricGate: BiometricGate
     public let financePersonal: FinancePersonalViewModel
     public let financeAccounts: FinanceAccountsViewModel
     public let financeTransactions: FinanceTransactionsViewModel
@@ -79,6 +80,13 @@ public final class AppCore {
             serverContractLive: false
         )
         self.auth = AuthViewModel(api: sessionAPI, store: store)
+        // Demo wiring leaves the gate at `.unavailable` so the cockpit
+        // boots straight into the seeded fixtures; production wiring
+        // starts `.locked` and the shell calls `authenticate()` from
+        // its first `.task`.
+        self.biometricGate = useDemoData
+            ? BiometricGate.alwaysUnlocked()
+            : BiometricGate()
 
         let client = APIClient(
             baseURL: baseURL,

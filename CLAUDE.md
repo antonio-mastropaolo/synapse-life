@@ -60,3 +60,16 @@ When translating a Synapse v2 web feature, follow this order:
 Default to the Human Interface Guidelines, then to whatever Synapse v2 already
 encoded as user-visible behavior. Disagreement with either is fine — just
 write down why.
+
+## Session handoff
+
+Substrate work (persistence, account aggregation, AI agent layer) is tracked
+separately from the surface-layer M-numbered milestones. The current state is
+captured in `SUBSTRATE_INTEGRATION_MANIFEST.md` at the repo root. Read it
+first if you're picking up a substrate task. The roadmap lives at
+`~/.claude/plans/typed-rolling-koala.md`.
+
+When fanning out parallel Swift work to subagents, use `mobile-app-builder`
+or `general-purpose`. Do **not** use `ares-engineer` — it is scoped to the
+two ARES repos and carries product-specific framing that does not belong
+here.

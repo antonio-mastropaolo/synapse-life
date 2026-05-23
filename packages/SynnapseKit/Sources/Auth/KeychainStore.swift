@@ -7,22 +7,45 @@ public enum KeychainError: Error, Equatable, Sendable {
 }
 
 /// Minimal Keychain wrapper around `SecItem*` for refresh-token storage and
-/// other small secrets. Items are scoped by `service` and `account`, written
-/// with `kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly` so they survive
-/// reboots but cannot leak via iCloud Keychain backup.
+/// other small secrets. Items are scoped by `service` and `account`. The
+/// default accessibility class is `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`
+/// — strictly stronger than the previous `…AfterFirstUnlockThisDeviceOnly`
+/// default — so secrets cannot be hosted on a device that lacks a passcode
+/// and cannot leak via iCloud Keychain backup.
+///
+/// Tests and unsigned `swift test` invocations on a host without a user
+/// passcode may need to relax the accessibility class; the `accessibility:`
+/// init parameter is provided for that path. Production callers leave it
+/// at the default.
 public struct KeychainStore: Sendable {
 
     public let service: String
 
-    /// The `kSecAttrAccessible` class this store will request when writing
-    /// items. Surfaced so tests and code review can assert on it without
-    /// round-tripping through the keychain (the legacy macOS keychain does
-    /// not return the attribute on lookup).
-    public static let accessibilityClass: String =
-        kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
+    /// The `kSecAttrAccessible` class this instance will request when writing
+    /// items. Per-instance (rather than static) so tests can opt into a more
+    /// relaxed class without mutating global state; production callers should
+    /// leave it at the default.
+    public let accessibility: String
 
-    public init(service: String) {
+    /// Default accessibility class for production callers. Strictly stronger
+    /// than the previous default — items written under this class are
+    /// unavailable on a device with no user passcode, and are excluded from
+    /// iCloud Keychain backup.
+    public static let defaultAccessibility: String =
+        kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly as String
+
+    /// Back-compat shim: the prior public surface exposed
+    /// `KeychainStore.accessibilityClass` as a static let. Kept as an alias of
+    /// `defaultAccessibility` so older call sites don't break, but new code
+    /// should read it from the instance.
+    public static var accessibilityClass: String { defaultAccessibility }
+
+    public init(
+        service: String,
+        accessibility: String = KeychainStore.defaultAccessibility
+    ) {
         self.service = service
+        self.accessibility = accessibility
     }
 
     /// Opting into the data-protection keychain (`kSecUseDataProtectionKeychain`)
@@ -45,7 +68,7 @@ public struct KeychainStore: Sendable {
         let query = baseQuery(account: account)
         let attrs: [String: Any] = [
             kSecValueData as String: data,
-            kSecAttrAccessible as String: Self.accessibilityClass
+            kSecAttrAccessible as String: self.accessibility
         ]
 
         let status = SecItemUpdate(query as CFDictionary, attrs as CFDictionary)

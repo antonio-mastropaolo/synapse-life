@@ -22,9 +22,21 @@ struct KeychainStoreTests {
         "tech.synnapse.keychain.tests.\(UUID().uuidString)"
     }
 
+    /// Production callers leave `accessibility:` at the default
+    /// (`kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`). For round-trip
+    /// tests we explicitly relax to `…AfterFirstUnlockThisDeviceOnly` so the
+    /// suite does not depend on the host having a login password set — the
+    /// strict class is asserted separately in `defaultsToWhenPasscodeSet`.
+    private func testStore(service: String) -> KeychainStore {
+        KeychainStore(
+            service: service,
+            accessibility: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
+        )
+    }
+
     @Test(.enabled(if: keychainAvailable))
     func roundTripsValue() throws {
-        let store = KeychainStore(service: uniqueService())
+        let store = testStore(service: uniqueService())
         let account = "refresh-token"
         defer { try? store.delete(account: account) }
 
@@ -35,7 +47,7 @@ struct KeychainStoreTests {
 
     @Test(.enabled(if: keychainAvailable))
     func overwritesExistingValue() throws {
-        let store = KeychainStore(service: uniqueService())
+        let store = testStore(service: uniqueService())
         let account = "refresh-token"
         defer { try? store.delete(account: account) }
 
@@ -47,30 +59,45 @@ struct KeychainStoreTests {
 
     @Test(.enabled(if: keychainAvailable))
     func deleteIsNoOpWhenAbsent() throws {
-        let store = KeychainStore(service: uniqueService())
+        let store = testStore(service: uniqueService())
         // Must not throw.
         try store.delete(account: "never-written")
     }
 
     @Test
-    func usesAfterFirstUnlockThisDeviceOnly() throws {
-        // The legacy macOS keychain does not surface kSecAttrAccessible on
-        // lookup. We instead pin the requested accessibility class on the
-        // type so a regression in the write path is loud.
-        let expected = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
-        #expect(KeychainStore.accessibilityClass == expected)
+    func defaultsToWhenPasscodeSet() throws {
+        // Production default tightened from `AfterFirstUnlockThisDeviceOnly`
+        // to `WhenPasscodeSetThisDeviceOnly` so secrets cannot be hosted on
+        // a device with no user passcode and cannot leak via iCloud Keychain
+        // backup. The legacy macOS keychain does not surface the attribute
+        // on lookup, so we pin the requested class on the type instead.
+        let expected = kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly as String
+        #expect(KeychainStore.defaultAccessibility == expected)
+        #expect(KeychainStore.accessibilityClass == expected) // back-compat alias
+
+        // Instance accessibility defaults to the strong class…
+        let defaultStore = KeychainStore(service: "x")
+        #expect(defaultStore.accessibility == expected)
+        // …but tests may opt into the relaxed class via the init parameter.
+        let relaxed = KeychainStore(
+            service: "x",
+            accessibility: kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String
+        )
+        #expect(relaxed.accessibility == kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly as String)
     }
 
     #if os(iOS)
     @Test(.enabled(if: keychainAvailable))
     func roundTripsAccessibilityAttributeOnIOS() throws {
-        let store = KeychainStore(service: uniqueService())
+        let store = testStore(service: uniqueService())
         let account = "refresh-token"
         defer { try? store.delete(account: account) }
 
         try store.set("x", account: account)
         let access = try store.accessibility(account: account)
-        #expect(access == KeychainStore.accessibilityClass)
+        // The test store was constructed with the relaxed class; assert the
+        // attribute round-trips that class, not the static default.
+        #expect(access == store.accessibility)
     }
     #endif
 }

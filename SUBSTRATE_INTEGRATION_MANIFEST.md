@@ -1,0 +1,280 @@
+# Substrate Integration Manifest — Phase 0 + Phase 1 + Phase 2/3 scaffolds
+
+Companion to the surface-layer manifests (`M7`, `M8`, `M9`, `AI_PLUS`,
+`DASHBOARD`, `IOS`, `SHELL`). Those documented the polished UI surfaces.
+This one documents the **substrate** the surfaces will eventually read
+from: a SwiftData persistence layer, a Plaid-shaped account-aggregation
+scaffold, and a hybrid LLM scaffold. Written so the next session can
+continue cleanly after `/clear`.
+
+The full plan with rationale lives at
+`/Users/amastro/.claude/plans/typed-rolling-koala.md`. This manifest is
+the **session-end snapshot**: what's done, where it lives, what's still
+stub, and the exact next moves.
+
+## Status
+
+| Phase | Status | Test count this session |
+|------|--------|------|
+| Phase 0 — App Store unblockers | **complete** | KeychainStoreTests green |
+| Phase 1 — SwiftData persistence | **complete (canary aside)** | 16 / 17 pass |
+| Phase 2 — Plaid scaffold (no real SDK) | **scaffold only** | 9 / 9 pass |
+| Phase 3 — Intelligence scaffold (no real LLM) | **scaffold only** | 37 / 37 pass |
+| Phase 4 — Native sensors + agentic flows | not started | — |
+| Phase 5 — Monetization + observability + submission | not started | — |
+
+**Overall: 62 / 63 tests pass.** The 1 failure is a deliberate canary —
+see "Known gaps" below.
+
+## What landed (file-level)
+
+### Phase 0 — App Store unblockers
+
+- `apps/Synnapse-iOS/PrivacyInfo.xcprivacy` — new. Declares financial-info
+  + identifier + email + name + crash-data collection; declares required-
+  reason API uses for `UserDefaults`, `FileTimestamp`, `SystemBootTime`,
+  `DiskSpace`.
+- `apps/Synnapse-macOS/PrivacyInfo.xcprivacy` — new. Same categories
+  minus device-id (sandbox restricts the API).
+- `apps/Synnapse-iOS/Synnapse-iOS.entitlements` — added
+  `aps-environment=development`, `usernotifications.communication`,
+  renamed App Group to `group.tech.synnapse` so it matches the bundle
+  prefix `tech.synnapse.ios`.
+- `apps/Synnapse-macOS/Synnapse-macOS.entitlements` — App Group renamed
+  to `group.tech.synnapse` to match the iOS target.
+- `packages/SynnapseKit/Sources/Auth/KeychainStore.swift` — default
+  accessibility class tightened to
+  `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`. New `accessibility:`
+  init parameter so tests can opt into the relaxed class without
+  mutating global state. The legacy static
+  `KeychainStore.accessibilityClass` is kept as an alias of the new
+  `defaultAccessibility` for backwards compat.
+- `packages/SynnapseKit/Sources/Auth/BiometricGate.swift` — new.
+  `@MainActor @Observable` Face-ID / device-passcode gate via
+  `LocalAuthentication`. 60-second background-lock threshold (configurable).
+  `noteBackgrounded()` / `noteForegrounded()` / `lock()` / `authenticate(reason:)`
+  / `alwaysUnlocked()`.
+- `packages/SynnapseKit/Sources/AppLifecycle/AppCore.swift` — adds
+  `public let biometricGate: BiometricGate`. Demo wiring uses
+  `BiometricGate.alwaysUnlocked()`; live wiring starts `.locked`.
+- `packages/SynnapseKit/Tests/AuthTests/KeychainStoreTests.swift` —
+  updated to assert the new strong default, the alias, and the test
+  helper that opts into the relaxed class.
+
+### Phase 1 — SwiftData persistence
+
+Replaces the empty `Sources/Persistence/Placeholder.swift` (deleted) with:
+
+- `Sources/Persistence/Module.swift` — module marker + schema version
+  string (`"1.0.0"`).
+- `Sources/Persistence/ContainerFactory.swift` — `PersistenceContainerFactory`
+  with `.live(appGroupIdentifier:)` / `.ephemeral` / `.namedFile(URL)`
+  configurations. Live falls back to the documents directory when the
+  App Group isn't entitled (so unsigned `swift test` and dev simulator
+  runs still get a store).
+- `Sources/Persistence/Projections.swift` — DTO ↔ persisted
+  conversions. `from(_:syncedAt:)`, `toDTO()`, and `update(from:syncedAt:) -> Bool`
+  for each persisted type. The `update` return value (true when any
+  field changed) is what the store actors use to decide whether to
+  emit a `NotificationCenter` change event.
+- `Sources/Persistence/Models/PersistedFinanceAccount.swift` — `@Model`
+  mirror of `FinanceAccount`. Stores `kindRaw: String`; `kind` is a
+  computed projection that falls through to `.other` on unknown
+  raw values (forward-compat with future taxonomy additions).
+- `Sources/Persistence/Models/PersistedTransaction.swift` — `@Model`
+  mirror of `Transaction`. Stores `categoryRaw: String?`; `category`
+  is the projected `TransactionCategory`.
+- `Sources/Persistence/Models/PersistedInvestmentPosition.swift` —
+  `@Model` mirror of `InvestmentPosition`. Synthesizes the composite
+  id `"\(accountId):\(securityId)"` as the `.unique` attribute.
+- `Sources/Persistence/Models/PersistedAuditLog.swift` — `@Model` for
+  the append-only event store. Companion enums `AuditEventKind` (raw
+  strings `pii.read`, `plaid.link`, `txn.sync`, `llm.call`,
+  `money.move`, `auth`) and `AuditOutcome` (`ok`, `denied`, `error`,
+  `cancelled`).
+- `Sources/Persistence/Stores/AccountStore.swift` — `@ModelActor`. All
+  methods take/return Sendable DTOs. `upsert(_:syncedAt:)`,
+  `upsertAll(_:syncedAt:)`, `all(institutionId:)`, `get(id:)`,
+  `count()`, `deleteAll()`. The persisted reference type never crosses
+  the actor boundary.
+- `Sources/Persistence/Stores/TransactionStore.swift` — `@ModelActor`.
+  `upsert`, `upsertAll`, `delete(ids:)` (Plaid removed-array path),
+  `deleteAll`, `all(limit:)`, `forAccount(_:limit:)`, `between(_:and:category:limit:)`,
+  `get(id:)`, `count()`, `seedIfEmpty(_:)`.
+- `Sources/Persistence/Stores/InvestmentStore.swift` — `@ModelActor`.
+  `upsert`, `upsertAll`, `all()`, `forAccount(_:)`, `count()`,
+  `deleteAll()`.
+- `Sources/Persistence/Stores/AuditLogStore.swift` — `@ModelActor`.
+  `append(kind:subject:detail:outcome:timestamp:)`, `recent(limit:)`,
+  `count()`, `prune(olderThan:now:)`. The companion `AuditLogEntry`
+  Sendable struct crosses the actor boundary (carries `kind: AuditEventKind?`
+  which is `nil` when the raw string is unknown to this binary).
+
+### Phase 2 — Plaid scaffold (NO real SDK linked)
+
+- `Sources/Connectors/Plaid/PlaidConnector.swift` — `public protocol PlaidConnector: Sendable`.
+  Six `async throws` methods: `createLinkToken(userId:)`,
+  `exchangePublicToken(_:)`, `syncTransactions(itemId:cursor:)`,
+  `fetchAccounts(itemId:)`, `fetchInvestments(itemId:)`,
+  `removeItem(itemId:)`.
+- `Sources/Connectors/Plaid/PlaidTypes.swift` — Sendable types:
+  `PlaidLinkToken`, `PlaidItem` (with `accessTokenRef` = Keychain key,
+  never the raw token), `PlaidSyncDelta` (added / modified / removedIds
+  / nextCursor / hasMore), `PlaidEnvironment` enum (`.sandbox`,
+  `.development`, `.production`) with matching base URLs.
+- `Sources/Connectors/Plaid/StubPlaidConnector.swift` — deterministic
+  sandbox-shaped fixtures. 3 fake transactions on first sync, empty
+  delta after. 1 checking + 1 credit account. AAPL + VOO positions.
+- `Sources/Connectors/Plaid/LivePlaidConnector.swift` — `actor`
+  pointing at the synapse-v2 server-side endpoints
+  (`/api/connectors/plaid/...`). Every method currently throws
+  `PlaidConnectorError.notImplemented` after asserting the URL
+  constructs correctly. This is the seam Phase 2 fills.
+- `Sources/Connectors/Plaid/PlaidSync.swift` — `actor PlaidSync`.
+  Wires `PlaidConnector` → `AccountStore` + `TransactionStore` +
+  `InvestmentStore` + `AuditLogStore`. Cursor-paginates while
+  `delta.hasMore`. Writes one `AuditLogStore` row on success or
+  failure. Returns `PlaidSyncResult(addedCount, modifiedCount, removedCount, cursor)`.
+
+### Phase 3 — Intelligence scaffold (NO real LLM linked)
+
+- `Sources/Intelligence/Module.swift` — module marker + doc explaining
+  the hybrid routing strategy and the PII redaction contract.
+- `Sources/Intelligence/LLMClient.swift` — `protocol LLMClient: Sendable`.
+  Sendable types: `LLMPrompt`, `LLMTool` (JSON-Schema arg shape),
+  `LLMResponse`, `LLMDelta`, `LLMError`.
+- `Sources/Intelligence/AppleFoundationLLM.swift` — `actor`. `name = "apple.foundation"`.
+  `#if canImport(FoundationModels)` import is present; both `generate`
+  and `stream` currently throw `LLMError.notImplemented`. A
+  `// Phase 3 — call SystemLanguageModel.shared.respond(...)` comment
+  marks the future implementation site.
+- `Sources/Intelligence/RemoteLLM.swift` — `actor`. Configurable name
+  (`"remote.claude"` / `"remote.gpt"`). Holds an `APIClient`. Documents
+  the SSE frame shape (`data: {…}` text deltas + `done` terminator)
+  matching `AdvisorsAPI`. Throws `notImplemented` until Phase 3 wires
+  `POST /api/llm/proxy`.
+- `Sources/Intelligence/StubLLM.swift` — `actor`. Deterministic stream
+  that chunk-splits on whitespace and emits one `LLMDelta.text(...)`
+  per chunk then `.done`. Used by tests and SwiftUI previews.
+- `Sources/Intelligence/PIIRedactor.swift` — **the only real code in
+  this module.** Strips emails (`<email>`), phones (`<phone>`), SSNs
+  (`<ssn>`), accounts (8–17 digit runs), card numbers (→ `••••<last4>`),
+  addresses (`<address>`), dollar amounts > $50,000 (exclusive, →
+  `<large_amount>`). Whitelist parameter `allowedMerchants: Set<String>`.
+  27 fixture tests pass.
+- `Sources/Intelligence/IntelligenceRouter.swift` — `actor`. Constructor
+  `(local: LLMClient, remote: LLMClient, redactor: PIIRedactor)`. Single
+  `route(_:tools:)` method: simple queries (`prompt.user.count < 200 && tools.count <= 2`) → local;
+  complex → redact then remote. Falls back to a stub on `notImplemented`
+  so the UI doesn't break in Phase 3 dev.
+- `Sources/Intelligence/ToolCallRegistry.swift` — `actor`. Constructor
+  takes `AccountStore`, `TransactionStore`, `InvestmentStore`,
+  `AuditLogStore`. `static defaultTools()` returns four `LLMTool`
+  descriptors (`get_accounts`, `get_transactions`, `get_investments`,
+  `get_recurrings`). `dispatch(name:args:)` is wired for `get_accounts`
+  + `get_transactions(start, end, category?)` returning JSON strings.
+  `get_investments` and `get_recurrings` throw
+  `LLMError.toolNotImplemented` — see "Known gaps" below.
+
+### Package.swift
+
+- New library products: `Connectors`, `Intelligence`.
+- New targets matching the new source directories. Both depend on
+  `Models` + `Networking` + `Persistence`.
+- New test targets: `PersistenceTests`, `ConnectorsTests`,
+  `IntelligenceTests`.
+
+## Known gaps (start here next session)
+
+### G1 — SwiftData drops `Decimal` precision past ~15 sig figs
+
+`Tests/PersistenceTests/DecimalRoundTripTests.swift:104` documents the
+failure mode. Fixture `0.30000000000000004` reads back as `0.3` after a
+round trip. All cents-precision USD and 12-digit trillions round-trip
+exactly, so today's wire-format Plaid amounts are fine — but the
+canary will bite the moment any non-currency math (crypto ticks at 8
+decimals, basis points, futures prices) lands.
+
+**Fix:** in each of `PersistedFinanceAccount` / `PersistedTransaction` /
+`PersistedInvestmentPosition`, change the `Decimal` and `Decimal?`
+fields to `String` and `String?`. Use `Decimal.description` on write
+and `Decimal(string:)` on read inside the `toDTO()` projection. Don't
+change the DTO types in `Models/*`. Update the canary fixture to
+assert exactness across all 20 cases.
+
+### G2 — Namespace collision: two `IntelligenceRouter`s
+
+`Sources/Features/AI/Intelligence/IntelligenceRouter.swift` already
+exists in the `Features` module and shadows the new
+`Intelligence.IntelligenceRouter`. Resolve by either renaming the
+Features one to `LegacyIntelligenceRouter` (less risky) or by deleting
+it once the new router replaces the Features callers (cleaner).
+
+### G3 — `RecurringStore` missing
+
+`ToolCallRegistry.defaultTools()` registers `get_recurrings` but
+`dispatch("get_recurrings", …)` throws `LLMError.toolNotImplemented`.
+Adding it needs three steps: a `Recurring` Sendable DTO in `Models/`,
+a `PersistedRecurring` `@Model` + projection, and a
+`@ModelActor RecurringStore`. The `Features/Recurrings/` module
+already infers recurring transactions in memory — that detector is
+the seed for the persisted store.
+
+### G4 — `AppCore` doesn't hold the new persistence stores or
+`IntelligenceRouter` yet
+
+This session added `biometricGate` only. Next pass: build a
+`ModelContainer` via `PersistenceContainerFactory.make(.live(...))`,
+construct the four store actors against it, construct
+`IntelligenceRouter`, surface them as `public let ...` on `AppCore`,
+and inject into the SwiftUI environment from `apps/Shared/RootView.swift`.
+
+### G5 — Phase 2 Plaid SDK not added
+
+`LivePlaidConnector` throws `notImplemented`. Needs the user's Plaid
+`client_id` + `secret` (stored server-side in synapse-v2, not in the
+iOS app) plus two new synapse-v2 endpoints:
+`POST /api/connectors/plaid/link-token/create` and
+`POST /api/connectors/plaid/item/public-token/exchange`. The iOS-side
+work is to add `.package(url:)` for Plaid LinkKit in `Package.swift`
+and to swap the `notImplemented` throws for real `URLSession` calls
+via `APIClient`.
+
+### G6 — Phase 3 real LLM calls not wired
+
+`AppleFoundationLLM` and `RemoteLLM` both throw `notImplemented`.
+Apple `FoundationModels` lands at iOS 18.1+; bump deployment target if
+needed. `RemoteLLM` waits on a synapse-v2 `POST /api/llm/proxy`
+endpoint that streams SSE in the same shape `AdvisorsAPI` already
+parses.
+
+## How to continue
+
+1. Read this manifest. Skim the plan at
+   `/Users/amastro/.claude/plans/typed-rolling-koala.md` for the
+   rationale and the full 5-phase roadmap.
+2. Decide priority:
+   - **G1 (decimal-as-string)** — small, isolated, high-value test
+     coverage. Good ~30-minute first move.
+   - **G4 (AppCore wiring)** — unlocks all subsequent work. Medium
+     scope; pairs well with G2 (namespace cleanup).
+   - **G5 (real Plaid)** — needs operator credentials. Block on user
+     before starting.
+   - **G6 (real LLM)** — Apple FoundationModels can land without
+     external creds; remote needs synapse-v2 endpoint first.
+3. Use `mobile-app-builder` or `general-purpose` for parallel
+   fan-outs. **Do not use `ares-engineer`** — it's scoped to the two
+   ARES repos and carries product-specific framing that bleeds into
+   the output.
+
+## Test invocation
+
+```bash
+cd packages/SynnapseKit
+swift build                                   # full graph, currently clean
+swift test                                    # all suites, ~62/63 pass
+swift test --filter PersistenceTests          # 16/17 pass (G1 canary)
+swift test --filter ConnectorsTests           # 9/9
+swift test --filter IntelligenceTests         # 37/37
+swift test --filter AuthTests                 # all green
+```

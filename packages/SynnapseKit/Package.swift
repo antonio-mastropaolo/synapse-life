@@ -12,6 +12,8 @@ let package = Package(
         .library(name: "Networking", targets: ["Networking"]),
         .library(name: "Auth", targets: ["Auth"]),
         .library(name: "Persistence", targets: ["Persistence"]),
+        .library(name: "Connectors", targets: ["Connectors"]),
+        .library(name: "Intelligence", targets: ["Intelligence"]),
         .library(name: "DesignSystem", targets: ["DesignSystem"]),
         .library(name: "Charts", targets: ["SynnapseCharts"]),
         .library(name: "Features", targets: ["Features"]),
@@ -40,6 +42,16 @@ let package = Package(
             name: "Persistence",
             dependencies: ["Models"],
             path: "Sources/Persistence"
+        ),
+        .target(
+            name: "Connectors",
+            dependencies: ["Models", "Networking", "Persistence"],
+            path: "Sources/Connectors"
+        ),
+        .target(
+            name: "Intelligence",
+            dependencies: ["Models", "Networking", "Persistence"],
+            path: "Sources/Intelligence"
         ),
         .target(name: "DesignSystem", path: "Sources/DesignSystem"),
         .target(
@@ -92,6 +104,21 @@ let package = Package(
             name: "AuthTests",
             dependencies: ["Auth", "Networking", "Models"],
             path: "Tests/AuthTests"
+        ),
+        .testTarget(
+            name: "PersistenceTests",
+            dependencies: ["Persistence", "Models"],
+            path: "Tests/PersistenceTests"
+        ),
+        .testTarget(
+            name: "ConnectorsTests",
+            dependencies: ["Connectors", "Persistence", "Models", "Networking"],
+            path: "Tests/ConnectorsTests"
+        ),
+        .testTarget(
+            name: "IntelligenceTests",
+            dependencies: ["Intelligence", "Persistence", "Models", "Networking"],
+            path: "Tests/IntelligenceTests"
         ),
         .testTarget(
             name: "DesignSystemTests",
