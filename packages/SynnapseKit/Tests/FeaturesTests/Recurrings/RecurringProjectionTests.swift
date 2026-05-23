@@ -50,4 +50,29 @@ struct RecurringProjectionTests {
         // debit of the same merchant in the store.
         #expect(debit.id != income.id)
     }
+
+    @Test
+    func reverseBridgeRoundTripsThroughTheStoreShape() {
+        let original = detected(merchant: "Spotify Premium", category: .subscriptions)
+        let back = original.asRecurring().asDetected()
+        #expect(back.merchant == original.merchant)
+        #expect(back.category == original.category)
+        #expect(back.medianAmount == original.medianAmount)
+        #expect(back.cadenceDays == original.cadenceDays)
+        #expect(back.predictedNext == original.predictedNext)
+        #expect(back.occurrenceCount == original.occurrenceCount)
+        #expect(back.transactionIds == original.transactionIds)
+    }
+
+    @Test @MainActor
+    func hydratePaintsVMButGuardsEmpty() {
+        let vm = RecurringsViewModel()
+        // Empty hydrate is a no-op so it never blanks an already-refreshed list.
+        vm.hydrate([])
+        #expect(vm.recurrings.isEmpty)
+
+        let row = detected(merchant: "Netflix", category: .subscriptions)
+        vm.hydrate([row])
+        #expect(vm.recurrings.map(\.merchant) == ["Netflix"])
+    }
 }

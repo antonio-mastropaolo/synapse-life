@@ -41,7 +41,7 @@ struct CopilotShellMac: View {
     let lifeAPI: LifeAPI
     let advisors: AdvisorsListViewModel
     // New (2026-05-17 Copilot integration) — dashboard inbox + AI++
-    // surfaces. These are owned by `AppModel` so the sidebar can route
+    // surfaces. These are owned by `AppCore` so the sidebar can route
     // the new destinations through their real VMs instead of
     // placeholders.
     let dashboard: DashboardViewModel
@@ -770,7 +770,7 @@ private struct CopilotDetailPane: View {
 
             // Categories (agent 3). Pill system + auto-categorize
             // rules + new-category sheet. The shared VM lives on
-            // AppModel and has its transactions already projected by
+            // AppCore and has its transactions already projected by
             // bootstrap so the pill rows are populated on first
             // click.
             case .categories:

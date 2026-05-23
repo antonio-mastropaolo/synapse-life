@@ -34,6 +34,28 @@ public final class AppCore {
     public let advisors: AdvisorsListViewModel
     public let settings: SettingsViewModel
 
+    // MARK: - Cockpit surfaces (lifted from the shell AppModels)
+
+    /// Inbox of un-reviewed transactions. Seeded with the rich demo data so
+    /// the Dashboard surface paints a believable queue on first launch.
+    public let dashboard: DashboardViewModel
+    /// Shared Categories VM — one instance survives sidebar selections; the
+    /// demo / live transactions are projected through it once in `bootstrap`.
+    public let categories: CategoriesViewModel
+    public let digest: DigestViewModel
+    public let forecast: ForecastViewModel
+    public let smartAlerts: SmartAlertsViewModel
+    public let intelligenceAsk: IntelligenceAskViewModel
+    public let subscriptions: SubscriptionsViewModel
+    public let memberships: MembershipsStore
+    /// Recurrings surface. After each transaction refresh its detections are
+    /// written through to `recurringStore`; on cold start the VM is hydrated
+    /// back from that store so the surface is never empty.
+    public let recurrings: RecurringsViewModel
+    public let goals: GoalsStore
+    /// Deep-link router + state restoration.
+    public let lifecycle: AppLifecycleService
+
     // MARK: - Substrate (Phase 1 persistence + Phase 3 intelligence)
 
     /// The SwiftData container the persistence stores read/write through.
@@ -180,6 +202,52 @@ public final class AppCore {
             remote: RemoteLLM(client: client),
             redactor: PIIRedactor()
         )
+
+        // Cockpit surfaces. The Dashboard inbox seeds from demo data so the
+        // detail pane paints a populated queue on first run; the AI++ wedge
+        // VMs defer to local stub reducers until the matching server route
+        // lands and are refreshed from `bootstrap()` once the finance
+        // snapshot exists.
+        self.dashboard = DashboardViewModel(
+            entries: DashboardDemoData.entries(
+                relativeTo: Date(),
+                calendar: Calendar.current
+            ),
+            ledgerTotal: DashboardDemoData.ledgerTotal,
+            calendar: Calendar.current,
+            referenceDate: Date(),
+            locale: .current
+        )
+        self.categories = CategoriesViewModel(store: CategoryStore())
+        self.digest = DigestViewModel(api: LocalStubDigestAPI())
+        self.forecast = ForecastViewModel(api: LocalStubForecastAPI())
+        self.smartAlerts = SmartAlertsViewModel()
+        self.subscriptions = SubscriptionsViewModel()
+        self.recurrings = RecurringsViewModel()
+        self.memberships = MembershipsStore(usesSampleData: useDemoData)
+        self.goals = GoalsStore(usesSampleData: useDemoData)
+
+        let askAPI = LiveAskAPI(client: client, serverContractLive: false)
+        let serverRouter = ServerIntelligenceRouter(askAPI: askAPI)
+        let askRouter = DefaultIntelligenceRouter(
+            appleIntelligence: AppleIntelligenceRouter(underlying: serverRouter),
+            server: serverRouter
+        )
+        let personalForContext = financePersonal
+        self.intelligenceAsk = IntelligenceAskViewModel(
+            router: askRouter,
+            contextProvider: {
+                if case .ready(let snap) = personalForContext.state {
+                    return AskContext(
+                        accounts: snap.accounts,
+                        recentTransactions: personalForContext.recentTransactions
+                    )
+                }
+                return AskContext(accounts: [], recentTransactions: [])
+            }
+        )
+
+        self.lifecycle = AppLifecycleService()
     }
 
     /// App Group used by the live persistence store, matching the bundle
@@ -207,10 +275,12 @@ public final class AppCore {
         fatalError("Unable to create a SwiftData ModelContainer")
     }
 
-    /// Async bootstrap mirror of what the shell's `bootstrapIfNeeded`
-    /// would call. Restores the auth session from keychain and, when
-    /// the core was wired with Mock APIs, seeds the demo fixtures so
-    /// the cockpit renders something on first paint.
+    /// Async bootstrap the shell awaits from its first `.task`. Restores the
+    /// auth session, seeds demo fixtures (when wired with Mock APIs), refreshes
+    /// the finance VMs, projects Categories, and refreshes the cockpit
+    /// surfaces. Recurrings is hydrated from the persisted store first (so the
+    /// surface is never blank on a cold launch) and written back through after
+    /// the live refresh recomputes it.
     public func bootstrap() async {
         await auth.restoreFromStore()
         if let finance = demoFinanceAPI,
@@ -221,6 +291,78 @@ public final class AppCore {
                 life: life,
                 advisors: advisorsAPI
             )
+        }
+
+        // Cold-start read: paint last-known recurrings from the durable store
+        // before the network refresh recomputes them.
+        await hydrateRecurringsFromStore()
+
+        await financePersonal.refresh()
+        await financeAccounts.refresh()
+        await financeTransactions.refresh()
+        await financeInvestments.refresh()
+        await advisors.refresh()
+
+        // Project the dashboard's transactions through Categories so the
+        // surface paints populated pill rows on first open.
+        let dashboardTxs = dashboard.entries.map(\.transaction)
+        await categories.project(transactions: dashboardTxs)
+
+        refreshSurfaces()
+        await persistRecurrings()
+        applyConcealBalancesBridge()
+    }
+
+    /// Refresh the AI++ wedge + detection surfaces against the current finance
+    /// snapshot. Idempotent; safe to re-invoke on week-rollover / selection
+    /// hooks. Mirrors what the macOS shell's `refreshIntelligenceSurfaces` did.
+    public func refreshSurfaces() {
+        guard case .ready(let snap) = financePersonal.state else { return }
+        let tx = financePersonal.recentTransactions
+        digest.refresh(accounts: snap.accounts, transactions: tx)
+        forecast.refresh(accounts: snap.accounts, transactions: tx)
+        smartAlerts.refresh(accounts: snap.accounts, transactions: tx)
+        subscriptions.refresh(transactions: tx)
+        recurrings.refresh(transactions: tx)
+        memberships.refresh(transactions: tx)
+        if goals.isEvaluationDue() {
+            goals.evaluatePendingWindows(transactions: tx)
+            if !goals.unseenResults.isEmpty {
+                let hits = goals.unseenResults.filter { $0.outcome == .hit }.count
+                let total = goals.unseenResults.count
+                Task {
+                    let state = await NotificationGate.shared.requestIfNeeded()
+                    if state == .granted {
+                        await NotificationGate.shared.postWeeklySummary(
+                            hitCount: hits, totalCount: total
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    /// Write the detector's current recurrings through to the durable store so
+    /// the agent's `get_recurrings` tool and a future cold start see real data.
+    /// Failures are swallowed: a transient store write must not break a launch.
+    public func persistRecurrings() async {
+        let rows = recurrings.recurrings.map { $0.asRecurring() }
+        guard !rows.isEmpty else { return }
+        _ = try? await recurringStore.upsertAll(rows)
+    }
+
+    /// Hydrate the Recurrings VM from the persisted store. No-op when the store
+    /// is empty (first ever launch) — `RecurringsViewModel.hydrate` guards that.
+    public func hydrateRecurringsFromStore() async {
+        guard let rows = try? await recurringStore.all() else { return }
+        recurrings.hydrate(rows.map { $0.asDetected() })
+    }
+
+    /// Mirror `settings.concealBalances` into the finance VM via the M5
+    /// scene-phase path.
+    public func applyConcealBalancesBridge() {
+        if settings.concealBalances {
+            financePersonal.scenePhaseDidChange(.inactive)
         }
     }
 }

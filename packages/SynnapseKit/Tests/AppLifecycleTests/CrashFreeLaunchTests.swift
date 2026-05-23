@@ -1,5 +1,7 @@
 import Foundation
 import Testing
+import Models
+import Persistence
 @testable import AppLifecycle
 
 /// `AppCore` is the cross-platform construction seam shared by both the
@@ -41,6 +43,52 @@ struct CrashFreeLaunchTests {
         _ = core.notifications
         _ = core.recurringStore
         _ = core.llmRouter
+        // Cockpit surfaces lifted from the shell AppModels.
+        _ = core.dashboard
+        _ = core.categories
+        _ = core.digest
+        _ = core.forecast
+        _ = core.smartAlerts
+        _ = core.intelligenceAsk
+        _ = core.subscriptions
+        _ = core.memberships
+        _ = core.recurrings
+        _ = core.goals
+        _ = core.lifecycle
+    }
+
+    @Test("Demo bootstrap populates the Recurrings VM and writes through to the store")
+    func demoBootstrapPersistsRecurrings() async throws {
+        let core = AppCore(useDemoData: true)
+        await core.bootstrap()
+        // The detector ran against the seeded demo transactions, so the VM has
+        // rows AND they were written through to the durable store — the data
+        // the agent's get_recurrings tool reads.
+        #expect(!core.recurrings.recurrings.isEmpty)
+        let persisted = try await core.recurringStore.all()
+        #expect(!persisted.isEmpty)
+        #expect(persisted.count == core.recurrings.recurrings.count)
+    }
+
+    @Test("hydrateRecurringsFromStore paints the VM from persisted rows")
+    func hydrateFromStore() async throws {
+        let core = AppCore(useDemoData: true)
+        let when = Date(timeIntervalSince1970: 1_779_840_000)
+        _ = try await core.recurringStore.upsert(Recurring(
+            id: "recurring.coldstart",
+            merchant: "Cold Start Co",
+            category: "subscriptions",
+            medianAmount: Decimal(string: "9.99")!,
+            cadenceDays: 30,
+            lastSeen: when.addingTimeInterval(-30 * 86_400),
+            predictedNext: when,
+            occurrenceCount: 3,
+            confidence: 0.8,
+            transactionIds: ["a", "b", "c"],
+            isIncome: false
+        ))
+        await core.hydrateRecurringsFromStore()
+        #expect(core.recurrings.recurrings.contains { $0.merchant == "Cold Start Co" })
     }
 
     @Test("AppCore init survives an invalid base URL by falling back")

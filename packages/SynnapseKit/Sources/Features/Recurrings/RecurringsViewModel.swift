@@ -37,6 +37,18 @@ public final class RecurringsViewModel {
         self.lastRefreshed = today
     }
 
+    /// Cold-start hydration from a persisted source (the SwiftData
+    /// `RecurringStore`, bridged through `Recurring.asDetected()`). Paints the
+    /// surface with last-known rows before a live `refresh(transactions:)`
+    /// recomputes them. Skipped when `detected` is empty so it never blanks an
+    /// already-refreshed list. The per-merchant occurrence inspector stays
+    /// empty until the first real `refresh` supplies transactions.
+    public func hydrate(_ detected: [DetectedRecurring], at date: Date? = nil) {
+        guard !detected.isEmpty else { return }
+        self.recurrings = detected
+        self.lastRefreshed = date
+    }
+
     public func status(for r: DetectedRecurring) -> RecurringStatus {
         store.status(for: r.merchant)
     }

@@ -10,7 +10,11 @@ import AppLifecycle
 @main
 struct SynnapseMacApp: App {
 
-    @State private var appModel = AppModel()
+    /// Single construction seam shared with the iOS shell. Owns every VM and
+    /// the persistence stores; the scene below is just platform glue.
+    @State private var core = AppCore(
+        useDemoData: ProcessInfo.processInfo.environment["SYNNAPSE_USE_DEMO"] == "1"
+    )
     @State private var routing = RootShellViewModel()
     /// Whether the Ask sheet is currently presented. The keystroke
     /// (`⌘K`) and the legacy command-bar entry points both flip this
@@ -25,22 +29,22 @@ struct SynnapseMacApp: App {
             ZStack(alignment: .top) {
                 CopilotShellMac(
                     routing: routing,
-                    personal: appModel.financePersonal,
-                    accounts: appModel.financeAccounts,
-                    transactions: appModel.financeTransactions,
-                    investments: appModel.financeInvestments,
-                    lifeAPI: appModel.lifeAPI,
-                    advisors: appModel.advisors,
-                    dashboard: appModel.dashboard,
-                    categories: appModel.categories,
-                    digest: appModel.digest,
-                    forecast: appModel.forecast,
-                    smartAlerts: appModel.smartAlerts,
-                    subscriptions: appModel.subscriptions,
-                    recurrings: appModel.recurrings,
-                    memberships: appModel.memberships,
-                    goals: appModel.goals,
-                    showsDemoDataFooter: appModel.usesDemoData
+                    personal: core.financePersonal,
+                    accounts: core.financeAccounts,
+                    transactions: core.financeTransactions,
+                    investments: core.financeInvestments,
+                    lifeAPI: core.lifeAPI,
+                    advisors: core.advisors,
+                    dashboard: core.dashboard,
+                    categories: core.categories,
+                    digest: core.digest,
+                    forecast: core.forecast,
+                    smartAlerts: core.smartAlerts,
+                    subscriptions: core.subscriptions,
+                    recurrings: core.recurrings,
+                    memberships: core.memberships,
+                    goals: core.goals,
+                    showsDemoDataFooter: core.usesDemoData
                 )
 
                 if isAskPresented {
@@ -54,7 +58,7 @@ struct SynnapseMacApp: App {
                         .transition(.opacity)
 
                     IntelligenceAskView(
-                        viewModel: appModel.intelligenceAsk,
+                        viewModel: core.intelligenceAsk,
                         onCitationTap: { citation in
                             routeCitation(citation)
                         },
@@ -66,9 +70,9 @@ struct SynnapseMacApp: App {
             }
             .animation(.easeOut(duration: 0.18), value: isAskPresented)
             .frame(minWidth: 1080, minHeight: 720)
-            .task { await appModel.bootstrapIfNeeded() }
+            .task { await core.bootstrap() }
             .onOpenURL { url in
-                appModel.lifecycle.handle(url: url)
+                core.lifecycle.handle(url: url)
             }
         }
         .windowStyle(.hiddenTitleBar)
@@ -105,7 +109,7 @@ struct SynnapseMacApp: App {
         }
 
         Settings {
-            SettingsScene(settings: appModel.settings, auth: appModel.auth)
+            SettingsScene(settings: core.settings, auth: core.auth)
         }
     }
 
@@ -119,7 +123,7 @@ struct SynnapseMacApp: App {
     }
 
     private func closeAsk() {
-        appModel.intelligenceAsk.cancel()
+        core.intelligenceAsk.cancel()
         isAskPresented = false
     }
 
@@ -140,279 +144,3 @@ struct SynnapseMacApp: App {
         closeAsk()
     }
 }
-
-@MainActor
-@Observable
-final class AppModel {
-    private(set) var auth: AuthViewModel
-    private var bootstrapped = false
-
-    private(set) var financePersonal: FinancePersonalViewModel
-    private(set) var financeAccounts: FinanceAccountsViewModel
-    private(set) var financeTransactions: FinanceTransactionsViewModel
-    private(set) var financeInvestments: FinanceInvestmentsViewModel
-
-    /// LIFE terminal API.
-    let lifeAPI: LifeAPI
-
-    private(set) var advisors: AdvisorsListViewModel
-    private(set) var settings: SettingsViewModel
-
-    /// Inbox of un-reviewed transactions (agent 2). Seeded with the
-    /// rich demo data so the Dashboard tab paints a believable 30-row
-    /// queue on first launch. When `/api/dashboard/inbox` lands, swap
-    /// to an empty VM and call `dashboard.load(...)` from bootstrap.
-    private(set) var dashboard: DashboardViewModel
-
-    /// Categories VM — lifted to AppModel so a single instance
-    /// survives sidebar selections AND so `bootstrapIfNeeded` can
-    /// project the demo / live transactions through it once on
-    /// launch (so the surface renders populated pills the first time
-    /// the user clicks the Categories row).
-    private(set) var categories: CategoriesViewModel
-
-    // AI++ wedge VMs. The reducers are deterministic against the
-    // pinned demo data, so the surfaces render representative content
-    // even before any server contract exists.
-    private(set) var digest: DigestViewModel
-    private(set) var forecast: ForecastViewModel
-    private(set) var smartAlerts: SmartAlertsViewModel
-    private(set) var intelligenceAsk: IntelligenceAskViewModel
-
-    /// Subscriptions surface (replaces the previous ComingSoonView
-    /// stub). The view model owns the detected `[DetectedSubscription]`
-    /// list and computes monthly / yearly totals; the detector itself
-    /// is pure-logic so `refresh(...)` is synchronous.
-    private(set) var subscriptions: SubscriptionsViewModel
-
-    /// Memberships surface — superset of Subscriptions with
-    /// cancellation guides, duplicate clustering, and an AI
-    /// optimisation summary. Hydrated from sample data when demo
-    /// mode is on, refreshed against live transactions in
-    /// `refreshIntelligenceSurfaces()` once the finance snapshot
-    /// is in place.
-    private(set) var memberships: MembershipsStore
-
-    /// Recurrings surface — broader than Subscriptions, includes every
-    /// detected cadence (weekly transit, bi-weekly payroll, monthly
-    /// rent). Paired with [[RecurringStatusStore]] so the user's
-    /// Confirm / Ignore decisions survive relaunch.
-    private(set) var recurrings: RecurringsViewModel
-
-    /// Goals surface — converts AI tips into tracked weekly goals,
-    /// evaluates them on foreground, surfaces unseen results via a
-    /// toast overlay on the shell root.
-    private(set) var goals: GoalsStore
-
-    let lifecycle: AppLifecycleService
-
-    let usesDemoData: Bool
-
-    private let demoFinanceAPI: MockFinanceAPI?
-    private let demoLifeAPI: MockLifeAPI?
-    private let demoAdvisorsAPI: MockAdvisorsAPI?
-
-    init() {
-        let baseURLString = ProcessInfo.processInfo.environment["SYNNAPSE_API_BASE"]
-            ?? "http://localhost:3000/"
-        let baseURL = URL(string: baseURLString) ?? URL(string: "http://localhost:3000/")!
-        let store = SessionStore()
-        let sessionAPI = LiveSessionAPI(
-            baseURL: baseURL,
-            session: .shared,
-            serverContractLive: false
-        )
-        self.auth = AuthViewModel(api: sessionAPI, store: store)
-        let client = APIClient(
-            baseURL: baseURL,
-            session: .shared,
-            defaultHeaders: ["Accept": "application/json"]
-        )
-
-        let useDemo = ProcessInfo.processInfo.environment["SYNNAPSE_USE_DEMO"] == "1"
-        let financeAPI: FinanceAPI
-        let lifeAPI: LifeAPI
-        let advisorsAPI: AdvisorsAPI
-        if useDemo {
-            let mockFinance = MockFinanceAPI()
-            let mockLife = MockLifeAPI()
-            let mockAdvisors = MockAdvisorsAPI()
-            self.demoFinanceAPI = mockFinance
-            self.demoLifeAPI = mockLife
-            self.demoAdvisorsAPI = mockAdvisors
-            self.usesDemoData = true
-            financeAPI = mockFinance
-            lifeAPI = mockLife
-            advisorsAPI = mockAdvisors
-        } else {
-            self.demoFinanceAPI = nil
-            self.demoLifeAPI = nil
-            self.demoAdvisorsAPI = nil
-            self.usesDemoData = false
-            financeAPI = LiveFinanceAPI(client: client)
-            lifeAPI = LiveLifeAPI(client: client, serverContractLive: false)
-            advisorsAPI = LiveAdvisorsAPI(client: client)
-        }
-
-        let personalVM = FinancePersonalViewModel(api: financeAPI)
-        self.financePersonal = personalVM
-        self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
-        self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
-        self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
-        self.lifeAPI = lifeAPI
-
-        self.advisors = AdvisorsListViewModel(api: advisorsAPI)
-        self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
-
-        // Dashboard inbox — seeded with the same demo data the iOS
-        // shell uses so the macOS detail pane paints a populated
-        // queue on first run.
-        self.dashboard = DashboardViewModel(
-            entries: DashboardDemoData.entries(
-                relativeTo: Date(),
-                calendar: Calendar.current
-            ),
-            ledgerTotal: DashboardDemoData.ledgerTotal,
-            calendar: Calendar.current,
-            referenceDate: Date(),
-            locale: .current
-        )
-
-        // Categories — shared VM. Projection happens in
-        // `bootstrapIfNeeded` after the dashboard's demo entries are
-        // known (a single shared CategoryStore is fine in-process).
-        self.categories = CategoriesViewModel(store: CategoryStore())
-
-        // AI++ wedge. Each VM defers to its local stub API until the
-        // matching synapse-v2 route lands. Refreshes are kicked off
-        // from `bootstrapIfNeeded` once the finance snapshot exists.
-        self.digest = DigestViewModel(api: LocalStubDigestAPI())
-        self.forecast = ForecastViewModel(api: LocalStubForecastAPI())
-        self.smartAlerts = SmartAlertsViewModel()
-        self.subscriptions = SubscriptionsViewModel()
-        self.recurrings = RecurringsViewModel()
-        self.memberships = MembershipsStore(usesSampleData: useDemo)
-        // Goals store seeds three sample goals on first launch when
-        // demo mode is on; subsequent launches load from disk.
-        self.goals = GoalsStore(usesSampleData: useDemo)
-
-        // Ask viewmodel — bridges the existing LiveAskAPI through the
-        // new IntelligenceRouter shape. The router auto-picks the
-        // Apple Intelligence path on supported systems and falls back
-        // to the server-style stream otherwise. The on-device branch
-        // wraps the server branch for the "wrap until FoundationModels
-        // is generally importable" path agent 5 documented.
-        let askAPI = LiveAskAPI(client: client, serverContractLive: false)
-        let serverRouter = ServerIntelligenceRouter(askAPI: askAPI)
-        let router = DefaultIntelligenceRouter(
-            appleIntelligence: AppleIntelligenceRouter(underlying: serverRouter),
-            server: serverRouter
-        )
-        self.intelligenceAsk = IntelligenceAskViewModel(
-            router: router,
-            contextProvider: {
-                if case .ready(let snap) = personalVM.state {
-                    return AskContext(
-                        accounts: snap.accounts,
-                        recentTransactions: personalVM.recentTransactions
-                    )
-                }
-                return AskContext(accounts: [], recentTransactions: [])
-            }
-        )
-
-        self.lifecycle = AppLifecycleService()
-    }
-
-    func bootstrapIfNeeded() async {
-        guard !bootstrapped else { return }
-        bootstrapped = true
-        await auth.restoreFromStore()
-
-        if let finance = demoFinanceAPI,
-           let life = demoLifeAPI,
-           let advisorsAPI = demoAdvisorsAPI {
-            await DemoData.seed(
-                finance: finance,
-                life: life,
-                advisors: advisorsAPI
-            )
-        }
-
-        await financePersonal.refresh()
-        await financeAccounts.refresh()
-        await financeTransactions.refresh()
-        await financeInvestments.refresh()
-        await advisors.refresh()
-
-        // Project the dashboard's transactions through the Categories
-        // VM so the surface paints populated pill rows on first click.
-        // The Dashboard's demo data is a richer set than the live
-        // finance VM's recent transactions today; once a real server
-        // contract lands, swap to `financePersonal.recentTransactions`.
-        let dashboardTxs = dashboard.entries.map(\.transaction)
-        await categories.project(transactions: dashboardTxs)
-
-        // Once the finance snapshot is in place, kick off the AI++
-        // refreshes so the INTELLIGENCE surfaces are populated before
-        // the user lands on them.
-        refreshIntelligenceSurfaces()
-
-        applyConcealBalancesBridge()
-    }
-
-    /// Refresh Digest / Forecast / Smart Alerts against the current
-    /// finance snapshot. Called once from bootstrap; future hooks
-    /// (week-rollover, account selection) should re-invoke this.
-    private func refreshIntelligenceSurfaces() {
-        guard case .ready(let snap) = financePersonal.state else { return }
-        let tx = financePersonal.recentTransactions
-        digest.refresh(accounts: snap.accounts, transactions: tx)
-        // Forecast consumes the full account set so the deterministic
-        // BalanceProjection sums across every checking-style balance,
-        // while the stochastic chart still pins to the primary
-        // checking account internally.
-        forecast.refresh(accounts: snap.accounts, transactions: tx)
-        smartAlerts.refresh(accounts: snap.accounts, transactions: tx)
-        // Subscriptions + Recurrings — fed the same transactions feed
-        // so their detection sets stay aligned with what the Forecast
-        // is reading from.
-        subscriptions.refresh(transactions: tx)
-        recurrings.refresh(transactions: tx)
-        // Memberships: same transactions feed, layered with
-        // cancellation guides + optimisation tips. The store keeps
-        // any sample-data hydration intact until the live detector
-        // produces ≥ 1 membership, so demo mode never goes blank.
-        memberships.refresh(transactions: tx)
-        // Goals: evaluate any windows whose deadlines have passed.
-        // The store decides whether to actually run based on
-        // `isEvaluationDue` so multiple foreground events don't
-        // re-fire results on the same day.
-        if goals.isEvaluationDue() {
-            goals.evaluatePendingWindows(transactions: tx)
-            if !goals.unseenResults.isEmpty {
-                let hits = goals.unseenResults.filter { $0.outcome == .hit }.count
-                let total = goals.unseenResults.count
-                Task {
-                    let state = await NotificationGate.shared.requestIfNeeded()
-                    if state == .granted {
-                        await NotificationGate.shared.postWeeklySummary(
-                            hitCount: hits, totalCount: total
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    func applyConcealBalancesBridge() {
-        if settings.concealBalances {
-            financePersonal.scenePhaseDidChange(.inactive)
-        }
-    }
-}
-
-// The previous `RootShell` wrapper gated the boot path on
-// `appModel.auth.state`. That wrapper has been removed: the app boots
-// straight into the live shell. Auth is now a user-initiated action
-// available from Settings (see `SettingsScene`).

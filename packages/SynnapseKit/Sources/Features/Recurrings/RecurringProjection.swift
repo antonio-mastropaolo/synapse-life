@@ -33,3 +33,26 @@ public extension DetectedRecurring {
         )
     }
 }
+
+public extension Recurring {
+
+    /// Reverse bridge: hydrate a `DetectedRecurring` from a persisted
+    /// `Recurring`. Used on cold start so the Recurrings surface can paint
+    /// last-known rows from the store before a live transaction refresh
+    /// recomputes them. The category slug re-hydrates through
+    /// `CategoryID.from(slug:)` (an unknown slug round-trips to
+    /// `.custom(slug:)`, never lossy).
+    func asDetected() -> DetectedRecurring {
+        DetectedRecurring(
+            merchant: merchant,
+            category: CategoryID.from(slug: category),
+            medianAmount: medianAmount,
+            cadenceDays: cadenceDays,
+            lastSeen: lastSeen,
+            predictedNext: predictedNext,
+            occurrenceCount: occurrenceCount,
+            confidence: confidence,
+            transactionIds: transactionIds
+        )
+    }
+}
