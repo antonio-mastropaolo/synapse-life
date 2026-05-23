@@ -357,18 +357,30 @@ parses.
 
 ## How to continue
 
+Status after Session 2 (2026-05-23): **G1, G2, G4 (package seam) all
+resolved; Phase 2 connector network layer + Phase 4 ProactiveAnalyzer +
+durable feed all landed.** Everything to date is package-only and green
+under `swift test` (529 tests; the only reds are 6 pre-existing macOS
+snapshot baselines, unrelated to substrate).
+
 1. Read this manifest. Skim the plan at
    `/Users/amastro/.claude/plans/typed-rolling-koala.md` for the
-   rationale and the full 5-phase roadmap.
-2. Decide priority:
-   - **G1 (decimal-as-string)** — small, isolated, high-value test
-     coverage. Good ~30-minute first move.
-   - **G4 (AppCore wiring)** — unlocks all subsequent work. Medium
-     scope; pairs well with G2 (namespace cleanup).
-   - **G5 (real Plaid)** — needs operator credentials. Block on user
-     before starting.
-   - **G6 (real LLM)** — Apple FoundationModels can land without
-     external creds; remote needs synapse-v2 endpoint first.
+   rationale and the full 5-phase roadmap; its Session log has the
+   commit-by-commit story.
+2. Decide priority (remaining work):
+   - **App-target adoption of the substrate** — the big next increment,
+     and the first that `swift test` can't fully cover (needs an Xcode /
+     simulator build). Shells consume `AppCore`'s stores + `.modelContainer`,
+     the Dashboard inbox reads `notifications.recent()`, and a nightly
+     `BGTaskScheduler` task runs `ProactiveAnalyzer.analyze` →
+     `notifications.upsertAll` + local notifications (+ `Info.plist` task
+     IDs). See G4's "still open" note.
+   - **G3 (RecurringStore)** — package-only, unblocked, test-first. Wire
+     `get_recurrings` end to end; the `Features/Recurrings` detector seeds it.
+   - **G6 (Apple FoundationModels)** — the on-device half is unblocked
+     (no creds); the remote half waits on synapse-v2 `/api/llm/proxy`.
+   - **G5 (real Plaid)** and **G6 remote** — operator-blocked (Plaid
+     credentials; synapse-v2 server routes). Block on user.
 3. Use `mobile-app-builder` or `general-purpose` for parallel
    fan-outs. **Do not use `ares-engineer`** — it's scoped to the two
    ARES repos and carries product-specific framing that bleeds into
@@ -379,9 +391,12 @@ parses.
 ```bash
 cd packages/SynnapseKit
 swift build                                   # full graph, currently clean
-swift test                                    # all suites, ~62/63 pass
-swift test --filter PersistenceTests          # 16/17 pass (G1 canary)
-swift test --filter ConnectorsTests           # 9/9
+swift test                                    # all suites, 529 tests; 6 reds
+                                              #   are pre-existing macOS snapshot
+                                              #   baselines (not substrate)
+swift test --filter PersistenceTests          # 23/23 (G1 canary now green)
+swift test --filter ConnectorsTests           # 18/18
 swift test --filter IntelligenceTests         # 37/37
-swift test --filter AuthTests                 # all green
+swift test --filter AppLifecycleTests         # 23/23 (substrate wiring)
+swift test --filter ProactiveAnalyzer         # 5/5
 ```
