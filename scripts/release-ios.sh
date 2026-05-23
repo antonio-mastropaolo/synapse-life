@@ -2,7 +2,7 @@
 #
 # scripts/release-ios.sh
 #
-# Archives the iOS Synnapse build, exports an App Store .ipa, and
+# Archives the iOS Synapse build, exports an App Store .ipa, and
 # uploads it to App Store Connect / TestFlight using `altool`.
 #
 # Credentials are taken from the environment so no secrets are stored
@@ -23,19 +23,19 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 BUILD_DIR="${REPO_ROOT}/build"
-ARCHIVE_PATH="${BUILD_DIR}/SynnapseiOS.xcarchive"
+ARCHIVE_PATH="${BUILD_DIR}/SynapseiOS.xcarchive"
 EXPORT_PATH="${BUILD_DIR}/iOS-export"
-EXPORT_OPTIONS="${REPO_ROOT}/apps/Synnapse-iOS/ExportOptions.plist"
+EXPORT_OPTIONS="${REPO_ROOT}/apps/Synapse-iOS/ExportOptions.plist"
 
 : "${ASC_API_KEY_ID:?ASC_API_KEY_ID env var is required}"
 : "${ASC_API_ISSUER:?ASC_API_ISSUER env var is required}"
 
 mkdir -p "$BUILD_DIR"
 
-echo "[1/3] xcodebuild archive — SynnapseiOS"
+echo "[1/3] xcodebuild archive — SynapseiOS"
 xcodebuild \
-    -project Synnapse.xcodeproj \
-    -scheme SynnapseiOS \
+    -project Synapse.xcodeproj \
+    -scheme SynapseiOS \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -archivePath "$ARCHIVE_PATH" \

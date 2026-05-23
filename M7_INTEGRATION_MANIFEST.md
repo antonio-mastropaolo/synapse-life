@@ -19,19 +19,19 @@ The new test files live under existing test target paths
 recursively. The `Package.swift` declares these targets with `path:` only,
 no `sources:` filter, so the additions are automatic.
 
-Confirm with `swift test --package-path packages/SynnapseKit` after pulling
+Confirm with `swift test --package-path packages/SynapseKit` after pulling
 this worktree in — it should report 249 tests / 50 suites green.
 
-## 2. Xcode project — Synnapse.xcodeproj
+## 2. Xcode project — Synapse.xcodeproj
 
-The new SwiftPM files are inside the `SynnapseKit` package, so the Xcode
+The new SwiftPM files are inside the `SynapseKit` package, so the Xcode
 project picks them up via the existing package reference. **No project
 file changes required for the package layer.**
 
-The two app targets (`Synnapse-iOS`, `Synnapse-macOS`) need the wiring
+The two app targets (`Synapse-iOS`, `Synapse-macOS`) need the wiring
 described in sections 3 + 4 below.
 
-## 3. iOS app — `apps/Synnapse-iOS/SynnapseiOSApp.swift`
+## 3. iOS app — `apps/Synapse-iOS/SynapseiOSApp.swift`
 
 Replace the existing "People" placeholder tab with the real `PeopleView`,
 and add a new "Inbox" destination. Suggested patch shape:
@@ -75,19 +75,19 @@ identically in either container.
 
 ### iOS deep link (optional)
 
-People deep links should route on `synnapse://people/<email>` and call
-`peopleVM.select(person)`. Inbox deep links on `synnapse://inbox/<message-id>`
+People deep links should route on `synapse://people/<email>` and call
+`peopleVM.select(person)`. Inbox deep links on `synapse://inbox/<message-id>`
 should select the matching `InboxItem`. Wire these in
-`SynnapseiOSApp.body`'s `.onOpenURL { ... }` modifier — pattern matches
+`SynapseiOSApp.body`'s `.onOpenURL { ... }` modifier — pattern matches
 M3's auth-callback handling.
 
-## 4. macOS app — `apps/Synnapse-macOS/SynnapseMacApp.swift`
+## 4. macOS app — `apps/Synapse-macOS/SynapseMacApp.swift`
 
 Add two new `WindowGroup`s and two menu commands. Suggested patch shape:
 
 ```swift
 @main
-struct SynnapseMacApp: App {
+struct SynapseMacApp: App {
     @State private var peopleVM = PeopleViewModel(
         api: LivePeopleAPI(client: appClient)
     )
@@ -106,7 +106,7 @@ struct SynnapseMacApp: App {
         .commands {
             CommandGroup(after: .windowList) {
                 Button("People") {
-                    NSWorkspace.shared.open(URL(string: "synnapse://window/people")!)
+                    NSWorkspace.shared.open(URL(string: "synapse://window/people")!)
                 }
                 .keyboardShortcut("5", modifiers: [.command])
             }
@@ -120,7 +120,7 @@ struct SynnapseMacApp: App {
         .commands {
             CommandGroup(after: .windowList) {
                 Button("Inbox") {
-                    NSWorkspace.shared.open(URL(string: "synnapse://window/inbox")!)
+                    NSWorkspace.shared.open(URL(string: "synapse://window/inbox")!)
                 }
                 .keyboardShortcut("6", modifiers: [.command])
             }

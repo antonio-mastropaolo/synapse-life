@@ -13,7 +13,7 @@ of un-reviewed transactions, plus a reshape of the iOS app to a
 ### Module map
 
 ```
-packages/SynnapseKit/Sources/Features/Dashboard/
+packages/SynapseKit/Sources/Features/Dashboard/
 ├── DashboardEntry.swift              value type wrapping Transaction + reviewed flag
 ├── DashboardSection.swift            one date bucket
 ├── DashboardViewModel.swift          @Observable; selection + projection + mark-reviewed
@@ -26,8 +26,8 @@ packages/SynnapseKit/Sources/Features/Dashboard/
 ```
 
 ```
-apps/Synnapse-iOS/
-├── SynnapseiOSApp.swift              5-tab RootTabView + DashboardViewModel in AppModel
+apps/Synapse-iOS/
+├── SynapseiOSApp.swift              5-tab RootTabView + DashboardViewModel in AppModel
 └── Features/
     ├── ComingSoonView.swift          honest placeholder for unowned surfaces
     └── MoreTab.swift                 More-tab drill-down list
@@ -65,7 +65,7 @@ RootShellViewModel):
   `Features/Recurrings`, `Features/Goals`, `Features/CashFlow`,
   `Features/AI`, `Features/Digest`, `Features/Forecast` (other
   agents own these).
-- I did NOT touch `apps/Synnapse-macOS/**`.
+- I did NOT touch `apps/Synapse-macOS/**`.
 - I did NOT edit `Features/Finance/Transactions*` files. The
   Dashboard reads `Transaction` and `TransactionCategory` from
   `Models` only.

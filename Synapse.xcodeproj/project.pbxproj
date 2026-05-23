@@ -1,0 +1,679 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		026C60FF13909BA4113CE712 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = BE0653AD55BABC16280C03EC /* Auth */; };
+		034BA6054B13D6D2A2EAC228 /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = 996E1630206637FBB34628B6 /* Features */; };
+		0448FAFA8FC7543309C358C2 /* PositionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E712C1E8934569084841027 /* PositionDetailView.swift */; };
+		0659BE980704BBB3BD6C37B0 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = F41170189DCEACA261F266D4 /* Networking */; };
+		06B011C6E5E15B852EE23B4E /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = ED554544A8F704D8F7F49803 /* DesignSystem */; };
+		1244982A756401886740864C /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 408A6017629A77602EC013AA /* Networking */; };
+		248ACC9D5A5F06406658BB95 /* CopilotSidebarAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7795D7554A46BF00F1FC5912 /* CopilotSidebarAccounts.swift */; };
+		25D43D066559BACEA4899EB8 /* SynapseMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D68BBA09120EF8B77728F4 /* SynapseMacApp.swift */; };
+		3038B49D8B3B14B2945D9CF9 /* FinanceShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2AD9A2B6358F569FD13D0480 /* FinanceShellView.swift */; };
+		33D269643B46444FD9068522 /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 37B2DCBF71431B09A4885283 /* Models */; };
+		3559FB08329372069A367B30 /* ExportOptions.plist in Resources */ = {isa = PBXBuildFile; fileRef = 4031F963D8C88C46FA534353 /* ExportOptions.plist */; };
+		3771F185C76E4E589DFCD5BF /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 195956530CA4CB8F205E7AFD /* Models */; };
+		456402ED3407C476662CA303 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12C79226BE0151DD42F7D85 /* RootView.swift */; };
+		5106EDB58695E9820FF1ABF8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3C2E89311C72364231AB24EF /* PrivacyInfo.xcprivacy */; };
+		52450DE13B550CF8E682D447 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D12C79226BE0151DD42F7D85 /* RootView.swift */; };
+		6D9C79FEFD72398B443221FA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D8C3327BA24C95318055B984 /* Assets.xcassets */; };
+		754486035928CE9E84F09860 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D83D72F4677DEC6BF298B75 /* TransactionDetailView.swift */; };
+		807143B42901C8E23D98BF20 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2F487397F749C5AA93B79F /* Haptics.swift */; };
+		9A789E58BA3C9561FE74D927 /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = 8F3086D62A1129E306459157 /* Features */; };
+		9E3794EC75CA497F7AF0555D /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 6E1529FC552A39E98D44BEC7 /* PrivacyInfo.xcprivacy */; };
+		A587E3DAD25D339E79827EE8 /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = 48C017693E6DB12841A7B5DA /* AppLifecycle */; };
+		A6CDBB626A699CBE55162F22 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6A4749C41C348D7A188D9A2C /* AccountDetailView.swift */; };
+		A9062A05662E1B9CDD2AAB3A /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 6BD88509B79AB49C73B6361C /* Auth */; };
+		AA573C20BDA49E64CE177193 /* SynapseiOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 818F6036AD3543858CBC70EE /* SynapseiOSApp.swift */; };
+		B3D7572AB5A8A3F20A6F0E4D /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = 437873CAD9590A8394C9CC6B /* AppLifecycle */; };
+		B43AFDB4F98925D254E77E8D /* CopilotShellMac.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70422DEFA82E3DF99A97F2F3 /* CopilotShellMac.swift */; };
+		B7A52D486EA8B16CA4752812 /* ExportOptions.plist in Resources */ = {isa = PBXBuildFile; fileRef = 8F258314B295224B56F86209 /* ExportOptions.plist */; };
+		C2176C5E91E38E5276A1D101 /* FinanceHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6AEDCC654AE19E6331160BDD /* FinanceHubView.swift */; };
+		D137E5610B1A23E2FE81CB05 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 0F7E426B8BCC9674FF193345 /* Assets.xcassets */; };
+		D15F4D71028D673616D24C8B /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = B406CCC1E68329012BD10C9E /* DesignSystem */; };
+		EB4931871AA3796523C44AFD /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = 5BA997DC78D64113282263B7 /* Persistence */; };
+		EEC4D99B006F33570795CDB8 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = DAA0B92CF9E3274B1F660BBF /* Persistence */; };
+		F2D51E403275B42083051836 /* MoreTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = FECACB1D1ED2DEC6B7DE1A26 /* MoreTab.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		02809F61062516D7B7D61532 /* Synapse-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synapse-iOS.entitlements"; sourceTree = "<group>"; };
+		0F7E426B8BCC9674FF193345 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		1633C674C1D6223E2072A97F /* SynapseiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SynapseiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		185D42A568882BF880FA4DB9 /* SynapseKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynapseKit; path = packages/SynapseKit; sourceTree = SOURCE_ROOT; };
+		1D83D72F4677DEC6BF298B75 /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
+		2AD9A2B6358F569FD13D0480 /* FinanceShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceShellView.swift; sourceTree = "<group>"; };
+		3B2F487397F749C5AA93B79F /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		3C2E89311C72364231AB24EF /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		4031F963D8C88C46FA534353 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
+		5E712C1E8934569084841027 /* PositionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionDetailView.swift; sourceTree = "<group>"; };
+		6A4749C41C348D7A188D9A2C /* AccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDetailView.swift; sourceTree = "<group>"; };
+		6AEDCC654AE19E6331160BDD /* FinanceHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceHubView.swift; sourceTree = "<group>"; };
+		6E1529FC552A39E98D44BEC7 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		70422DEFA82E3DF99A97F2F3 /* CopilotShellMac.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotShellMac.swift; sourceTree = "<group>"; };
+		7795D7554A46BF00F1FC5912 /* CopilotSidebarAccounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotSidebarAccounts.swift; sourceTree = "<group>"; };
+		818F6036AD3543858CBC70EE /* SynapseiOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynapseiOSApp.swift; sourceTree = "<group>"; };
+		8F258314B295224B56F86209 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
+		CA0BD7A05D2614AF810362CF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		D12C79226BE0151DD42F7D85 /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		D8C3327BA24C95318055B984 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E6F4C8951541083AE8AD3DA3 /* SynapseMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynapseMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		F345B97E5111D5B58C42EDA7 /* Synapse-macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Synapse-macOS.entitlements"; sourceTree = "<group>"; };
+		F5D68BBA09120EF8B77728F4 /* SynapseMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynapseMacApp.swift; sourceTree = "<group>"; };
+		FECACB1D1ED2DEC6B7DE1A26 /* MoreTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreTab.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		26D90B59D6E6C078BEB3630D /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D15F4D71028D673616D24C8B /* DesignSystem in Frameworks */,
+				1244982A756401886740864C /* Networking in Frameworks */,
+				A9062A05662E1B9CDD2AAB3A /* Auth in Frameworks */,
+				3771F185C76E4E589DFCD5BF /* Models in Frameworks */,
+				EEC4D99B006F33570795CDB8 /* Persistence in Frameworks */,
+				9A789E58BA3C9561FE74D927 /* Features in Frameworks */,
+				A587E3DAD25D339E79827EE8 /* AppLifecycle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4CEF56367AEF629D8A107787 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				06B011C6E5E15B852EE23B4E /* DesignSystem in Frameworks */,
+				0659BE980704BBB3BD6C37B0 /* Networking in Frameworks */,
+				026C60FF13909BA4113CE712 /* Auth in Frameworks */,
+				33D269643B46444FD9068522 /* Models in Frameworks */,
+				EB4931871AA3796523C44AFD /* Persistence in Frameworks */,
+				034BA6054B13D6D2A2EAC228 /* Features in Frameworks */,
+				B3D7572AB5A8A3F20A6F0E4D /* AppLifecycle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2302A571909B70A975134DCC /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				D12C79226BE0151DD42F7D85 /* RootView.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		772ADEF65C926E609CE847DF /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				185D42A568882BF880FA4DB9 /* SynapseKit */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		8B9CF596FCB07B1002F10E36 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				1633C674C1D6223E2072A97F /* SynapseiOS.app */,
+				E6F4C8951541083AE8AD3DA3 /* SynapseMac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A0D8CABEFB722523E5F11A5C /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				6A4749C41C348D7A188D9A2C /* AccountDetailView.swift */,
+				6AEDCC654AE19E6331160BDD /* FinanceHubView.swift */,
+				3B2F487397F749C5AA93B79F /* Haptics.swift */,
+				FECACB1D1ED2DEC6B7DE1A26 /* MoreTab.swift */,
+				5E712C1E8934569084841027 /* PositionDetailView.swift */,
+				1D83D72F4677DEC6BF298B75 /* TransactionDetailView.swift */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		A4F5770B49C317E953F28FE6 = {
+			isa = PBXGroup;
+			children = (
+				BBC6A6195956DC86B0FDF787 /* apps */,
+				772ADEF65C926E609CE847DF /* Packages */,
+				8B9CF596FCB07B1002F10E36 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		BBC6A6195956DC86B0FDF787 /* apps */ = {
+			isa = PBXGroup;
+			children = (
+				2302A571909B70A975134DCC /* Shared */,
+				D1E1F5A78613F7B8B2F6854E /* Synapse-iOS */,
+				CA99BA65856C15DD3FB0F749 /* Synapse-macOS */,
+			);
+			path = apps;
+			sourceTree = "<group>";
+		};
+		CA99BA65856C15DD3FB0F749 /* Synapse-macOS */ = {
+			isa = PBXGroup;
+			children = (
+				0F7E426B8BCC9674FF193345 /* Assets.xcassets */,
+				70422DEFA82E3DF99A97F2F3 /* CopilotShellMac.swift */,
+				7795D7554A46BF00F1FC5912 /* CopilotSidebarAccounts.swift */,
+				8F258314B295224B56F86209 /* ExportOptions.plist */,
+				2AD9A2B6358F569FD13D0480 /* FinanceShellView.swift */,
+				3C2E89311C72364231AB24EF /* PrivacyInfo.xcprivacy */,
+				F345B97E5111D5B58C42EDA7 /* Synapse-macOS.entitlements */,
+				F5D68BBA09120EF8B77728F4 /* SynapseMacApp.swift */,
+			);
+			path = "Synapse-macOS";
+			sourceTree = "<group>";
+		};
+		D1E1F5A78613F7B8B2F6854E /* Synapse-iOS */ = {
+			isa = PBXGroup;
+			children = (
+				D8C3327BA24C95318055B984 /* Assets.xcassets */,
+				4031F963D8C88C46FA534353 /* ExportOptions.plist */,
+				CA0BD7A05D2614AF810362CF /* Info.plist */,
+				6E1529FC552A39E98D44BEC7 /* PrivacyInfo.xcprivacy */,
+				02809F61062516D7B7D61532 /* Synapse-iOS.entitlements */,
+				818F6036AD3543858CBC70EE /* SynapseiOSApp.swift */,
+				A0D8CABEFB722523E5F11A5C /* Features */,
+			);
+			path = "Synapse-iOS";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		070CB86E0FB54443EB58F73B /* SynapseMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C3FEBDB85FB4EFC79957C133 /* Build configuration list for PBXNativeTarget "SynapseMac" */;
+			buildPhases = (
+				F7A4CC45A04325EEACC11AB5 /* Sources */,
+				C809C672E0BA58A4F27F310E /* Resources */,
+				26D90B59D6E6C078BEB3630D /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SynapseMac;
+			packageProductDependencies = (
+				B406CCC1E68329012BD10C9E /* DesignSystem */,
+				408A6017629A77602EC013AA /* Networking */,
+				6BD88509B79AB49C73B6361C /* Auth */,
+				195956530CA4CB8F205E7AFD /* Models */,
+				DAA0B92CF9E3274B1F660BBF /* Persistence */,
+				8F3086D62A1129E306459157 /* Features */,
+				48C017693E6DB12841A7B5DA /* AppLifecycle */,
+			);
+			productName = SynapseMac;
+			productReference = E6F4C8951541083AE8AD3DA3 /* SynapseMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+		35B8237D32B1EAB67E2306C3 /* SynapseiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 21BDFCFC774C5BAA6D326337 /* Build configuration list for PBXNativeTarget "SynapseiOS" */;
+			buildPhases = (
+				2A5C00BE88C4CC479362F34B /* Sources */,
+				30BAF9E6D510138097D55317 /* Resources */,
+				4CEF56367AEF629D8A107787 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SynapseiOS;
+			packageProductDependencies = (
+				ED554544A8F704D8F7F49803 /* DesignSystem */,
+				F41170189DCEACA261F266D4 /* Networking */,
+				BE0653AD55BABC16280C03EC /* Auth */,
+				37B2DCBF71431B09A4885283 /* Models */,
+				5BA997DC78D64113282263B7 /* Persistence */,
+				996E1630206637FBB34628B6 /* Features */,
+				437873CAD9590A8394C9CC6B /* AppLifecycle */,
+			);
+			productName = SynapseiOS;
+			productReference = 1633C674C1D6223E2072A97F /* SynapseiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		63ECA7F26C9BEC01908AC62B /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					070CB86E0FB54443EB58F73B = {
+						DevelopmentTeam = WCGJPF9TWU;
+						ProvisioningStyle = Automatic;
+					};
+					35B8237D32B1EAB67E2306C3 = {
+						DevelopmentTeam = WCGJPF9TWU;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = F9E134B30A5BBF25B9343AD5 /* Build configuration list for PBXProject "Synapse" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = A4F5770B49C317E953F28FE6;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				3EBCFFC63C94DF15C2959DE9 /* XCLocalSwiftPackageReference "packages/SynapseKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 8B9CF596FCB07B1002F10E36 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				070CB86E0FB54443EB58F73B /* SynapseMac */,
+				35B8237D32B1EAB67E2306C3 /* SynapseiOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		30BAF9E6D510138097D55317 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				6D9C79FEFD72398B443221FA /* Assets.xcassets in Resources */,
+				3559FB08329372069A367B30 /* ExportOptions.plist in Resources */,
+				9E3794EC75CA497F7AF0555D /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C809C672E0BA58A4F27F310E /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D137E5610B1A23E2FE81CB05 /* Assets.xcassets in Resources */,
+				B7A52D486EA8B16CA4752812 /* ExportOptions.plist in Resources */,
+				5106EDB58695E9820FF1ABF8 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		2A5C00BE88C4CC479362F34B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A6CDBB626A699CBE55162F22 /* AccountDetailView.swift in Sources */,
+				C2176C5E91E38E5276A1D101 /* FinanceHubView.swift in Sources */,
+				807143B42901C8E23D98BF20 /* Haptics.swift in Sources */,
+				F2D51E403275B42083051836 /* MoreTab.swift in Sources */,
+				0448FAFA8FC7543309C358C2 /* PositionDetailView.swift in Sources */,
+				456402ED3407C476662CA303 /* RootView.swift in Sources */,
+				AA573C20BDA49E64CE177193 /* SynapseiOSApp.swift in Sources */,
+				754486035928CE9E84F09860 /* TransactionDetailView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F7A4CC45A04325EEACC11AB5 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				B43AFDB4F98925D254E77E8D /* CopilotShellMac.swift in Sources */,
+				248ACC9D5A5F06406658BB95 /* CopilotSidebarAccounts.swift in Sources */,
+				3038B49D8B3B14B2945D9CF9 /* FinanceShellView.swift in Sources */,
+				52450DE13B550CF8E682D447 /* RootView.swift in Sources */,
+				25D43D066559BACEA4899EB8 /* SynapseMacApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		2CEAE979A133FFD1F794D5B9 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		32569CF7DA5EAE95C6576211 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synapse-macOS/Synapse-macOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Synapse uses Touch ID to unlock your financial data so only you can see it.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.mac;
+				PRODUCT_NAME = Synapse;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		3F8D5A021FC8C5D16711EB41 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synapse-macOS/Synapse-macOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Synapse uses Touch ID to unlock your financial data so only you can see it.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.mac;
+				PRODUCT_NAME = Synapse;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		4C3D2735868DF9C333D5797A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		6793ABD897B68A7849BFDB14 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synapse-iOS/Synapse-iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				INFOPLIST_FILE = "apps/Synapse-iOS/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.ios;
+				PRODUCT_NAME = Synapse;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		85BC80E8CE1FFDFA895E64B3 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/Synapse-iOS/Synapse-iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				INFOPLIST_FILE = "apps/Synapse-iOS/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Synapse;
+				INFOPLIST_KEY_CFBundleName = Synapse;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.ios;
+				PRODUCT_NAME = Synapse;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		21BDFCFC774C5BAA6D326337 /* Build configuration list for PBXNativeTarget "SynapseiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				85BC80E8CE1FFDFA895E64B3 /* Debug */,
+				6793ABD897B68A7849BFDB14 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		C3FEBDB85FB4EFC79957C133 /* Build configuration list for PBXNativeTarget "SynapseMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				32569CF7DA5EAE95C6576211 /* Debug */,
+				3F8D5A021FC8C5D16711EB41 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F9E134B30A5BBF25B9343AD5 /* Build configuration list for PBXProject "Synapse" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				2CEAE979A133FFD1F794D5B9 /* Debug */,
+				4C3D2735868DF9C333D5797A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		3EBCFFC63C94DF15C2959DE9 /* XCLocalSwiftPackageReference "packages/SynapseKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = packages/SynapseKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		195956530CA4CB8F205E7AFD /* Models */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Models;
+		};
+		37B2DCBF71431B09A4885283 /* Models */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Models;
+		};
+		408A6017629A77602EC013AA /* Networking */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Networking;
+		};
+		437873CAD9590A8394C9CC6B /* AppLifecycle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppLifecycle;
+		};
+		48C017693E6DB12841A7B5DA /* AppLifecycle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppLifecycle;
+		};
+		5BA997DC78D64113282263B7 /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		6BD88509B79AB49C73B6361C /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Auth;
+		};
+		8F3086D62A1129E306459157 /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
+		};
+		996E1630206637FBB34628B6 /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
+		};
+		B406CCC1E68329012BD10C9E /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		BE0653AD55BABC16280C03EC /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Auth;
+		};
+		DAA0B92CF9E3274B1F660BBF /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		ED554544A8F704D8F7F49803 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		F41170189DCEACA261F266D4 /* Networking */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Networking;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = 63ECA7F26C9BEC01908AC62B /* Project object */;
+}

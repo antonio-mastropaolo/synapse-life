@@ -20,43 +20,43 @@ Commit: `feat(advisors+octagon+trading-desk): three new surfaces — M8 (test-fi
 
 ### Models (new types only)
 
-- `packages/SynnapseKit/Sources/Models/Advisor.swift` — `Advisor`,
+- `packages/SynapseKit/Sources/Models/Advisor.swift` — `Advisor`,
   `AdvisorsResponse`, `ChatMessage`, `MessageRole`
-- `packages/SynnapseKit/Sources/Models/OctagonVendor.swift` —
+- `packages/SynapseKit/Sources/Models/OctagonVendor.swift` —
   `OctagonVendor` (with nested `HQ`, `Financing`, `CEO`),
   `OctagonBriefEnvelope`, `MembershipCard` (with `Cadence`, `Status`),
   `MembershipsResponse`
 
 ### Networking
 
-- `packages/SynnapseKit/Sources/Networking/AdvisorsAPI.swift` — protocol
+- `packages/SynapseKit/Sources/Networking/AdvisorsAPI.swift` — protocol
   + `LiveAdvisorsAPI` + `MockAdvisorsAPI` + `SSEParser` + `ChatDelta`
-- `packages/SynnapseKit/Sources/Networking/OctagonAPI.swift` — protocol
+- `packages/SynapseKit/Sources/Networking/OctagonAPI.swift` — protocol
   + `LiveOctagonAPI` + `MockOctagonAPI`
 
 ### Features
 
-- `packages/SynnapseKit/Sources/Features/Advisors/AdvisorsListViewModel.swift`
-- `packages/SynnapseKit/Sources/Features/Advisors/StreamingChatViewModel.swift`
-- `packages/SynnapseKit/Sources/Features/Advisors/AdvisorsView.swift`
-- `packages/SynnapseKit/Sources/Features/Octagon/OctagonViewModel.swift`
-- `packages/SynnapseKit/Sources/Features/Octagon/OctagonView.swift`
-- `packages/SynnapseKit/Sources/Features/Finance/TradingDeskViewModel.swift`
+- `packages/SynapseKit/Sources/Features/Advisors/AdvisorsListViewModel.swift`
+- `packages/SynapseKit/Sources/Features/Advisors/StreamingChatViewModel.swift`
+- `packages/SynapseKit/Sources/Features/Advisors/AdvisorsView.swift`
+- `packages/SynapseKit/Sources/Features/Octagon/OctagonViewModel.swift`
+- `packages/SynapseKit/Sources/Features/Octagon/OctagonView.swift`
+- `packages/SynapseKit/Sources/Features/Finance/TradingDeskViewModel.swift`
   (NEW file — does NOT touch any existing M5 Finance files)
-- `packages/SynnapseKit/Sources/Features/Finance/TradingDeskView.swift`
+- `packages/SynapseKit/Sources/Features/Finance/TradingDeskView.swift`
 
 ### Tests
 
-- `packages/SynnapseKit/Tests/ModelsTests/AdvisorTests.swift`
-- `packages/SynnapseKit/Tests/ModelsTests/OctagonVendorTests.swift`
-- `packages/SynnapseKit/Tests/NetworkingTests/AdvisorsRepositoryTests.swift`
-- `packages/SynnapseKit/Tests/NetworkingTests/OctagonRepositoryTests.swift`
-- `packages/SynnapseKit/Tests/FeaturesTests/Advisors/StreamingChatViewModelTests.swift`
-- `packages/SynnapseKit/Tests/FeaturesTests/Octagon/OctagonViewModelTests.swift`
-- `packages/SynnapseKit/Tests/FeaturesTests/Finance/TradingDeskViewModelTests.swift`
-- `packages/SynnapseKit/Tests/SnapshotTests/AdvisorsScreenSnapshotTests.swift`
-- `packages/SynnapseKit/Tests/SnapshotTests/OctagonScreenSnapshotTests.swift`
-- `packages/SynnapseKit/Tests/SnapshotTests/TradingDeskScreenSnapshotTests.swift`
+- `packages/SynapseKit/Tests/ModelsTests/AdvisorTests.swift`
+- `packages/SynapseKit/Tests/ModelsTests/OctagonVendorTests.swift`
+- `packages/SynapseKit/Tests/NetworkingTests/AdvisorsRepositoryTests.swift`
+- `packages/SynapseKit/Tests/NetworkingTests/OctagonRepositoryTests.swift`
+- `packages/SynapseKit/Tests/FeaturesTests/Advisors/StreamingChatViewModelTests.swift`
+- `packages/SynapseKit/Tests/FeaturesTests/Octagon/OctagonViewModelTests.swift`
+- `packages/SynapseKit/Tests/FeaturesTests/Finance/TradingDeskViewModelTests.swift`
+- `packages/SynapseKit/Tests/SnapshotTests/AdvisorsScreenSnapshotTests.swift`
+- `packages/SynapseKit/Tests/SnapshotTests/OctagonScreenSnapshotTests.swift`
+- `packages/SynapseKit/Tests/SnapshotTests/TradingDeskScreenSnapshotTests.swift`
 
 ### Snapshot reference PNGs (24 total)
 
@@ -78,7 +78,7 @@ unchanged.
 The new surfaces are not yet attached to the app shells. Per the M8
 brief, the integrator should:
 
-#### iOS (`apps/Synnapse-iOS/SynnapseiOSApp.swift`)
+#### iOS (`apps/Synapse-iOS/SynapseiOSApp.swift`)
 
 - Replace the "Advisors" placeholder tab (if present from M1) with:
   ```swift
@@ -93,7 +93,7 @@ brief, the integrator should:
   TradingDeskPlaceholderView()
   ```
 
-#### macOS (`apps/Synnapse-macOS/SynnapseMacApp.swift`)
+#### macOS (`apps/Synapse-macOS/SynapseMacApp.swift`)
 
 Three new `WindowGroup`s with keyboard shortcuts:
 
@@ -158,12 +158,12 @@ None of substance. Two implementation notes worth surfacing:
 
 ```bash
 # Full macOS suite via SPM:
-swift test --package-path packages/SynnapseKit
+swift test --package-path packages/SynapseKit
 
 # iOS snapshot suite (against an iPhone-class sim — viewport is locked
 # by snapshot config to 1170×2532 regardless of the actual simulator):
 xcodebuild test \
-  -workspace Synnapse.xcworkspace \
+  -workspace Synapse.xcworkspace \
   -scheme SnapshotTests \
   -destination "platform=iOS Simulator,name=iPhone 17 Pro"
 ```

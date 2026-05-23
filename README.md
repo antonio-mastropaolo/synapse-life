@@ -6,7 +6,7 @@ email, vendor intel) live in the [synapse-v2](https://github.com/antonio-mastrop
 web app and were intentionally cut from Synapse on 2026-05-17.
 
 The Xcode workspace, target, scheme, and Swift package names still carry
-the `Synnapse` spelling — that's the internal codename and renaming it
+the `Synapse` spelling — that's the internal codename and renaming it
 would churn the build graph for no user-visible benefit. The display
 name (`CFBundleDisplayName`) is `Synapse`.
 
@@ -25,18 +25,18 @@ Four surviving surfaces:
 
 ## Layout
 
-- `packages/SynnapseKit/` — shared Swift package. Modules:
+- `packages/SynapseKit/` — shared Swift package. Modules:
   - `Models` — Sendable domain types, money primitives, shared JSON decoders.
   - `Networking` — `APIClient`, `Endpoint`, typed live API clients.
   - `Auth` — `KeychainStore`, `SessionStore`, Sign in with Apple bridge.
   - `Persistence` — local stores.
   - `DesignSystem` — `Theme`, `Identity`, `Tokens`, `contrastRatio`, `CockpitShellPreview`.
-  - `SynnapseCharts` — chart primitives for the Finance surfaces.
+  - `SynapseCharts` — chart primitives for the Finance surfaces.
   - `Features` — view models + views (Finance, Life, Advisors, Settings, Auth).
   - `AppLifecycle` — `AppCore` (cross-platform construction seam), `DeepLink`, `RestorationPayload`, `AppLifecycleService`.
   - `Tools` — `IconRenderer` for the app icon (macOS-only target).
-- `apps/Synnapse-macOS/` — macOS app shell. Multi-window via SwiftUI `WindowGroup`.
-- `apps/Synnapse-iOS/` — iOS app shell. Four-tab `TabView` (Finance, Life, Advisors, More).
+- `apps/Synapse-macOS/` — macOS app shell. Multi-window via SwiftUI `WindowGroup`.
+- `apps/Synapse-iOS/` — iOS app shell. Four-tab `TabView` (Finance, Life, Advisors, More).
 - `apps/Shared/` — code shared between the two app targets.
 - `project.yml` — xcodegen spec. Regenerate the Xcode project with `xcodegen generate`.
 - `scripts/` — `make-icons.swift`, `release-macos.sh`, `release-ios.sh`. See `scripts/README.md`.
@@ -46,20 +46,20 @@ Four surviving surfaces:
 ```
 brew install xcodegen
 xcodegen generate
-open Synnapse.xcworkspace
+open Synapse.xcworkspace
 ```
 
-Pick the `SynnapseMac` or `SynnapseiOS` scheme. The default base URL
-is `http://localhost:3000/`; override with the `SYNNAPSE_API_BASE`
+Pick the `SynapseMac` or `SynapseiOS` scheme. The default base URL
+is `http://localhost:3000/`; override with the `SYNAPSE_API_BASE`
 environment variable on the scheme.
 
 ## Test
 
 ```
-swift test --package-path packages/SynnapseKit
+swift test --package-path packages/SynapseKit
 ```
 
-Snapshot references live under `packages/SynnapseKit/Tests/SnapshotTests/__Snapshots__/`.
+Snapshot references live under `packages/SynapseKit/Tests/SnapshotTests/__Snapshots__/`.
 Per-surface snapshots are split into mac and iOS variants; the test
 runner records new references when missing rather than failing, so
 the first run on a new platform produces baseline images.
@@ -75,7 +75,7 @@ the operator because it requires Apple Developer credentials.
   app to TestFlight via `xcrun altool`.
 - `./scripts/make-icons.swift` — re-renders the Cockpit-amber app
   icon set from source. Run after editing the renderer at
-  `packages/SynnapseKit/Sources/Tools/IconRenderer.swift`.
+  `packages/SynapseKit/Sources/Tools/IconRenderer.swift`.
 
 See `scripts/README.md` for the one-time credential setup (notarytool
 keychain profile, App Store Connect API key) and a list of env vars

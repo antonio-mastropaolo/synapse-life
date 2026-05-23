@@ -1,6 +1,6 @@
 # Release scripts
 
-This directory holds the scripts that produce shippable Synnapse builds
+This directory holds the scripts that produce shippable Synapse builds
 for macOS (Developer ID + notarisation) and iOS (TestFlight upload).
 The scripts themselves are short and self-contained; the heavy lifting
 is the one-time credential setup the user does on their laptop. None
@@ -11,10 +11,10 @@ of those credentials live in the repo.
 - `make-icons.swift` — re-renders the Cockpit-amber app icon at every
   required size and writes the PNGs into both asset catalogs. Re-run
   whenever the icon design changes. Renderer lives in
-  `packages/SynnapseKit/Sources/Tools/IconRenderer.swift`.
+  `packages/SynapseKit/Sources/Tools/IconRenderer.swift`.
 
 - `release-macos.sh` — archives + exports + notarises + staples the
-  macOS app. End result: a `SynnapseMac.app` under `build/macOS-export/`
+  macOS app. End result: a `SynapseMac.app` under `build/macOS-export/`
   that double-clicks cleanly on a fresh Mac.
 
 - `release-ios.sh` — archives + exports + uploads the iOS app to App
@@ -32,7 +32,7 @@ password generated at https://appleid.apple.com/.
 Store the credential profile once:
 
 ```
-xcrun notarytool store-credentials synnapse-notarytool \
+xcrun notarytool store-credentials synapse-notarytool \
     --apple-id "<your-apple-id>" \
     --team-id "<YOUR_TEAM_ID>" \
     --password "<app-specific-password>"

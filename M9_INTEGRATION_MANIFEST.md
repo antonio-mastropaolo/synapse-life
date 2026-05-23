@@ -1,7 +1,7 @@
 # M9 Integration Manifest — Sequences + Settings + Accessibility Polish
 
 Worktree: `worktree-m9-sequences-settings-a11y`
-Worktree path: `/Users/amastro/Projects/Synnapse-worktrees/m9-sequences-settings-a11y`
+Worktree path: `/Users/amastro/Projects/Synapse-worktrees/m9-sequences-settings-a11y`
 Branch: `worktree-m9-sequences-settings-a11y`
 Entering test count: 194 in 41 suites
 Exiting test count: 241 in 52 suites — all green
@@ -60,7 +60,7 @@ If the integrator wants the Accessibility module to live independently (the
 spec hinted at this), apply this diff after merge:
 
 ```swift
-// In packages/SynnapseKit/Package.swift:
+// In packages/SynapseKit/Package.swift:
 
 products: [
     // ...existing...
@@ -77,7 +77,7 @@ targets: [
         name: "Features",
         // add "Accessibility" to deps so it stays linked
         dependencies: ["Models", "Networking", "DesignSystem", "Auth",
-                       "SynnapseCharts", "Accessibility"],
+                       "SynapseCharts", "Accessibility"],
         // ...
     ),
     .testTarget(
@@ -97,11 +97,11 @@ If you keep the current colocated layout, nothing else needs to change.
 
 ## App-shell wiring (manual edits required)
 
-The M9 hard constraint forbade me from touching `apps/Synnapse-macOS/SynnapseMacApp.swift`
-and `apps/Synnapse-iOS/SynnapseiOSApp.swift`. The integrator needs to apply the
+The M9 hard constraint forbade me from touching `apps/Synapse-macOS/SynapseMacApp.swift`
+and `apps/Synapse-iOS/SynapseiOSApp.swift`. The integrator needs to apply the
 following diffs.
 
-### macOS — `apps/Synnapse-macOS/SynnapseMacApp.swift`
+### macOS — `apps/Synapse-macOS/SynapseMacApp.swift`
 
 **1. Add a `SettingsViewModel` to `AppModel`:**
 
@@ -152,7 +152,7 @@ self.sequences = SequencesViewModel(api: LiveSequencesAPI(client: client))
 **Note:** ⌘, opens Settings is already true on macOS — the `Settings { }`
 scene gives you that for free. Verified by reading the existing app shell.
 
-### iOS — `apps/Synnapse-iOS/SynnapseiOSApp.swift`
+### iOS — `apps/Synapse-iOS/SynapseiOSApp.swift`
 
 **1. Add `SettingsViewModel` + `SequencesViewModel` to `AppModel`:**
 
@@ -256,7 +256,7 @@ integrator can either:
 ### Diff 1 — Default identity gainAccent (light mode)
 
 ```swift
-// packages/SynnapseKit/Sources/DesignSystem/Tokens.swift
+// packages/SynapseKit/Sources/DesignSystem/Tokens.swift
 // In TokenSet.init defaults, gainAccent:
 gainAccent ?? ColorToken(0.20, 0.78, 0.50)   // before — 2.14:1 against #FCFCFC
 gainAccent ?? ColorToken(0.05, 0.55, 0.30)   // after  — clears WCAG AA 3.0:1
@@ -273,7 +273,7 @@ the `TokenSet.init` fallback. One diff resolves both findings.
 ### Diff 2 — Terminal Amber phosphorDim
 
 ```swift
-// packages/SynnapseKit/Sources/DesignSystem/Tokens.swift
+// packages/SynapseKit/Sources/DesignSystem/Tokens.swift
 private static let phosDim = ColorToken(0.700, 0.329, 0.000)    // before — 4.01:1
 private static let phosDim = ColorToken(0.770, 0.392, 0.000)    // after  — 4.55:1
 ```
@@ -302,7 +302,7 @@ change updates both modes.
    run on an iOS host.
 4. **Token diffs are proposed, not applied** — DesignSystem/Tokens.swift is
    off-limits per the worktree boundary.
-5. **The existing `SettingsView` private struct in `SynnapseMacApp.swift` is
+5. **The existing `SettingsView` private struct in `SynapseMacApp.swift` is
    not removed** — that file is off-limits per the worktree boundary. The
    manifest documents the swap.
 6. **No public setter on `FinancePersonalViewModel.concealBalances`.** The
@@ -326,7 +326,7 @@ clears AA + 44pt + Dynamic Type.
 ## Verified against entering state
 
 ```
-$ swift test --package-path packages/SynnapseKit
+$ swift test --package-path packages/SynapseKit
 ✔ Test run with 241 tests in 52 suites passed
 ```
 

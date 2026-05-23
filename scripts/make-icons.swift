@@ -2,15 +2,15 @@
 //
 // scripts/make-icons.swift
 //
-// Re-renders the Synnapse app icon set from source so the design
+// Re-renders the Synapse app icon set from source so the design
 // language (Cockpit black + amber-phosphor "S") lives in code rather
 // than in a binary asset. Run from the repo root:
 //
 //     swift scripts/make-icons.swift
 //
 // Writes:
-//   apps/Synnapse-iOS/Assets.xcassets/AppIcon.appiconset/synnapse-icon-1024.png
-//   apps/Synnapse-macOS/Assets.xcassets/AppIcon.appiconset/icon_{16,32,128,256,512}{,@2x}.png
+//   apps/Synapse-iOS/Assets.xcassets/AppIcon.appiconset/synapse-icon-1024.png
+//   apps/Synapse-macOS/Assets.xcassets/AppIcon.appiconset/icon_{16,32,128,256,512}{,@2x}.png
 //
 // The renderer itself is `IconRenderer` in the `Tools` SwiftPM target;
 // this file is intentionally thin so the design can be tuned by
@@ -23,7 +23,7 @@ import ImageIO
 import UniformTypeIdentifiers
 
 // Inline copy of IconRenderer so the script can run without a SwiftPM
-// `swift run` step. Mirrors `packages/SynnapseKit/Sources/Tools/IconRenderer.swift`
+// `swift run` step. Mirrors `packages/SynapseKit/Sources/Tools/IconRenderer.swift`
 // (Palette.synapticPulse). Keep the two in sync; the canonical version
 // is in the package.
 enum IconRenderError: Error {
@@ -147,8 +147,8 @@ func renderIconPNG(side: Int) throws -> Data {
 // relative paths from cwd and create parent directories as needed.
 let fm = FileManager.default
 let cwd = fm.currentDirectoryPath
-let iosOut = "\(cwd)/apps/Synnapse-iOS/Assets.xcassets/AppIcon.appiconset/synnapse-icon-1024.png"
-let macOSDir = "\(cwd)/apps/Synnapse-macOS/Assets.xcassets/AppIcon.appiconset"
+let iosOut = "\(cwd)/apps/Synapse-iOS/Assets.xcassets/AppIcon.appiconset/synapse-icon-1024.png"
+let macOSDir = "\(cwd)/apps/Synapse-macOS/Assets.xcassets/AppIcon.appiconset"
 
 func ensureDir(_ path: String) throws {
     try fm.createDirectory(

@@ -23,7 +23,7 @@ xcuserdata/
 .build/
 Package.resolved
 # Note: we deliberately do NOT ignore /Packages or /packages — the SwiftPM
-# package lives at /packages/SynnapseKit and must be tracked.
+# package lives at /packages/SynapseKit and must be tracked.
 
 # CocoaPods (not used, but defensive)
 Pods/

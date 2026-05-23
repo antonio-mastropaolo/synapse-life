@@ -2,13 +2,13 @@
 #
 # scripts/release-macos.sh
 #
-# Archives, exports, notarises, and staples the macOS Synnapse build for
+# Archives, exports, notarises, and staples the macOS Synapse build for
 # distribution outside the Mac App Store (Developer ID + notarization).
 # Intended to be invoked from the repo root.
 #
 # One-time setup the user does on their laptop (not the agent):
 #
-#   xcrun notarytool store-credentials synnapse-notarytool \
+#   xcrun notarytool store-credentials synapse-notarytool \
 #       --apple-id "<your-apple-id>" \
 #       --team-id "<YOUR_TEAM_ID>" \
 #       --password "<app-specific-password>"
@@ -24,17 +24,17 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 BUILD_DIR="${REPO_ROOT}/build"
-ARCHIVE_PATH="${BUILD_DIR}/SynnapseMac.xcarchive"
+ARCHIVE_PATH="${BUILD_DIR}/SynapseMac.xcarchive"
 EXPORT_PATH="${BUILD_DIR}/macOS-export"
-EXPORT_OPTIONS="${REPO_ROOT}/apps/Synnapse-macOS/ExportOptions.plist"
-NOTARY_PROFILE="${NOTARY_PROFILE:-synnapse-notarytool}"
+EXPORT_OPTIONS="${REPO_ROOT}/apps/Synapse-macOS/ExportOptions.plist"
+NOTARY_PROFILE="${NOTARY_PROFILE:-synapse-notarytool}"
 
 mkdir -p "$BUILD_DIR"
 
-echo "[1/4] xcodebuild archive — SynnapseMac"
+echo "[1/4] xcodebuild archive — SynapseMac"
 xcodebuild \
-    -project Synnapse.xcodeproj \
-    -scheme SynnapseMac \
+    -project Synapse.xcodeproj \
+    -scheme SynapseMac \
     -configuration Release \
     -destination 'generic/platform=macOS' \
     -archivePath "$ARCHIVE_PATH" \
@@ -47,8 +47,8 @@ xcodebuild \
     -exportOptionsPlist "$EXPORT_OPTIONS" \
     -exportPath "$EXPORT_PATH"
 
-APP_PATH="${EXPORT_PATH}/SynnapseMac.app"
-ZIP_PATH="${EXPORT_PATH}/SynnapseMac.app.zip"
+APP_PATH="${EXPORT_PATH}/SynapseMac.app"
+ZIP_PATH="${EXPORT_PATH}/SynapseMac.app.zip"
 
 if [ ! -d "$APP_PATH" ]; then
     echo "expected exported app at $APP_PATH — exiting" >&2

@@ -7,7 +7,7 @@ agents (2-5) follow to wire their feature views into the new shell.
 ## Sidebar destinations (canonical order)
 
 Defined as `RootDestination` cases in
-`packages/SynnapseKit/Sources/DesignSystem/RootShellViewModel.swift`.
+`packages/SynapseKit/Sources/DesignSystem/RootShellViewModel.swift`.
 The macOS sidebar paints them in exactly this order. Adding or
 reordering rows is a breaking change — `SidebarSelectionTests.canonicalOrder`
 locks it.
@@ -37,13 +37,13 @@ To replace the placeholder for a destination you own:
 
 1. Build your feature view inside your designated `Sources/Features/<X>/` directory.
 2. Export the view type (e.g. `DashboardView`).
-3. Edit `apps/Synnapse-macOS/CopilotShellMac.swift`, find the `case .dashboard:`
+3. Edit `apps/Synapse-macOS/CopilotShellMac.swift`, find the `case .dashboard:`
    arm of `CopilotDetailPane.body`, and replace `CopilotPlaceholder(...)` with
    your view. Keep the `.id("dashboard")` modifier so the route-change
    transition still fires.
 4. If your view needs a view model, follow the existing pattern:
    - Add the VM as a `let` on `CopilotShellMac` (it's already a heavy view).
-   - Initialize the VM in `AppModel` (in `SynnapseMacApp.swift`).
+   - Initialize the VM in `AppModel` (in `SynapseMacApp.swift`).
    - Pass it through.
 
 Do not edit `RootShellViewModel.swift` to add a destination unless the
@@ -66,7 +66,7 @@ stays.
 
 ## Copilot chrome tokens
 
-Defined in `packages/SynnapseKit/Sources/DesignSystem/CopilotTokens.swift`.
+Defined in `packages/SynapseKit/Sources/DesignSystem/CopilotTokens.swift`.
 Read via `CopilotTokens.shell` — a `Sendable` struct. WCAG AA cleared.
 
 | Token                 | sRGB (R,G,B,a)             | Hex      | Use                                 |
@@ -113,18 +113,18 @@ for legend renderers.
 ## Files touched
 
 Created:
-- `apps/Synnapse-macOS/CopilotShellMac.swift`
-- `packages/SynnapseKit/Sources/DesignSystem/CopilotTokens.swift`
-- `packages/SynnapseKit/Tests/DesignSystemTests/CopilotTokensTests.swift`
-- `packages/SynnapseKit/Tests/DesignSystemTests/SidebarSelectionTests.swift`
+- `apps/Synapse-macOS/CopilotShellMac.swift`
+- `packages/SynapseKit/Sources/DesignSystem/CopilotTokens.swift`
+- `packages/SynapseKit/Tests/DesignSystemTests/CopilotTokensTests.swift`
+- `packages/SynapseKit/Tests/DesignSystemTests/SidebarSelectionTests.swift`
 
 Modified:
-- `packages/SynnapseKit/Sources/DesignSystem/RootShellViewModel.swift`
-- `packages/SynnapseKit/Tests/DesignSystemTests/RootShellSelectionTests.swift`
-- `apps/Synnapse-macOS/SynnapseMacApp.swift`
+- `packages/SynapseKit/Sources/DesignSystem/RootShellViewModel.swift`
+- `packages/SynapseKit/Tests/DesignSystemTests/RootShellSelectionTests.swift`
+- `apps/Synapse-macOS/SynapseMacApp.swift`
 
 Deleted:
-- `apps/Synnapse-macOS/CockpitShellMac.swift` (replaced by `CopilotShellMac.swift`)
+- `apps/Synapse-macOS/CockpitShellMac.swift` (replaced by `CopilotShellMac.swift`)
 
 ## What I did NOT touch
 
@@ -137,7 +137,7 @@ Per the parallelization rules:
   I kept the Copilot palette in `CopilotTokens.swift` for cleaner isolation —
   Tokens.swift is the identity-system surface; CopilotTokens is the shell
   surface. No other agent depends on tokens living in `Tokens.swift`.)
-- `apps/Synnapse-iOS/**` — agent 2
+- `apps/Synapse-iOS/**` — agent 2
 
 ## Departures from the brief
 

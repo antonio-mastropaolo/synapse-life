@@ -1,13 +1,13 @@
-# Synnapse — agent instructions
+# Synapse — agent instructions
 
 This file briefs Claude Code (and any AI collaborator) on how to work in this
 repository. Read it before editing.
 
 ## Project
 
-Synnapse is the native iOS + macOS reframe of Synapse v2 (the web app at
+Synapse is the native iOS + macOS reframe of Synapse v2 (the web app at
 `/Users/amastro/Projects/synapse-v2`). Synapse v2 stays canonical for product
-behavior. Synnapse re-implements it using SwiftUI, SwiftData, and `URLSession`
+behavior. Synapse re-implements it using SwiftUI, SwiftData, and `URLSession`
 — no `WKWebView` wrappers, no React Native, no Capacitor. The native idiom
 wins on every surface.
 
@@ -28,10 +28,10 @@ wins on every surface.
 
 ## Tooling
 
-- `xcodegen generate` regenerates `Synnapse.xcodeproj` from `project.yml`. The
+- `xcodegen generate` regenerates `Synapse.xcodeproj` from `project.yml`. The
   `.xcodeproj` is checked in for convenience; if you change `project.yml`,
   regenerate and commit both.
-- `swift test --package-path packages/SynnapseKit` runs the package tests.
+- `swift test --package-path packages/SynapseKit` runs the package tests.
 - `swiftformat .` and `swiftlint` enforce style; see `.swiftformat` and
   `.swiftlint.yml`.
 
