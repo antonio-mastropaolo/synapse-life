@@ -195,8 +195,15 @@ public struct FinancePersonalView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(tokens.surface.color)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
+        )
+        .elevation(DS.Elevation.card)
     }
 
     @ViewBuilder
@@ -229,8 +236,15 @@ public struct FinancePersonalView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(16)
-        .background(tokens.surface.color)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
+        )
+        .elevation(DS.Elevation.card)
     }
 
     private func kpiCell(label: String, amount: Decimal? = nil, rawText: String? = nil, tint: Color? = nil) -> some View {
@@ -289,8 +303,15 @@ public struct FinancePersonalView: View {
             }
         }
         .padding(16)
-        .background(tokens.surface.color)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .background(
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
+        )
+        .elevation(DS.Elevation.card)
     }
 
     @ViewBuilder

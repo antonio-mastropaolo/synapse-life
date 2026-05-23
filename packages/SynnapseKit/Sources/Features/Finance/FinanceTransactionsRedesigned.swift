@@ -128,13 +128,14 @@ public struct FinanceTransactionsRedesigned: View {
         }
         .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(tokens.surface.color)
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .stroke(tokens.foregroundSecondary.color.opacity(0.10), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(Color.primary.opacity(0.06), lineWidth: DS.Stroke.hairline)
         )
+        .elevation(DS.Elevation.card)
     }
 
     private func dailyComposition(tokens: TokenSet) -> some View {
@@ -336,13 +337,18 @@ public struct FinanceTransactionsRedesigned: View {
             .padding(12)
             .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
             .background(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(isExpanded ? bucket.color.opacity(0.10) : tokens.surface.color)
+                bucket.color.opacity(isExpanded ? 0.10 : 0),
+                in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+            )
+            .background(
+                DS.Surface.card,
+                in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                     .stroke(bucket.color.opacity(isExpanded ? 0.65 : 0.30), lineWidth: isExpanded ? 1.5 : 1)
             )
+            .elevation(DS.Elevation.card)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -432,13 +438,14 @@ public struct FinanceTransactionsRedesigned: View {
         }
         .padding(20)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(tokens.surface.color)
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .stroke(borderColor, lineWidth: 1)
         )
+        .elevation(DS.Elevation.card)
     }
 
     private func statTile(label: String, value: String, tokens: TokenSet) -> some View {
@@ -583,13 +590,14 @@ public struct FinanceTransactionsRedesigned: View {
         // type comfortably at the typical inspector column width.
         .frame(maxWidth: .infinity, minHeight: 132, maxHeight: 132, alignment: .topLeading)
         .background(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                .fill(tokens.foregroundSecondary.color.opacity(0.05))
+            DS.Surface.card,
+            in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 8, style: .continuous)
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .stroke(signal.tone.opacity(0.30), lineWidth: 1)
         )
+        .elevation(DS.Elevation.card)
     }
 
     private func aiSignals(for bucket: CategoryBucket) -> [AISignal] {
