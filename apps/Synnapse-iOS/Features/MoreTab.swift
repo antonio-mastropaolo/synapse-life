@@ -9,17 +9,15 @@ import AppLifecycle
 /// didn't earn a primary slot on the Copilot-inspired bottom rail.
 ///
 /// Ordering is product-first, not alphabetical:
-///   * MONEY     — Personal, Accounts, Goals, Subscriptions,
-///                 Recurrings, Categories
+///   * MONEY     — Personal, Accounts, Subscriptions, Recurrings
 ///   * LIFE      — Life terminal, Advisors
 ///   * SYSTEM    — Settings, Sign in
 ///
-/// Each row drills into a `NavigationLink` destination — for the
-/// surfaces that exist today (Personal, Accounts, Life, Advisors,
-/// Settings) we push the real view; for the surfaces other agents
-/// still own (Goals, Subscriptions, Recurrings, Categories, Cash
-/// flow) we surface a `ComingSoonView` so the tab is exhaustive
-/// rather than misleading.
+/// Each row drills into a real `NavigationLink` destination. Surfaces
+/// that are still in progress (Goals, Categories, Cash flow) carry no
+/// row in a shipping build — they would only show a placeholder, which
+/// Apple review rejects. Those rows are mounted under DEBUG so the team
+/// can reach the in-progress views locally.
 @MainActor
 struct MoreTab: View {
 
@@ -93,6 +91,9 @@ struct MoreTab: View {
             moreRow(symbol: "creditcard.fill", title: "Accounts",
                     subtitle: "Linked institutions and balances")
         }
+        #if DEBUG
+        // Goals is in-progress (placeholder surface). Reachable only in
+        // DEBUG so it never appears to a reviewer or shipping user.
         NavigationLink {
             ComingSoonView(
                 title: "Goals",
@@ -103,6 +104,7 @@ struct MoreTab: View {
             moreRow(symbol: "target", title: "Goals",
                     subtitle: "Savings targets")
         }
+        #endif
         NavigationLink {
             SubscriptionsView(viewModel: core.subscriptions)
                 .navigationTitle("Subscriptions")
@@ -121,6 +123,9 @@ struct MoreTab: View {
             moreRow(symbol: "arrow.clockwise", title: "Recurrings",
                     subtitle: "Predicted bills next month")
         }
+        #if DEBUG
+        // Categories editing is in-progress (placeholder surface).
+        // Reachable only in DEBUG so it never appears to a reviewer.
         NavigationLink {
             ComingSoonView(
                 title: "Categories",
@@ -131,6 +136,7 @@ struct MoreTab: View {
             moreRow(symbol: "tag", title: "Categories",
                     subtitle: "Rules and tagging")
         }
+        #endif
     }
 
     @ViewBuilder

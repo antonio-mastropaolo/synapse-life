@@ -46,19 +46,23 @@ struct SynnapseiOSApp: App {
 // `SignInView`, `AuthViewModel`, `SessionStore`, and `LiveSessionAPI`
 // stay in the codebase and remain reachable from Settings.
 
-/// Five visible tabs (Copilot-inspired reshape, 2026-05-17):
-///   Dashboard · Transactions · Cash flow · Investments · More
+/// Visible tabs (Copilot-inspired reshape):
+///   Dashboard · Transactions · Investments · More
 ///
-/// The shape mirrors Copilot's bottom rail. The first tab is now the
+/// The shape mirrors Copilot's bottom rail. The first tab is the
 /// review-queue inbox rather than the finance hub — that matches the
 /// product's primary action ("look at what's new and triage") rather
-/// than the analytic view ("how much do I have"). Cash flow and
-/// Investments are first-class because they're the two surfaces a
-/// user opens daily without a triage intent.
+/// than the analytic view ("how much do I have"). Investments is a
+/// first-class slot because it's a surface a user opens daily without
+/// a triage intent.
 ///
-/// More holds the long tail: Goals, Recurrings, Subscriptions,
-/// Categories, Accounts, Personal, Life, Advisors, Settings, plus
-/// Sign-in entry. The drill-down list lives in [[MoreTab]].
+/// More holds the long tail: Personal, Accounts, Subscriptions,
+/// Recurrings, Life, Advisors, Settings, plus the Sign-in entry. The
+/// drill-down list lives in [[MoreTab]].
+///
+/// The Cash-flow surface is not yet a shipping feature, so it has no
+/// bottom-rail slot in release builds; the in-progress tab is mounted
+/// only under DEBUG so the team can exercise it locally.
 ///
 /// Synnapse is a private-life client; work surfaces from synapse-v2
 /// (Spotlight, Approvals, People, Inbox, Sequences, Octagon, Trading
@@ -66,14 +70,17 @@ struct SynnapseiOSApp: App {
 private struct RootTabView: View {
     @Bindable var core: AppCore
 
-    /// The five visible tab identifiers. We track selection ourselves
+    /// The visible tab identifiers. We track selection ourselves
     /// (rather than letting `TabView` drive an implicit `Int`) so the
     /// `onChange` handler can fire a selection haptic the instant the
     /// user lands on a new tab. Apple's own tab bar does not haptic on
     /// switch; we add it because every top-tier finance app on iOS
     /// does, and the absence reads as a missing affordance.
     enum Tab: Hashable {
-        case dashboard, transactions, cashflow, investments, more
+        case dashboard, transactions, investments, more
+        #if DEBUG
+        case cashflow
+        #endif
     }
 
     @State private var selection: Tab = .dashboard
@@ -106,12 +113,17 @@ private struct RootTabView: View {
             .tabItem { Label("Transactions", systemImage: "list.bullet.indent") }
             .tag(Tab.transactions)
 
+            #if DEBUG
+            // Cash flow is in-progress: its surface still renders sample
+            // figures, so it ships only under DEBUG and is never part of
+            // a release build's bottom rail.
             CashFlowTab()
                 .identity(.cockpitInstrument)
                 .tabItem {
                     Label("Cash flow", systemImage: "chart.line.uptrend.xyaxis")
                 }
                 .tag(Tab.cashflow)
+            #endif
 
             InvestmentsTab(viewModel: core.financeInvestments)
                 .identity(.cockpitInstrument)
@@ -175,11 +187,12 @@ private struct TransactionsTab: View {
     }
 }
 
-/// Cash flow tab. Agent 4 owns the surface module
-/// (`Features/CashFlow/**`); until that lands we render a placeholder
-/// so the tab bar's slot is reserved and tappable without a crash.
-/// The placeholder is intentionally honest — "Coming soon" beats a
-/// half-built chart in a screenshot review.
+#if DEBUG
+/// Cash flow tab — in-progress surface. Its module
+/// (`Features/CashFlow/**`) still renders sample figures, so this tab
+/// is compiled only into DEBUG builds and never reaches a reviewer or
+/// shipping user. When the real Cash Flow VM lands this moves out of
+/// the DEBUG gate.
 private struct CashFlowTab: View {
     var body: some View {
         NavigationStack {
@@ -193,6 +206,7 @@ private struct CashFlowTab: View {
         }
     }
 }
+#endif
 
 /// Investments tab — was the fourth card on the old hub; now its
 /// own bottom-rail entry.

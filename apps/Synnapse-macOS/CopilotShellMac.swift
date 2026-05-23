@@ -255,19 +255,31 @@ private struct CopilotSidebar: View {
     /// content for these destinations and key off the order. Adding a
     /// new row requires the corresponding case on `RootDestination` and
     /// a baseline update.
-    fileprivate static let topLevelRows: [RowSpec] = [
-        .init(destination: .dashboard,    label: "Dashboard",    icon: "rectangle.grid.2x2"),
-        .init(destination: .transactions, label: "Transactions", icon: "arrow.left.arrow.right"),
-        .init(destination: .goals,        label: "Goals",        icon: "target"),
-        .init(destination: .cashFlow,     label: "Cash flow",    icon: "waveform.path.ecg"),
-        .init(destination: .accounts,     label: "Accounts",     icon: "building.columns"),
-        .init(destination: .investments,  label: "Investments",  icon: "chart.pie"),
-        .init(destination: .categories,   label: "Categories",   icon: "square.grid.3x3"),
-        .init(destination: .recurrings,   label: "Recurrings",   icon: "arrow.triangle.2.circlepath"),
-        .init(destination: .memberships, label: "Memberships", icon: "square.stack.3d.up.fill"),
-        .init(destination: .life,         label: "Life",         icon: "terminal"),
-        .init(destination: .advisors,     label: "Advisors",     icon: "person.bubble")
-    ]
+    fileprivate static var topLevelRows: [RowSpec] {
+        var rows: [RowSpec] = [
+            .init(destination: .dashboard,    label: "Dashboard",    icon: "rectangle.grid.2x2"),
+            .init(destination: .transactions, label: "Transactions", icon: "arrow.left.arrow.right"),
+            .init(destination: .goals,        label: "Goals",        icon: "target")
+        ]
+        #if DEBUG
+        // Cash flow is in-progress: its surface still renders sample
+        // figures, so the sidebar row exists only in DEBUG and is never
+        // visible to a reviewer or shipping user. The `.cashFlow`
+        // destination stays routable via deep link for the same DEBUG
+        // builds; release builds simply have no entry point to it.
+        rows.append(.init(destination: .cashFlow, label: "Cash flow", icon: "waveform.path.ecg"))
+        #endif
+        rows.append(contentsOf: [
+            .init(destination: .accounts,     label: "Accounts",     icon: "building.columns"),
+            .init(destination: .investments,  label: "Investments",  icon: "chart.pie"),
+            .init(destination: .categories,   label: "Categories",   icon: "square.grid.3x3"),
+            .init(destination: .recurrings,   label: "Recurrings",   icon: "arrow.triangle.2.circlepath"),
+            .init(destination: .memberships, label: "Memberships", icon: "square.stack.3d.up.fill"),
+            .init(destination: .life,         label: "Life",         icon: "terminal"),
+            .init(destination: .advisors,     label: "Advisors",     icon: "person.bubble")
+        ])
+        return rows
+    }
 
     fileprivate struct RowSpec {
         let destination: RootDestination
@@ -719,6 +731,18 @@ private struct CopilotDetailPane: View {
     let showsDemoFooter: Bool
     var onProactiveDismiss: (ProactiveSignal) -> Void = { _ in }
 
+    /// Hero-card tap target for Cash flow. The cash-flow surface is an
+    /// in-progress placeholder, so in release builds it has no entry
+    /// point and the card renders non-interactive (`nil`). DEBUG builds
+    /// route to the placeholder for local exercise.
+    private var cashFlowHeroTap: (() -> Void)? {
+        #if DEBUG
+        return { routing.select(.cashFlow) }
+        #else
+        return nil
+        #endif
+    }
+
     var body: some View {
         Group {
             switch routing.selection {
@@ -764,7 +788,10 @@ private struct CopilotDetailPane: View {
             case .dashboard:
                 DashboardView(
                     viewModel: dashboard,
-                    openCashFlow: { routing.select(.cashFlow) },
+                    // The Net-this-week hero card links to Cash flow only
+                    // in DEBUG; in release the placeholder surface has no
+                    // entry point, so the card renders non-interactive.
+                    openCashFlow: cashFlowHeroTap,
                     openGoals: { routing.select(.goals) },
                     isDemoData: showsDemoFooter,
                     goalsStore: goals,
