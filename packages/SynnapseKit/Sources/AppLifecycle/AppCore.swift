@@ -1,9 +1,12 @@
 import Foundation
 import Observation
+import SwiftData
 import Models
 import Networking
 import Auth
 import Features
+import Persistence
+import Intelligence
 
 /// Cross-platform construction seam shared by the macOS and iOS app
 /// shells. Both `SynnapseMacApp.AppModel` and `SynnapseiOSApp.AppModel`
@@ -30,6 +33,27 @@ public final class AppCore {
     public let lifeAPI: LifeAPI
     public let advisors: AdvisorsListViewModel
     public let settings: SettingsViewModel
+
+    // MARK: - Substrate (Phase 1 persistence + Phase 3 intelligence)
+
+    /// The SwiftData container the persistence stores read/write through.
+    /// Demo / test wiring uses an in-memory store; live wiring targets the
+    /// App Group container (falling back to the documents directory when the
+    /// entitlement isn't available — see `PersistenceContainerFactory`).
+    public let modelContainer: ModelContainer
+    public let accountStore: AccountStore
+    public let transactionStore: TransactionStore
+    public let investmentStore: InvestmentStore
+    public let auditLog: AuditLogStore
+    /// Durable proactive feed (Phase 4). The analyzer's nightly pass upserts
+    /// into this; the Dashboard inbox reads `recent()` from it.
+    public let notifications: ProactiveNotificationStore
+
+    /// Hybrid LLM router (Phase 3). Local on-device path + redacted remote
+    /// path. Its LLM clients currently throw `notImplemented` and the router
+    /// falls back to a deterministic stub, so it's safe to construct and call
+    /// before the real backends land.
+    public let llmRouter: LLMRouter
 
     /// When true, the VMs were wired to the Mock APIs and the demo
     /// fixtures should be seeded before the scene refreshes. DEBUG
@@ -131,6 +155,52 @@ public final class AppCore {
         self.advisors = AdvisorsListViewModel(api: advisorsAPIWire)
 
         self.settings = SettingsViewModel(store: UserDefaultsSettingsStore())
+
+        // Persistence substrate. Demo / test wiring uses an in-memory store;
+        // live wiring targets the App Group container. The container is
+        // essential, so construction never silently degrades to "no store" —
+        // it falls back to ephemeral and, only if even that fails, traps with
+        // a clear message (matching `PersistenceContainerFactory`'s contract).
+        let container = Self.makeModelContainer(useDemoData: useDemoData)
+        self.modelContainer = container
+        self.accountStore = AccountStore(modelContainer: container)
+        self.transactionStore = TransactionStore(modelContainer: container)
+        self.investmentStore = InvestmentStore(modelContainer: container)
+        self.auditLog = AuditLogStore(modelContainer: container)
+        self.notifications = ProactiveNotificationStore(modelContainer: container)
+
+        // Hybrid LLM router. Backends are Phase 3 shells today; the router
+        // falls back to a deterministic stub so callers never break.
+        self.llmRouter = LLMRouter(
+            local: AppleFoundationLLM(),
+            remote: RemoteLLM(client: client),
+            redactor: PIIRedactor()
+        )
+    }
+
+    /// App Group used by the live persistence store, matching the bundle
+    /// prefix (`tech.synnapse.*`) the entitlements declare.
+    private static let appGroupIdentifier = "group.tech.synnapse"
+
+    /// Build the SwiftData container without ever trapping on the expected
+    /// failure modes. Demo wiring is in-memory; live wiring targets the App
+    /// Group container (which itself falls back to the documents directory
+    /// when the entitlement is absent — e.g. unsigned `swift test`). If the
+    /// requested configuration fails, we retry ephemeral before giving up.
+    private static func makeModelContainer(useDemoData: Bool) -> ModelContainer {
+        let primary: PersistenceContainerFactory.Configuration = useDemoData
+            ? .ephemeral
+            : .live(appGroupIdentifier: appGroupIdentifier)
+        if let container = try? PersistenceContainerFactory.make(primary) {
+            return container
+        }
+        if let container = try? PersistenceContainerFactory.make(.ephemeral) {
+            return container
+        }
+        // An environment where even an in-memory SwiftData store can't be
+        // created is unrecoverable; surfacing it is more honest than running
+        // against a phantom store.
+        fatalError("Unable to create a SwiftData ModelContainer")
     }
 
     /// Async bootstrap mirror of what the shell's `bootstrapIfNeeded`

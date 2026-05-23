@@ -82,7 +82,7 @@ let package = Package(
         ),
         .target(
             name: "AppLifecycle",
-            dependencies: ["Models", "Networking", "Auth", "DesignSystem", "Features"],
+            dependencies: ["Models", "Networking", "Auth", "DesignSystem", "Features", "Persistence", "Intelligence"],
             path: "Sources/AppLifecycle"
         ),
         .testTarget(

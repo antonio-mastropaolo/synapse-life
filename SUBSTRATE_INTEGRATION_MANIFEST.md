@@ -307,16 +307,26 @@ a `PersistedRecurring` `@Model` + projection, and a
 already infers recurring transactions in memory — that detector is
 the seed for the persisted store.
 
-### G4 — `AppCore` doesn't hold the new persistence stores or
-`LLMRouter` yet
+### G4 — `AppCore` substrate wiring — DONE (package seam); app-target adoption remains
 
-This session added `biometricGate` only. Next pass: build a
-`ModelContainer` via `PersistenceContainerFactory.make(.live(...))`,
-construct the four store actors against it, construct
-`LLMRouter`, surface them as `public let ...` on `AppCore`,
-and inject into the SwiftUI environment from `apps/Shared/RootView.swift`.
-With G2 resolved, `AppLifecycle` can import both `Features` and
-`Intelligence` without the name clash.
+`AppCore` now builds a `ModelContainer` (in-memory for demo/test;
+`.live(appGroupIdentifier: "group.tech.synnapse")` with an ephemeral
+fallback otherwise — never traps on the expected failure modes) and
+constructs all five store actors (`AccountStore`, `TransactionStore`,
+`InvestmentStore`, `AuditLogStore`, `ProactiveNotificationStore`) plus the
+`LLMRouter` (Apple-local + redacted-remote, stub-backed today). All are
+surfaced as `public let` and exercised by `CrashFreeLaunchTests`.
+`AppLifecycle` gained `Persistence` + `Intelligence` deps; the `@ModelActor`
+init is accessible cross-module, so no extra factory was needed.
+
+**Still open (app-target work, not in the package):** the shells
+(`SynnapseiOSApp.AppModel` / `SynnapseMacApp.AppModel`) build their own VMs
+and don't yet consume `AppCore`'s stores; they need to (a) adopt the
+container via `.modelContainer(...)`, (b) read the proactive feed into the
+Dashboard inbox, and (c) register a nightly `BGTaskScheduler` task that runs
+`ProactiveAnalyzer.analyze` → `notifications.upsertAll` and fires local
+notifications. Those touch `apps/*` + `Info.plist` and are the next
+increment.
 
 ### G5 — Phase 2 LinkKit SDK + server routes not added
 

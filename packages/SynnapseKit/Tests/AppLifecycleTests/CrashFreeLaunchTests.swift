@@ -30,6 +30,16 @@ struct CrashFreeLaunchTests {
         _ = core.lifeAPI
         _ = core.advisors
         _ = core.settings
+        // Substrate wiring (Phase 1 persistence + Phase 3 intelligence) must
+        // also construct without trapping — the live container path falls
+        // back to an on-disk store under unsigned `swift test`.
+        _ = core.modelContainer
+        _ = core.accountStore
+        _ = core.transactionStore
+        _ = core.investmentStore
+        _ = core.auditLog
+        _ = core.notifications
+        _ = core.llmRouter
     }
 
     @Test("AppCore init survives an invalid base URL by falling back")
