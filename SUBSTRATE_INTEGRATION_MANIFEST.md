@@ -330,7 +330,7 @@ store yet — a `RecurringStore.upsertAll(detected.map { $0.asRecurring() })`
 call belongs in the same nightly `BGTaskScheduler` task that runs the
 `ProactiveAnalyzer` (app-target work, see G4's "still open" note).
 
-### G4 — `AppCore` substrate wiring — DONE (package seam + macOS shell); iOS remains
+### G4 — `AppCore` substrate wiring — DONE (package seam + both shells)
 
 `AppCore` now builds a `ModelContainer` (in-memory for demo/test;
 `.live(appGroupIdentifier: "group.tech.synnapse")` with an ephemeral
@@ -354,11 +354,14 @@ the detections back through (`persistRecurrings()`) so `get_recurrings` reads
 real data. Verified: `SynnapseMac` builds, launches, and the Recurrings surface
 renders through `AppCore` (DETECTED 7, persisted).
 
+**iOS shell adoption — DONE.** `SynnapseiOSApp` drops its `AppModel` and
+instantiates `AppCore`; `RootTabView` / `MoreTab` take `core: AppCore`. `AppCore`
+gained the two members the iOS shell needed (`financeAPI` handle + a
+`life: LifeViewModel`; the iOS `commandBar` was unused by any view and dropped).
+Verified: `SynnapseiOS` builds for the simulator. Both shells are now thin
+scenes over the single `AppCore` seam.
+
 **Still open (app-target work):**
-- **iOS shell** still uses its own `AppModel`; repoint it onto `AppCore` (needs
-  a simulator to verify — `swift test` can't cover it). The iOS `AppModel` adds
-  a `commandBar` + `LifeViewModel` + a `financeAPI` handle that `AppCore`
-  doesn't expose yet.
 - **`.modelContainer(...)` injection** into the SwiftUI environment (so a future
   widget / share-extension reads the same store) — `AppCore` holds the
   container but the scenes don't yet inject it.
