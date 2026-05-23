@@ -23,7 +23,7 @@ import Foundation
 ///
 /// TODO(phase3): tune the simple/complex threshold from telemetry once
 /// we have it. The 200-character cut-off is a guess.
-public actor IntelligenceRouter {
+public actor LLMRouter {
     private let local: any LLMClient
     private let remote: any LLMClient
     private let redactor: PIIRedactor

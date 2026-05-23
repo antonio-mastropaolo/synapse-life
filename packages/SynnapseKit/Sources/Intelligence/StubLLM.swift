@@ -1,7 +1,7 @@
 import Foundation
 
 /// Deterministic in-process LLM. Used by `IntelligenceTests`, by SwiftUI
-/// previews, and by `IntelligenceRouter` as the safety-net fallback when
+/// previews, and by `LLMRouter` as the safety-net fallback when
 /// `local` throws `LLMError.notImplemented` during Phase 3 development.
 ///
 /// `generate(...)` returns `"stub: <user prompt>"`. `stream(...)` splits

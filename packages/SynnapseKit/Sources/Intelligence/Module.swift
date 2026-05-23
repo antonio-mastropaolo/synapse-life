@@ -13,7 +13,7 @@ import Foundation
 ///   Q&A and long-form narrative. Expensive, requires network, never sees
 ///   raw PII because the request goes through `PIIRedactor` first.
 ///
-/// `IntelligenceRouter` makes the local-vs-remote choice based on prompt
+/// `LLMRouter` makes the local-vs-remote choice based on prompt
 /// shape (length + tool count for now; will be re-tuned from telemetry in
 /// Phase 3). When the router decides "remote", it MUST first run the
 /// prompt through `PIIRedactor.redact(_:allowedMerchants:)`. The redactor

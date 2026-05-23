@@ -40,12 +40,12 @@ private actor RedactionRecorder {
     func record(_ s: String) { inputs.append(s) }
 }
 
-final class IntelligenceRouterTests: XCTestCase {
+final class LLMRouterTests: XCTestCase {
 
     func test_shortPrompt_routesToLocal() async throws {
         let local = TaggedStubLLM(name: "fake.local")
         let remote = TaggedStubLLM(name: "fake.remote")
-        let router = IntelligenceRouter(
+        let router = LLMRouter(
             local: local,
             remote: remote,
             redactor: PIIRedactor()
@@ -64,7 +64,7 @@ final class IntelligenceRouterTests: XCTestCase {
     func test_longPrompt_routesToRemote_afterRedaction() async throws {
         let local = TaggedStubLLM(name: "fake.local")
         let remote = TaggedStubLLM(name: "fake.remote")
-        let router = IntelligenceRouter(
+        let router = LLMRouter(
             local: local,
             remote: remote,
             redactor: PIIRedactor()
@@ -89,7 +89,7 @@ final class IntelligenceRouterTests: XCTestCase {
     func test_manyTools_routesToRemote() async throws {
         let local = TaggedStubLLM(name: "fake.local")
         let remote = TaggedStubLLM(name: "fake.remote")
-        let router = IntelligenceRouter(
+        let router = LLMRouter(
             local: local,
             remote: remote,
             redactor: PIIRedactor()
@@ -111,7 +111,7 @@ final class IntelligenceRouterTests: XCTestCase {
     func test_localNotImplemented_fallsBackToStub() async throws {
         let local = AppleFoundationLLM()  // throws notImplemented
         let remote = TaggedStubLLM(name: "fake.remote")
-        let router = IntelligenceRouter(
+        let router = LLMRouter(
             local: local,
             remote: remote,
             redactor: PIIRedactor()
@@ -129,16 +129,16 @@ final class IntelligenceRouterTests: XCTestCase {
     func test_isSimple_predicate() {
         let short = LLMPrompt(system: "", user: "hi")
         let long = LLMPrompt(system: "", user: String(repeating: "x", count: 250))
-        XCTAssertTrue(IntelligenceRouter.isSimple(prompt: short, tools: []))
-        XCTAssertFalse(IntelligenceRouter.isSimple(prompt: long, tools: []))
+        XCTAssertTrue(LLMRouter.isSimple(prompt: short, tools: []))
+        XCTAssertFalse(LLMRouter.isSimple(prompt: long, tools: []))
         let twoTools = [
             LLMTool(name: "a", description: "", argsSchemaJSON: "{}"),
             LLMTool(name: "b", description: "", argsSchemaJSON: "{}")
         ]
-        XCTAssertTrue(IntelligenceRouter.isSimple(prompt: short, tools: twoTools))
+        XCTAssertTrue(LLMRouter.isSimple(prompt: short, tools: twoTools))
         let threeTools = twoTools + [
             LLMTool(name: "c", description: "", argsSchemaJSON: "{}")
         ]
-        XCTAssertFalse(IntelligenceRouter.isSimple(prompt: short, tools: threeTools))
+        XCTAssertFalse(LLMRouter.isSimple(prompt: short, tools: threeTools))
     }
 }

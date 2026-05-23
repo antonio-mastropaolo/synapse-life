@@ -178,7 +178,8 @@ Replaces the empty `Sources/Persistence/Placeholder.swift` (deleted) with:
   addresses (`<address>`), dollar amounts > $50,000 (exclusive, →
   `<large_amount>`). Whitelist parameter `allowedMerchants: Set<String>`.
   27 fixture tests pass.
-- `Sources/Intelligence/IntelligenceRouter.swift` — `actor`. Constructor
+- `Sources/Intelligence/LLMRouter.swift` — `actor LLMRouter` (renamed from
+  `IntelligenceRouter` this session; see G2). Constructor
   `(local: LLMClient, remote: LLMClient, redactor: PIIRedactor)`. Single
   `route(_:tools:)` method: simple queries (`prompt.user.count < 200 && tools.count <= 2`) → local;
   complex → redact then remote. Falls back to a stub on `notImplemented`
@@ -221,13 +222,26 @@ paths aren't SQL-mappable, and a String sort misorders magnitudes), so
 they now sort the projected DTOs numerically in memory. The 20-fixture
 canary `allFixturesRoundTripExactly` passes; PersistenceTests 17/17.
 
-### G2 — Namespace collision: two `IntelligenceRouter`s
+### G2 — Namespace collision: two `IntelligenceRouter`s — RESOLVED
 
-`Sources/Features/AI/Intelligence/IntelligenceRouter.swift` already
-exists in the `Features` module and shadows the new
-`Intelligence.IntelligenceRouter`. Resolve by either renaming the
-Features one to `LegacyIntelligenceRouter` (less risky) or by deleting
-it once the new router replaces the Features callers (cleaner).
+The two types turned out to be different abstractions that merely shared
+a name, not competing implementations:
+
+- `Features.IntelligenceRouter` — Ask-UI streaming protocol
+  (`stream(prompt:context:) -> AsyncThrowingStream<IntelligenceDelta>`),
+  shipped + tested, drives the Ask bar via `IntelligenceAskViewModel`.
+- `Intelligence.IntelligenceRouter` — LLM-level actor
+  (`route(LLMPrompt, tools:) async -> LLMResponse`), substrate scaffold
+  whose LLM clients still throw `notImplemented` (G6).
+
+Deleting the Features one would have regressed the working Ask UI with no
+functioning replacement (the substrate router can't stream and its
+backends are stubs). **Resolved** by renaming the substrate actor to
+`LLMRouter` (it routes between `LLMClient`s — honest naming), leaving the
+Features Ask router untouched. The collision is gone and `AppCore` can
+import both modules unqualified. The eventual delete-and-repoint of the
+Features router onto `LLMRouter` is real Phase 3 work, gated on G6 (a live
+LLM client + an Ask-shaped streaming bridge). IntelligenceTests 37/37.
 
 ### G3 — `RecurringStore` missing
 
@@ -240,13 +254,15 @@ already infers recurring transactions in memory — that detector is
 the seed for the persisted store.
 
 ### G4 — `AppCore` doesn't hold the new persistence stores or
-`IntelligenceRouter` yet
+`LLMRouter` yet
 
 This session added `biometricGate` only. Next pass: build a
 `ModelContainer` via `PersistenceContainerFactory.make(.live(...))`,
 construct the four store actors against it, construct
-`IntelligenceRouter`, surface them as `public let ...` on `AppCore`,
+`LLMRouter`, surface them as `public let ...` on `AppCore`,
 and inject into the SwiftUI environment from `apps/Shared/RootView.swift`.
+With G2 resolved, `AppLifecycle` can import both `Features` and
+`Intelligence` without the name clash.
 
 ### G5 — Phase 2 LinkKit SDK + server routes not added
 
