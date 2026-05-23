@@ -40,13 +40,14 @@ struct ContainerFactoryTests {
     }
 
     @Test
-    func schemaContainsAllFourModelTypes() {
+    func schemaContainsAllModelTypes() {
         let entityNames = Set(PersistenceContainerFactory.schema.entities.map(\.name))
         #expect(entityNames.contains("PersistedFinanceAccount"))
         #expect(entityNames.contains("PersistedTransaction"))
         #expect(entityNames.contains("PersistedInvestmentPosition"))
         #expect(entityNames.contains("PersistedAuditLog"))
-        #expect(entityNames.count == 4)
+        #expect(entityNames.contains("PersistedNotification"))
+        #expect(entityNames.count == 5)
     }
 
     @Test

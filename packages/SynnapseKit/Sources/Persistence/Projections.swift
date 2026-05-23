@@ -197,3 +197,59 @@ extension PersistedInvestmentPosition {
         return changed
     }
 }
+
+extension PersistedNotification {
+
+    public static func from(
+        _ dto: ProactiveSignal,
+        createdAt: Date = Date()
+    ) -> PersistedNotification {
+        PersistedNotification(
+            id: dto.id,
+            kindRaw: dto.kind.rawValue,
+            headline: dto.headline,
+            body: dto.body,
+            subjectId: dto.subjectId,
+            date: dto.date,
+            severityRaw: dto.severity.rawValue,
+            severityRank: dto.severity.rank,
+            dismissed: false,
+            createdAt: createdAt
+        )
+    }
+
+    /// `kind` / `severity` fall back to a concrete case on an unrecognised
+    /// raw string. That only happens against data written by a *newer* schema
+    /// than this binary; rows this binary wrote always round-trip exactly.
+    public func toDTO() -> ProactiveSignal {
+        ProactiveSignal(
+            id: id,
+            kind: kind ?? .anomalousSpend,
+            headline: headline,
+            body: body,
+            subjectId: subjectId,
+            date: date,
+            severity: severity ?? .info
+        )
+    }
+
+    /// In-place content update from a re-run. Returns `true` if any surfaced
+    /// field changed. Deliberately does NOT touch `dismissed` or `createdAt`:
+    /// a nightly re-evaluation refreshes the wording, never the user's
+    /// dismissal or the original retention clock.
+    @discardableResult
+    public func update(from dto: ProactiveSignal) -> Bool {
+        var changed = false
+        if kindRaw != dto.kind.rawValue       { kindRaw = dto.kind.rawValue; changed = true }
+        if headline != dto.headline           { headline = dto.headline; changed = true }
+        if body != dto.body                   { body = dto.body; changed = true }
+        if subjectId != dto.subjectId         { subjectId = dto.subjectId; changed = true }
+        if date != dto.date                   { date = dto.date; changed = true }
+        if severityRaw != dto.severity.rawValue {
+            severityRaw = dto.severity.rawValue
+            severityRank = dto.severity.rank
+            changed = true
+        }
+        return changed
+    }
+}

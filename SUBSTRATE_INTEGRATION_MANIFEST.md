@@ -20,7 +20,7 @@ stub, and the exact next moves.
 | Phase 1 — SwiftData persistence | **complete** | 17 / 17 pass |
 | Phase 2 — Plaid proxy connector (no LinkKit SDK) | **network layer live** | 18 / 18 pass |
 | Phase 3 — Intelligence scaffold (no real LLM) | **scaffold only** | 37 / 37 pass |
-| Phase 4 — Native sensors + agentic flows | **started: ProactiveAnalyzer** | 5 / 5 pass |
+| Phase 4 — Native sensors + agentic flows | **analyzer + durable feed** | 11 / 11 pass |
 | Phase 5 — Monetization + observability + submission | not started | — |
 
 **Overall: 72 / 72 substrate tests pass.** The G1 Decimal canary is now
@@ -200,11 +200,13 @@ operator credentials (unlike receipt OCR / voice / App Intents, which need
 app-target or platform-UI surfaces, and unlike Phase 5, which needs
 third-party SDK accounts).
 
-- `Sources/Features/Proactive/ProactiveSignal.swift` — new. Unified feed
-  item the Dashboard inbox surfaces: `kind` (`.upcomingBill` /
-  `.newRecurring` / `.anomalousSpend`), `headline` / `body`, `subjectId`
-  (jump target), `date`, `severity` (`.info` / `.warning` / `.alert` with
-  a `rank`). Stable `id` so a nightly re-run dedups against persisted rows.
+- `Sources/Models/ProactiveSignal.swift` — new (lives in `Models`, not
+  `Features`, because `Persistence` mirrors it and can't depend on
+  `Features`). Unified feed item the Dashboard inbox surfaces: `kind`
+  (`.upcomingBill` / `.newRecurring` / `.anomalousSpend`), `headline` /
+  `body`, `subjectId` (jump target), `date`, `severity` (`.info` /
+  `.warning` / `.alert` with a `rank`). Stable `id` so a nightly re-run
+  dedups against persisted rows.
 - `Sources/Features/Proactive/ProactiveAnalyzer.swift` — new. Pure
   `enum` with `analyze(snapshot:configuration:) -> [ProactiveSignal]` over
   the existing `AlertsSnapshot`. Composes `ForecastReducer.predictedRecurrings`
@@ -219,11 +221,31 @@ third-party SDK accounts).
   new recurring (not both); current-week spike → alert anomaly; flat spend
   → no anomaly; deterministic ids + severity ranking + no dup ids.
 
-**Phase 4 follow-on (not started):** persist signals as a `PersistedNotification`
-`@Model` + store so they survive backgrounding (G4-adjacent), run the
-analyzer from a nightly `BGTaskScheduler` task, and surface the feed in the
-Dashboard inbox. Receipt OCR (VisionKit), voice (Speech), and App Intents
-remain unstarted — all need app-target wiring.
+- `Sources/Persistence/Models/PersistedNotification.swift` — new. `@Model`
+  mirror of `ProactiveSignal`. `kindRaw` / `severityRaw` stored as raw
+  strings (computed `kind` / `severity` projections, forward-compat).
+  `severityRank: Int` denormalised so the store sorts by urgency in SQL
+  (a computed key path can't back a `SortDescriptor`). `dismissed: Bool`
+  and `createdAt: Date` (retention key, distinct from the signal's "about"
+  `date`).
+- `Sources/Persistence/Stores/ProactiveNotificationStore.swift` — new
+  `@ModelActor`. `upsert` / `upsertAll` (dedup by stable id, return
+  new-or-changed; `update(from:)` refreshes wording but never touches
+  `dismissed` / `createdAt`), `recent(includeDismissed:limit:)` (urgency
+  then recency, hides dismissed by default), `get(id:)`,
+  `setDismissed(id:_:)`, `count()`, `deleteAll()`, `prune(olderThan:now:)`.
+- `Projections.swift` gained the `PersistedNotification` from/toDTO/update
+  extension; `ContainerFactory.schema` now lists five `@Model` types.
+- Tests: `Tests/FeaturesTests/Proactive/ProactiveAnalyzerTests.swift` (5)
+  + `Tests/PersistenceTests/ProactiveNotificationStoreTests.swift` (6,
+  round-trip / dedup changed-flag / dismissal survives re-run / ordering +
+  dismissed filter / bulk count / prune).
+
+**Phase 4 follow-on (not started):** run the analyzer + `upsertAll` from a
+nightly `BGTaskScheduler` task, fire local notifications for new-or-changed
+rows, and surface the feed in the Dashboard inbox. Those last two need
+G4 (AppCore wiring) + app-target work. Receipt OCR (VisionKit), voice
+(Speech), and App Intents remain unstarted — all need app-target wiring.
 
 ### Package.swift
 
