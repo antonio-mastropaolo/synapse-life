@@ -82,6 +82,14 @@ private struct RootTabView: View {
         TabView(selection: $selection) {
             DashboardTab(
                 viewModel: core.dashboard,
+                onProactiveTap: { _ in
+                    // Cross-tab jump: every proactive signal points at an
+                    // underlying transaction (a due bill, a new recurring
+                    // charge, an anomalous debit), so the Transactions tab is
+                    // the surface that shows its context. Deep-routing to the
+                    // Recurrings sub-screen (buried under More) is deferred.
+                    selection = .transactions
+                },
                 onProactiveDismiss: { signal in
                     Task { await core.dismissSignal(id: signal.id) }
                 }
@@ -128,15 +136,18 @@ private struct RootTabView: View {
 /// wired — the row's primary affordance is selection, not navigation).
 private struct DashboardTab: View {
     @Bindable var viewModel: DashboardViewModel
-    /// Persisted dismiss for proactive-feed rows. Tap-to-jump is omitted on
-    /// iOS for now — routing to another tab's surface from the Dashboard tab
-    /// needs cross-tab selection plumbing that isn't in place yet.
+    /// Tap a proactive row to jump to the Transactions tab (the surface that
+    /// holds the underlying charge). Owned by the tab container so it can flip
+    /// the `TabView` selection.
+    var onProactiveTap: ((ProactiveSignal) -> Void)?
+    /// Persisted dismiss for proactive-feed rows.
     var onProactiveDismiss: ((ProactiveSignal) -> Void)?
 
     var body: some View {
         NavigationStack {
             DashboardView(
                 viewModel: viewModel,
+                openProactiveSignal: onProactiveTap,
                 dismissProactiveSignal: onProactiveDismiss
             )
             .navigationTitle("Dashboard")
