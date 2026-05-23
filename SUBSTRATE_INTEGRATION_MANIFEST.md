@@ -361,15 +361,28 @@ gained the two members the iOS shell needed (`financeAPI` handle + a
 Verified: `SynnapseiOS` builds for the simulator. Both shells are now thin
 scenes over the single `AppCore` seam.
 
+**`.modelContainer` injection — DONE.** Both shells inject
+`.modelContainer(core.modelContainer)` so a future widget / share-extension and
+any `@Query`-driven descendant read the same store the persistence actors write.
+
+**Dashboard inbox reads the proactive feed — DONE.** `AppCore.refreshProactiveFeed`
+runs `ProactiveAnalyzer` against the finance snapshot, upserts the signals into
+the durable `ProactiveNotificationStore`, and loads `notifications.recent()`
+into `DashboardViewModel.proactiveSignals`. The new `DashboardProactiveStrip`
+renders an urgency-first strip above the review queue on both platforms (guarded
+by non-empty, so snapshot fixtures render unchanged). Verified live on macOS
+(new-recurring signals with predicted dates).
+
 **Still open (app-target work):**
-- **`.modelContainer(...)` injection** into the SwiftUI environment (so a future
-  widget / share-extension reads the same store) — `AppCore` holds the
-  container but the scenes don't yet inject it.
-- **Dashboard inbox reads `notifications.recent()`** — not yet wired to the
-  proactive feed.
 - **Nightly `BGTaskScheduler`** task running `ProactiveAnalyzer.analyze` →
   `notifications.upsertAll` + `recurringStore.upsertAll(...)` + local
-  notifications (+ `Info.plist` task IDs).
+  notifications (+ `Info.plist` task IDs). The foreground path
+  (`refreshProactiveFeed` / `persistRecurrings`) already does the store writes;
+  the background task is the same calls on a schedule plus the local-notification
+  fire.
+- **Proactive strip interactivity** — tap-to-jump (route the signal's
+  `subjectId` to its surface) and swipe-to-dismiss (`notifications.setDismissed`).
+  Render-only today.
 
 ### G5 — Phase 2 LinkKit SDK + server routes not added
 
