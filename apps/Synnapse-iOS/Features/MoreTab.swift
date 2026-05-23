@@ -3,6 +3,7 @@ import Features
 import Models
 import DesignSystem
 import Auth
+import AppLifecycle
 
 /// The "More" tab — the drill-down hub that holds everything that
 /// didn't earn a primary slot on the Copilot-inspired bottom rail.
@@ -22,7 +23,7 @@ import Auth
 @MainActor
 struct MoreTab: View {
 
-    let appModel: AppModel
+    let core: AppCore
 
     @Environment(\.theme) private var theme
     @Environment(\.colorScheme) private var scheme
@@ -35,7 +36,7 @@ struct MoreTab: View {
                 }
                 Section("Life") {
                     NavigationLink {
-                        LifeTerminalView(viewModel: appModel.life)
+                        LifeTerminalView(viewModel: core.life)
                             .navigationBarHidden(true)
                             .ignoresSafeArea(.container, edges: .top)
                             .identity(.terminalAmber)
@@ -44,7 +45,7 @@ struct MoreTab: View {
                                 subtitle: "Amber-phosphor daily log")
                     }
                     NavigationLink {
-                        AdvisorsView(viewModel: appModel.advisors)
+                        AdvisorsView(viewModel: core.advisors)
                             .navigationTitle("Advisors")
                             .navigationBarTitleDisplayMode(.large)
                             .identity(.cockpitInstrument)
@@ -56,8 +57,8 @@ struct MoreTab: View {
                 Section("System") {
                     NavigationLink {
                         SettingsForm(
-                            settings: appModel.settings,
-                            auth: appModel.auth
+                            settings: core.settings,
+                            auth: core.auth
                         )
                         .identity(.editorial)
                     } label: {
@@ -73,19 +74,19 @@ struct MoreTab: View {
     @ViewBuilder
     private var moneyRows: some View {
         NavigationLink {
-            FinancePersonalView(viewModel: appModel.financePersonal)
+            FinancePersonalView(viewModel: core.financePersonal)
                 .identity(.cockpitInstrument)
         } label: {
             moreRow(symbol: "house.fill", title: "Personal",
                     subtitle: "Net worth and KPIs")
         }
         NavigationLink {
-            FinanceAccountsView(viewModel: appModel.financeAccounts)
+            FinanceAccountsView(viewModel: core.financeAccounts)
                 .identity(.cockpitInstrument)
                 .navigationDestination(for: FinanceAccount.self) { account in
                     AccountDetailView(
                         account: account,
-                        financeAPI: appModel.financeAPI
+                        financeAPI: core.financeAPI
                     )
                 }
         } label: {
@@ -103,7 +104,7 @@ struct MoreTab: View {
                     subtitle: "Savings targets")
         }
         NavigationLink {
-            SubscriptionsView(viewModel: appModel.subscriptions)
+            SubscriptionsView(viewModel: core.subscriptions)
                 .navigationTitle("Subscriptions")
                 .navigationBarTitleDisplayMode(.large)
                 .identity(.cockpitInstrument)
@@ -112,7 +113,7 @@ struct MoreTab: View {
                     subtitle: "All your recurring charges")
         }
         NavigationLink {
-            RecurringsView(viewModel: appModel.recurrings)
+            RecurringsView(viewModel: core.recurrings)
                 .navigationTitle("Recurrings")
                 .navigationBarTitleDisplayMode(.large)
                 .identity(.cockpitInstrument)

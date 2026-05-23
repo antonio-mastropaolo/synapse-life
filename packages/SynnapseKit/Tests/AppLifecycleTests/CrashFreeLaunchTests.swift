@@ -29,7 +29,9 @@ struct CrashFreeLaunchTests {
         _ = core.financeAccounts
         _ = core.financeTransactions
         _ = core.financeInvestments
+        _ = core.financeAPI
         _ = core.lifeAPI
+        _ = core.life
         _ = core.advisors
         _ = core.settings
         // Substrate wiring (Phase 1 persistence + Phase 3 intelligence) must

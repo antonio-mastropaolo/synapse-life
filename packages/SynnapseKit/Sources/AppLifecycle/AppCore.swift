@@ -30,7 +30,14 @@ public final class AppCore {
     public let financeAccounts: FinanceAccountsViewModel
     public let financeTransactions: FinanceTransactionsViewModel
     public let financeInvestments: FinanceInvestmentsViewModel
+    /// Shared `FinanceAPI` handle so per-account drill-down screens (the iOS
+    /// shell) can spin up their own scoped `FinanceTransactionsViewModel`
+    /// without re-deriving which API (live vs mock) the app booted against.
+    public let financeAPI: FinanceAPI
     public let lifeAPI: LifeAPI
+    /// LIFE terminal VM (consumed by the iOS More tab). The macOS shell reads
+    /// `lifeAPI` directly; both wrap the same wire.
+    public let life: LifeViewModel
     public let advisors: AdvisorsListViewModel
     public let settings: SettingsViewModel
 
@@ -170,12 +177,14 @@ public final class AppCore {
         }
         self.usesDemoData = useDemoData
 
+        self.financeAPI = financeAPI
         self.financePersonal = FinancePersonalViewModel(api: financeAPI)
         self.financeAccounts = FinanceAccountsViewModel(api: financeAPI)
         self.financeTransactions = FinanceTransactionsViewModel(api: financeAPI, accountId: nil)
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
 
         self.lifeAPI = lifeAPIWire
+        self.life = LifeViewModel(api: lifeAPIWire)
 
         self.advisors = AdvisorsListViewModel(api: advisorsAPIWire)
 
@@ -301,6 +310,7 @@ public final class AppCore {
         await financeAccounts.refresh()
         await financeTransactions.refresh()
         await financeInvestments.refresh()
+        await life.refresh()
         await advisors.refresh()
 
         // Project the dashboard's transactions through Categories so the
