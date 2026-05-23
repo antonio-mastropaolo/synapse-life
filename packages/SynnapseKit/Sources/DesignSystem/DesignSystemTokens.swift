@@ -5,8 +5,8 @@ import SwiftUI
 ///
 /// `CopilotTokens` already owns the color tokens for the macOS shell
 /// chrome. This file adds the *non-color* primitives — spacing,
-/// corner-radius, motion, elevation — so the call sites stop reaching
-/// for magic numbers (`.padding(14)`, `.cornerRadius(8)`,
+/// corner-radius, motion, elevation, material — so the call sites stop
+/// reaching for magic numbers (`.padding(14)`, `.cornerRadius(8)`,
 /// `.animation(.easeOut(duration: 0.18), …)`) and instead resolve
 /// values through a named token (`DS.Spacing.md`, `DS.Radius.card`).
 ///
@@ -31,17 +31,22 @@ public enum DS {
     }
 
     // MARK: - Corner radius
+    //
+    // Tuned toward the current Apple-system card language: chips and
+    // controls keep a soft pill feel, cards round generously so they
+    // read as floating panes rather than sharp web panels, and hero
+    // surfaces sit in continuous-corner territory.
 
     public enum Radius {
         /// Pills, small chips. Should look "round" at any reasonable
         /// pill height.
-        public static let chip:    CGFloat = 4
+        public static let chip:    CGFloat = 6
         /// Buttons, small inputs, status pills.
-        public static let control: CGFloat = 6
+        public static let control: CGFloat = 9
         /// Default content cards / tiles.
-        public static let card:    CGFloat = 10
+        public static let card:    CGFloat = 16
         /// Big-canvas surfaces (modals, hero blocks).
-        public static let hero:    CGFloat = 14
+        public static let hero:    CGFloat = 22
     }
 
     // MARK: - Stroke
@@ -72,12 +77,31 @@ public enum DS {
         public static let spring   = Animation.spring(response: 0.42, dampingFraction: 0.82)
     }
 
+    // MARK: - Material
+    //
+    // System materials are the load-bearing surface treatment in the
+    // current Apple aesthetic. Naming them here lets cards and chrome
+    // ask for the right vibrancy level without each call site guessing.
+    // The `Material` values resolve to live blur + vibrancy on device;
+    // they degrade gracefully under Reduce Transparency.
+
+    public enum Surface {
+        /// Floating cards, tiles, popover bodies. The default card fill.
+        public static let card: Material = .regularMaterial
+        /// Lightweight chrome that should let the canvas read through —
+        /// toolbars, inline chips, secondary panels.
+        public static let chrome: Material = .ultraThinMaterial
+        /// Heavier overlays that need to fully separate from content —
+        /// modal scrims backing, sidebars over content.
+        public static let raised: Material = .thickMaterial
+    }
+
     // MARK: - Elevation
     //
-    // Subtle shadow tokens that approximate depth without going
-    // material-cardy. macOS dark mode handles depth through
-    // luminance shifts more than shadows, so these are deliberately
-    // light.
+    // Soft, diffuse shadow tokens. The current system look favours a
+    // wide, low-opacity fall-off over a tight dark drop — depth that
+    // reads as ambient light rather than a hard cast. macOS dark mode
+    // still leans on luminance shifts, so these stay restrained.
 
     public struct Shadow: Sendable {
         public let color: Color
@@ -95,12 +119,12 @@ public enum DS {
 
     public enum Elevation {
         public static let none = Shadow(color: .clear, radius: 0)
-        /// Card resting state — a faint shadow that registers as "lifted".
-        public static let card = Shadow(color: Color.black.opacity(0.20), radius: 6, y: 2)
-        /// Active / hovered card. Stronger fall-off.
-        public static let cardHover = Shadow(color: Color.black.opacity(0.35), radius: 12, y: 4)
+        /// Card resting state — a wide, soft ambient shadow.
+        public static let card = Shadow(color: Color.black.opacity(0.14), radius: 14, y: 6)
+        /// Active / hovered card. Lifts further with a slightly deeper cast.
+        public static let cardHover = Shadow(color: Color.black.opacity(0.22), radius: 24, y: 12)
         /// Overlays — toasts, popovers, modal cards.
-        public static let overlay = Shadow(color: Color.black.opacity(0.45), radius: 20, y: 6)
+        public static let overlay = Shadow(color: Color.black.opacity(0.30), radius: 40, y: 18)
     }
 }
 
@@ -111,6 +135,28 @@ public extension View {
     @ViewBuilder
     func elevation(_ shadow: DS.Shadow) -> some View {
         self.shadow(color: shadow.color, radius: shadow.radius, x: shadow.x, y: shadow.y)
+    }
+
+    /// Wrap content in a system-material card: rounded continuous corner,
+    /// the requested material fill, a hairline vibrant border, and the
+    /// resting ambient elevation. Pairs with `hoverLift` on macOS for the
+    /// interactive lift. Views opt in through their existing surface seam.
+    func glassCard(
+        radius: CGFloat = DS.Radius.card,
+        material: Material = DS.Surface.card,
+        padding: CGFloat = DS.Spacing.md
+    ) -> some View {
+        let shape = RoundedRectangle(cornerRadius: radius, style: .continuous)
+        return self
+            .padding(padding)
+            .background(material, in: shape)
+            .overlay(
+                shape.strokeBorder(
+                    Color.primary.opacity(0.06),
+                    lineWidth: DS.Stroke.hairline
+                )
+            )
+            .elevation(DS.Elevation.card)
     }
 }
 
