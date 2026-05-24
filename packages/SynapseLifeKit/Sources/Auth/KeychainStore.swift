@@ -17,6 +17,12 @@ public enum KeychainError: Error, Equatable, Sendable {
 /// passcode may need to relax the accessibility class; the `accessibility:`
 /// init parameter is provided for that path. Production callers leave it
 /// at the default.
+///
+/// Access group: when `accessGroup` is non-nil the store passes
+/// `kSecAttrAccessGroup` so all four Synapse binaries (life/work × iOS/mac)
+/// signed with the matching `keychain-access-groups` entitlement read and
+/// write the same items. `nil` keeps the legacy single-app behavior so
+/// unsigned `swift test` runs that lack the entitlement still pass.
 public struct KeychainStore: Sendable {
 
     public let service: String
@@ -26,6 +32,17 @@ public struct KeychainStore: Sendable {
     /// relaxed class without mutating global state; production callers should
     /// leave it at the default.
     public let accessibility: String
+
+    /// Shared keychain group for the four Synapse binaries. Matches the
+    /// `keychain-access-groups` entitlement listed in the four
+    /// `*.entitlements` files (owned by another agent — we do not touch
+    /// them, only reference the group by name here).
+    public static let sharedAccessGroup: String = "tech.synapse.shared"
+
+    /// Access group passed via `kSecAttrAccessGroup`. `nil` ⇒ the request
+    /// is omitted so unsigned test hosts (which lack the entitlement) do
+    /// not get rejected with `errSecMissingEntitlement`.
+    public let accessGroup: String?
 
     /// Default accessibility class for production callers. Strictly stronger
     /// than the previous default — items written under this class are
@@ -42,10 +59,12 @@ public struct KeychainStore: Sendable {
 
     public init(
         service: String,
-        accessibility: String = KeychainStore.defaultAccessibility
+        accessibility: String = KeychainStore.defaultAccessibility,
+        accessGroup: String? = nil
     ) {
         self.service = service
         self.accessibility = accessibility
+        self.accessGroup = accessGroup
     }
 
     /// Opting into the data-protection keychain (`kSecUseDataProtectionKeychain`)
@@ -56,11 +75,15 @@ public struct KeychainStore: Sendable {
     /// keychain here; the shipping app target sets this opt-in at build time
     /// once entitlements are present.
     private func baseQuery(account: String) -> [String: Any] {
-        [
+        var q: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
             kSecAttrAccount as String: account
         ]
+        if let group = accessGroup {
+            q[kSecAttrAccessGroup as String] = group
+        }
+        return q
     }
 
     public func set(_ value: String, account: String) throws {

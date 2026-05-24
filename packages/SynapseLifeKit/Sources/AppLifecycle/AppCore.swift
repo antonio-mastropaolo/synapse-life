@@ -141,7 +141,14 @@ public final class AppCore {
             session: .shared,
             serverContractLive: false
         )
-        self.auth = AuthViewModel(api: sessionAPI, store: store)
+        // Canonical synapse-v2 Sign-in-with-Apple endpoint. When non-nil
+        // the AuthViewModel routes sign-in through POST /api/auth/apple
+        // and falls back to the legacy SessionAPI only if absent.
+        let appleAuthAPI: AppleAuthAPI? = useDemoData ? nil : LiveAppleAuthAPI(
+            baseURL: baseURL,
+            urlSession: .shared
+        )
+        self.auth = AuthViewModel(api: sessionAPI, store: store, appleAuth: appleAuthAPI)
         // Demo wiring leaves the gate at `.unavailable` so the cockpit
         // boots straight into the seeded fixtures; production wiring
         // starts `.locked` and the shell calls `authenticate()` from
