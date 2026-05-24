@@ -35,9 +35,10 @@ public final class AppCore {
     /// without re-deriving which API (live vs mock) the app booted against.
     public let financeAPI: FinanceAPI
     public let lifeAPI: LifeAPI
-    /// LIFE terminal VM (consumed by the iOS More tab). The macOS shell reads
-    /// `lifeAPI` directly; both wrap the same wire.
-    public let life: LifeViewModel
+    /// Activity surface. Composes a unified, glass-language feed from
+    /// transactions, recurrings, proactive signals, and server-side digest
+    /// entries. Replaces the legacy LIFE terminal surface.
+    public let activity: ActivityViewModel
     public let advisors: AdvisorsListViewModel
     public let settings: SettingsViewModel
 
@@ -189,7 +190,6 @@ public final class AppCore {
         self.financeInvestments = FinanceInvestmentsViewModel(api: financeAPI)
 
         self.lifeAPI = lifeAPIWire
-        self.life = LifeViewModel(api: lifeAPIWire)
 
         self.advisors = AdvisorsListViewModel(api: advisorsAPIWire)
 
@@ -261,6 +261,22 @@ public final class AppCore {
             }
         )
 
+        let financeTxnsVM = self.financeTransactions
+        let recurringsVM = self.recurrings
+        let dashboardVM = self.dashboard
+        self.activity = ActivityViewModel(
+            source: LiveActivitySource(
+                lifeAPI: lifeAPIWire,
+                transactions: { await MainActor.run { financeTxnsVM.rows } },
+                recurrings: {
+                    await MainActor.run {
+                        recurringsVM.recurrings.map { $0.asRecurring() }
+                    }
+                },
+                signals: { await MainActor.run { dashboardVM.proactiveSignals } }
+            )
+        )
+
         self.lifecycle = AppLifecycleService()
     }
 
@@ -315,7 +331,7 @@ public final class AppCore {
         await financeAccounts.refresh()
         await financeTransactions.refresh()
         await financeInvestments.refresh()
-        await life.refresh()
+        await activity.load()
         await advisors.refresh()
 
         // Project the dashboard's transactions through Categories so the

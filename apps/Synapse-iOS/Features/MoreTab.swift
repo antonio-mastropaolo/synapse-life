@@ -32,15 +32,15 @@ struct MoreTab: View {
                 Section("Money") {
                     moneyRows
                 }
-                Section("Life") {
+                Section("Activity") {
                     NavigationLink {
-                        LifeTerminalView(viewModel: core.life)
-                            .navigationBarHidden(true)
-                            .ignoresSafeArea(.container, edges: .top)
-                            .identity(.terminalAmber)
+                        ActivityView(viewModel: core.activity)
+                            .navigationTitle("Activity")
+                            .navigationBarTitleDisplayMode(.large)
+                            .identity(.cockpitInstrument)
                     } label: {
-                        moreRow(symbol: "terminal", title: "Life",
-                                subtitle: "Amber-phosphor daily log")
+                        moreRow(symbol: "clock.arrow.circlepath", title: "Activity",
+                                subtitle: "Transactions, bills, anomalies, digests")
                     }
                     NavigationLink {
                         AdvisorsView(viewModel: core.advisors)

@@ -34,7 +34,7 @@ struct SynapseMacApp: App {
                     accounts: core.financeAccounts,
                     transactions: core.financeTransactions,
                     investments: core.financeInvestments,
-                    lifeAPI: core.lifeAPI,
+                    activity: core.activity,
                     advisors: core.advisors,
                     dashboard: core.dashboard,
                     categories: core.categories,
@@ -103,7 +103,7 @@ struct SynapseMacApp: App {
                     .keyboardShortcut("3", modifiers: [.command])
                 Button("Investments") { routing.select(.investments) }
                     .keyboardShortcut("4", modifiers: [.command])
-                Button("Life") { routing.select(.life) }
+                Button("Activity") { routing.select(.activity) }
                     .keyboardShortcut("5", modifiers: [.command])
                 Button("Advisors") { routing.select(.advisors) }
                     .keyboardShortcut("7", modifiers: [.command])

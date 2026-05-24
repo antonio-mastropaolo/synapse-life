@@ -18,7 +18,7 @@ public struct CommandSuggestion: Sendable, Hashable, Identifiable {
         case accounts
         case transactions
         case investments
-        case life
+        case activity
         case advisors
         case settings
 
@@ -28,7 +28,7 @@ public struct CommandSuggestion: Sendable, Hashable, Identifiable {
             case .accounts:     return "Accounts"
             case .transactions: return "Transactions"
             case .investments:  return "Investments"
-            case .life:         return "Life"
+            case .activity:     return "Activity"
             case .advisors:     return "Advisors"
             case .settings:     return "Settings"
             }

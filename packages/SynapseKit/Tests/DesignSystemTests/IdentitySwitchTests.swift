@@ -9,7 +9,6 @@ struct IdentitySwitchTests {
     @Test("Theme.make returns the requested identity")
     func makeReturnsRequestedIdentity() {
         #expect(Theme.make(.default).identity == .default)
-        #expect(Theme.make(.terminalAmber).identity == .terminalAmber)
         #expect(Theme.make(.cockpitInstrument).identity == .cockpitInstrument)
         #expect(Theme.make(.editorial).identity == .editorial)
     }
@@ -29,8 +28,8 @@ struct IdentitySwitchTests {
         // exists for back-compat — see [[backCompatDefaultEnumStable]].
         var env = EnvironmentValues()
         #expect(env.theme.identity == .cockpitInstrument)
-        env.theme = .make(.terminalAmber)
-        #expect(env.theme.identity == .terminalAmber)
+        env.theme = .make(.editorial)
+        #expect(env.theme.identity == .editorial)
     }
 
     @Test("Scheme selector returns the matching token set")

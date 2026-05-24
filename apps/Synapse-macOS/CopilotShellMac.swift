@@ -38,7 +38,7 @@ struct CopilotShellMac: View {
     let accounts: FinanceAccountsViewModel
     let transactions: FinanceTransactionsViewModel
     let investments: FinanceInvestmentsViewModel
-    let lifeAPI: LifeAPI
+    let activity: ActivityViewModel
     let advisors: AdvisorsListViewModel
     // New (2026-05-17 Copilot integration) — dashboard inbox + AI++
     // surfaces. These are owned by `AppCore` so the sidebar can route
@@ -99,7 +99,7 @@ struct CopilotShellMac: View {
                 accounts: accounts,
                 transactions: transactions,
                 investments: investments,
-                lifeAPI: lifeAPI,
+                activity: activity,
                 advisors: advisors,
                 dashboard: dashboard,
                 categories: categories,
@@ -275,7 +275,7 @@ private struct CopilotSidebar: View {
             .init(destination: .categories,   label: "Categories",   icon: "square.grid.3x3"),
             .init(destination: .recurrings,   label: "Recurrings",   icon: "arrow.triangle.2.circlepath"),
             .init(destination: .memberships, label: "Memberships", icon: "square.stack.3d.up.fill"),
-            .init(destination: .life,         label: "Life",         icon: "terminal"),
+            .init(destination: .activity,     label: "Activity",     icon: "clock.arrow.circlepath"),
             .init(destination: .advisors,     label: "Advisors",     icon: "person.bubble")
         ])
         return rows
@@ -716,7 +716,7 @@ private struct CopilotDetailPane: View {
     let accounts: FinanceAccountsViewModel
     let transactions: FinanceTransactionsViewModel
     let investments: FinanceInvestmentsViewModel
-    let lifeAPI: LifeAPI
+    let activity: ActivityViewModel
     let advisors: AdvisorsListViewModel
     let dashboard: DashboardViewModel
     let categories: CategoriesViewModel
@@ -772,10 +772,22 @@ private struct CopilotDetailPane: View {
                     .identity(.cockpitInstrument)
                     .id("finance.personal")
 
-            case .life:
-                LifeTerminalScene(api: lifeAPI)
-                    .identity(.terminalAmber)
-                    .id("life")
+            case .activity:
+                ActivityView(
+                    viewModel: activity,
+                    onOpenRoute: { route in
+                        switch route {
+                        case .openTransaction:
+                            routing.select(.transactions)
+                        case .openRecurring:
+                            routing.select(.recurrings)
+                        case .openSignal, .openInbox:
+                            routing.select(.dashboard)
+                        }
+                    }
+                )
+                .identity(.cockpitInstrument)
+                .id("activity")
 
             case .advisors:
                 AdvisorsView(viewModel: advisors)

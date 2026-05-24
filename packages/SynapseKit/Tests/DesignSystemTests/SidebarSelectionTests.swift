@@ -44,7 +44,7 @@ struct SidebarSelectionTests {
             .categories,
             .recurrings,
             .memberships,
-            .life,
+            .activity,
             .advisors,
             // INTELLIGENCE section (AI++ wedge, 2026-05-17)
             .digest,
@@ -100,7 +100,7 @@ struct SidebarSelectionTests {
             .categories,
             .recurrings,
             .memberships,
-            .life,
+            .activity,
             .advisors,
             .digest,
             .forecast,

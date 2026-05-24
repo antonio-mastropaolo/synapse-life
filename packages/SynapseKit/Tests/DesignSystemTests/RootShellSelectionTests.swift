@@ -35,11 +35,11 @@ struct RootShellSelectionTests {
         #expect(vm.selection == .finance(.personal))
     }
 
-    @Test("Selecting LIFE switches the destination")
-    func selectingLifeSwitchesDestination() {
+    @Test("Selecting ACTIVITY switches the destination")
+    func selectingActivitySwitchesDestination() {
         let vm = RootShellViewModel()
-        vm.select(.life)
-        #expect(vm.selection == .life)
+        vm.select(.activity)
+        #expect(vm.selection == .activity)
     }
 
     @Test("Selecting ADVISORS switches the destination")
@@ -71,17 +71,17 @@ struct RootShellSelectionTests {
         }
     }
 
-    @Test("LIFE/ADVISORS only activate for themselves")
-    func lifeAdvisorsOnlyActivateForThemselves() {
+    @Test("ACTIVITY/ADVISORS only activate for themselves")
+    func activityAdvisorsOnlyActivateForThemselves() {
         let vm = RootShellViewModel()
-        vm.select(.life)
-        #expect(vm.isActive(.life))
+        vm.select(.activity)
+        #expect(vm.isActive(.activity))
         #expect(!vm.isActive(.advisors))
         #expect(!vm.isActive(.finance(.personal)))
 
         vm.select(.advisors)
         #expect(vm.isActive(.advisors))
-        #expect(!vm.isActive(.life))
+        #expect(!vm.isActive(.activity))
         #expect(!vm.isActive(.finance(.personal)))
     }
 

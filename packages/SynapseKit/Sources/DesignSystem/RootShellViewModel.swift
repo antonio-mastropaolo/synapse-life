@@ -29,7 +29,7 @@ public enum RootDestination: Sendable, Equatable, Hashable {
     case memberships
 
     // MARK: - Surviving Synapse-only rows
-    case life
+    case activity
     case advisors
 
     // MARK: - INTELLIGENCE section (AI++ wedge, 2026-05-17)
@@ -94,7 +94,7 @@ extension RootDestination {
         .categories,
         .recurrings,
         .memberships,
-        .life,
+        .activity,
         .advisors,
         .digest,
         .forecast,

@@ -21,26 +21,6 @@ public struct ColorToken: Sendable, Equatable {
     }
 }
 
-/// LIFE-identity-only tokens.
-///
-/// The Amber-Phosphor Terminal renders in a strict 3-color palette —
-/// `phosphorBright` (peak amber), `phosphorDim` (dimmed amber for stale
-/// values and scanline), and `terminalInk` (near-black background). These
-/// tokens are wrapped in their own struct so other identities cannot
-/// accidentally read or paint with them; a test asserts that
-/// `TokenSet.life == nil` on every non-LIFE identity.
-public struct LifeIdentityTokens: Sendable, Equatable {
-    public let phosphorBright: ColorToken
-    public let phosphorDim: ColorToken
-    public let terminalInk: ColorToken
-
-    public init(phosphorBright: ColorToken, phosphorDim: ColorToken, terminalInk: ColorToken) {
-        self.phosphorBright = phosphorBright
-        self.phosphorDim = phosphorDim
-        self.terminalInk = terminalInk
-    }
-}
-
 public struct TokenSet: Sendable, Equatable {
     public let background: ColorToken
     public let surface: ColorToken
@@ -58,13 +38,6 @@ public struct TokenSet: Sendable, Equatable {
     public let lossAccent: ColorToken
     public let ledgerStripe: ColorToken
 
-    // MARK: - LIFE-specific tokens (M6)
-    //
-    // Only the `.terminalAmber` identity exposes these; on every other
-    // identity, `life == nil`. The terminal shader reads exactly these
-    // three colors and nothing else. Locked by `LifeIdentityIsolationTests`.
-    public let life: LifeIdentityTokens?
-
     public init(
         background: ColorToken,
         surface: ColorToken,
@@ -73,22 +46,16 @@ public struct TokenSet: Sendable, Equatable {
         accent: ColorToken,
         gainAccent: ColorToken? = nil,
         lossAccent: ColorToken? = nil,
-        ledgerStripe: ColorToken? = nil,
-        life: LifeIdentityTokens? = nil
+        ledgerStripe: ColorToken? = nil
     ) {
         self.background = background
         self.surface = surface
         self.foregroundPrimary = foregroundPrimary
         self.foregroundSecondary = foregroundSecondary
         self.accent = accent
-        // Default gain/loss derive from Apple's system green/red so any
-        // identity that does not override them still reads as money. The
-        // green clears the 3.0:1 non-text floor on both the light paper
-        // background and the dark graphite background.
         self.gainAccent = gainAccent ?? ColorToken(0.20, 0.56, 0.36)
         self.lossAccent = lossAccent ?? ColorToken(0.85, 0.27, 0.27)
         self.ledgerStripe = ledgerStripe ?? ColorToken(surface.red, surface.green, surface.blue, opacity: 0.55)
-        self.life = life
     }
 }
 
@@ -117,41 +84,6 @@ public enum Tokens {
         foregroundSecondary: ColorToken(0.66, 0.67, 0.71),
         accent:             ColorToken(0.39, 0.65, 1.00)
     )
-
-    // MARK: - Terminal Amber (LIFE identity)
-    //
-    // Strict three colors per the synapse-v2 LIFE redesign (commit 58987c2).
-    //   peak amber  → phosphorBright + foregroundPrimary + accent
-    //   dim amber   → phosphorDim + foregroundSecondary
-    //   ink         → terminalInk + background + surface
-    //
-    // Anything outside this trio would violate the visual contract. Light
-    // and dark resolve to the same set on purpose — terminal mode is the
-    // identity, not a theme variant. The amber identity is a deliberate
-    // product choice for the Life surface and stays distinct; the values
-    // here are refreshed toward a warmer, cleaner phosphor while holding
-    // the three-color contract and WCAG.
-
-    private static let phosBright = ColorToken(1.00, 0.553, 0.114)
-    // Dim phosphor must clear 4.5:1 normal-text against the ink ground.
-    // ~#C76A12 keeps the "stale value" read while staying above the bar.
-    private static let phosDim    = ColorToken(0.780, 0.416, 0.071)
-    private static let phosInk    = ColorToken(0.027, 0.022, 0.016)
-
-    public static let terminalAmberLight = TokenSet(
-        background:         phosInk,
-        surface:            phosInk,
-        foregroundPrimary:  phosBright,
-        foregroundSecondary: phosDim,
-        accent:             phosBright,
-        life: LifeIdentityTokens(
-            phosphorBright: phosBright,
-            phosphorDim:    phosDim,
-            terminalInk:    phosInk
-        )
-    )
-
-    public static let terminalAmberDark = terminalAmberLight
 
     // MARK: - Cockpit Instrument
     //

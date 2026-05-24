@@ -27,12 +27,12 @@ struct DeepLinkRoutingTests {
         #expect(DeepLink.parse(url: url) == nil)
     }
 
-    // Life --------------------------------------------------------------
+    // Activity ----------------------------------------------------------
 
-    @Test("synapse://life parses to .life")
-    func life() throws {
-        let url = try #require(URL(string: "synapse://life"))
-        #expect(DeepLink.parse(url: url) == .life)
+    @Test("synapse://activity parses to .activity")
+    func activity() throws {
+        let url = try #require(URL(string: "synapse://activity"))
+        #expect(DeepLink.parse(url: url) == .activity)
     }
 
     // Advisors / Settings ----------------------------------------------
@@ -59,7 +59,7 @@ struct DeepLinkRoutingTests {
             .finance(.accounts),
             .finance(.transactions),
             .finance(.investments),
-            .life,
+            .activity,
             .advisors(id: nil),
             .advisors(id: "aria"),
             .settings

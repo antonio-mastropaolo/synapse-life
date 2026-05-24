@@ -5,7 +5,6 @@ import Foundation
 ///
 /// The shell is the frame an unidentified subtree inherits. Inside, each
 /// surviving surface still applies its own identity:
-///   - LIFE applies `.identity(.terminalAmber)`
 ///   - Advisors / Settings apply `.identity(.editorial)`
 ///   - Finance keeps `.identity(.cockpitInstrument)` — the inner identity
 ///     happens to match the shell, which is intentional. Finance is what

@@ -2,7 +2,6 @@ import SwiftUI
 
 public enum Identity: String, Sendable, CaseIterable, Equatable {
     case `default`
-    case terminalAmber
     case cockpitInstrument
     case editorial
 }
@@ -31,10 +30,6 @@ public struct Theme: Sendable, Equatable {
             return Theme(identity: .default,
                          light: Tokens.defaultLight,
                          dark:  Tokens.defaultDark)
-        case .terminalAmber:
-            return Theme(identity: .terminalAmber,
-                         light: Tokens.terminalAmberLight,
-                         dark:  Tokens.terminalAmberDark)
         case .cockpitInstrument:
             return Theme(identity: .cockpitInstrument,
                          light: Tokens.cockpitInstrumentLight,

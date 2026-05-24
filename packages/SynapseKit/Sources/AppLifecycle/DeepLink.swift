@@ -21,7 +21,7 @@ public enum DeepLink: Equatable, Hashable, Sendable {
     }
 
     case finance(FinanceSurface)
-    case life
+    case activity
     case advisors(id: String?)
     case settings
 
@@ -65,8 +65,8 @@ public enum DeepLink: Equatable, Hashable, Sendable {
             }
             return .finance(surface)
 
-        case "life":
-            return .life
+        case "activity":
+            return .activity
 
         case "advisors":
             return .advisors(id: firstSegment)
@@ -92,8 +92,8 @@ public enum DeepLink: Equatable, Hashable, Sendable {
             components.host = "finance"
             components.path = "/" + surface.rawValue
 
-        case .life:
-            components.host = "life"
+        case .activity:
+            components.host = "activity"
 
         case .advisors(let id):
             components.host = "advisors"

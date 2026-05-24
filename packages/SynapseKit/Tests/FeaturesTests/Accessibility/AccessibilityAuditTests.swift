@@ -63,20 +63,6 @@ struct AccessibilityAuditTests {
     }
 
     @Test
-    func terminalAmberContrastIsAA() {
-        // Integration pass applied the M9 phosphorDim diff
-        // (0.700, 0.329, 0.000) -> (0.770, 0.392, 0.000). The terminal
-        // identity uses the same trio on light and dark on purpose.
-        let result = AccessibilityAudit.auditContrast(
-            theme: .make(.terminalAmber), surface: "Terminal"
-        )
-        if !result.passed {
-            for finding in result.findings { Issue.record("contrast: \(finding.detail)") }
-        }
-        #expect(result.passed)
-    }
-
-    @Test
     func cockpitInstrumentContrastIsAA() {
         // The cockpit identity (Finance) explicitly tunes gain/loss accents
         // to be readable on dark backplates — the audit must pass clean.

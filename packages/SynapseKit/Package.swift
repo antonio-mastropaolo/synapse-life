@@ -62,19 +62,7 @@ let package = Package(
         .target(
             name: "Features",
             dependencies: ["Models", "Networking", "DesignSystem", "Auth", "SynapseCharts"],
-            path: "Sources/Features",
-            resources: [
-                // LIFE terminal Metal shader source. We deliberately use
-                // `.copy` (not `.process`) so SwiftPM does NOT try to compile
-                // the `.metal` file into a `default.metallib` at build time —
-                // that path requires Apple's Metal Toolchain component, which
-                // is not present on every dev/CI host. Instead the runtime
-                // (`LifeShader`) reads the source from the bundle and asks
-                // the live `MTLDevice` to compile it. The cost is paid once
-                // at init; the typed `LifeShader.Error.libraryMissing` /
-                // `pipelineFailed` paths surface any toolchain breakage.
-                .copy("Life/Shaders")
-            ]
+            path: "Sources/Features"
         ),
         .target(
             name: "Tools",
