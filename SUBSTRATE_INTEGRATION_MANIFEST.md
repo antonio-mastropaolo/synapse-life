@@ -44,22 +44,22 @@ host-environment baselines, unrelated to substrate.)
   prefix `tech.synapse.ios`.
 - `apps/Synapse-macOS/Synapse-macOS.entitlements` — App Group renamed
   to `group.tech.synapse` to match the iOS target.
-- `packages/SynapseKit/Sources/Auth/KeychainStore.swift` — default
+- `packages/SynapseLifeKit/Sources/Auth/KeychainStore.swift` — default
   accessibility class tightened to
   `kSecAttrAccessibleWhenPasscodeSetThisDeviceOnly`. New `accessibility:`
   init parameter so tests can opt into the relaxed class without
   mutating global state. The legacy static
   `KeychainStore.accessibilityClass` is kept as an alias of the new
   `defaultAccessibility` for backwards compat.
-- `packages/SynapseKit/Sources/Auth/BiometricGate.swift` — new.
+- `packages/SynapseLifeKit/Sources/Auth/BiometricGate.swift` — new.
   `@MainActor @Observable` Face-ID / device-passcode gate via
   `LocalAuthentication`. 60-second background-lock threshold (configurable).
   `noteBackgrounded()` / `noteForegrounded()` / `lock()` / `authenticate(reason:)`
   / `alwaysUnlocked()`.
-- `packages/SynapseKit/Sources/AppLifecycle/AppCore.swift` — adds
+- `packages/SynapseLifeKit/Sources/AppLifecycle/AppCore.swift` — adds
   `public let biometricGate: BiometricGate`. Demo wiring uses
   `BiometricGate.alwaysUnlocked()`; live wiring starts `.locked`.
-- `packages/SynapseKit/Tests/AuthTests/KeychainStoreTests.swift` —
+- `packages/SynapseLifeKit/Tests/AuthTests/KeychainStoreTests.swift` —
   updated to assert the new strong default, the alias, and the test
   helper that opts into the relaxed class.
 
@@ -351,14 +351,14 @@ durable end to end: `bootstrap()` hydrates the Recurrings VM from
 `recurringStore` (cold-start read via the new `Recurring.asDetected()` reverse
 bridge + `RecurringsViewModel.hydrate`), refreshes the detector, then writes
 the detections back through (`persistRecurrings()`) so `get_recurrings` reads
-real data. Verified: `SynapseMac` builds, launches, and the Recurrings surface
+real data. Verified: `SynapseLifeMac` builds, launches, and the Recurrings surface
 renders through `AppCore` (DETECTED 7, persisted).
 
 **iOS shell adoption — DONE.** `SynapseiOSApp` drops its `AppModel` and
 instantiates `AppCore`; `RootTabView` / `MoreTab` take `core: AppCore`. `AppCore`
 gained the two members the iOS shell needed (`financeAPI` handle + a
 `life: LifeViewModel`; the iOS `commandBar` was unused by any view and dropped).
-Verified: `SynapseiOS` builds for the simulator. Both shells are now thin
+Verified: `SynapseLifeiOS` builds for the simulator. Both shells are now thin
 scenes over the single `AppCore` seam.
 
 **`.modelContainer` injection — DONE.** Both shells inject
@@ -461,7 +461,7 @@ snapshot baselines, unrelated to substrate).
 ## Test invocation
 
 ```bash
-cd packages/SynapseKit
+cd packages/SynapseLifeKit
 swift build                                   # full graph, currently clean
 swift test                                    # all suites, 537 tests; 6 reds
                                               #   are pre-existing macOS snapshot

@@ -7,7 +7,7 @@ import Models
 import AppLifecycle
 
 @main
-struct SynapseiOSApp: App {
+struct SynapseLifeApp: App {
     /// Single construction seam shared with the macOS shell. Owns every VM and
     /// the persistence stores; the scenes below are just platform glue.
     @State private var core = AppCore(

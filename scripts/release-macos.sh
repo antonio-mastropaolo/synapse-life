@@ -24,17 +24,17 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 BUILD_DIR="${REPO_ROOT}/build"
-ARCHIVE_PATH="${BUILD_DIR}/SynapseMac.xcarchive"
+ARCHIVE_PATH="${BUILD_DIR}/SynapseLifeMac.xcarchive"
 EXPORT_PATH="${BUILD_DIR}/macOS-export"
 EXPORT_OPTIONS="${REPO_ROOT}/apps/Synapse-macOS/ExportOptions.plist"
 NOTARY_PROFILE="${NOTARY_PROFILE:-synapse-notarytool}"
 
 mkdir -p "$BUILD_DIR"
 
-echo "[1/4] xcodebuild archive — SynapseMac"
+echo "[1/4] xcodebuild archive — SynapseLifeMac"
 xcodebuild \
-    -project Synapse.xcodeproj \
-    -scheme SynapseMac \
+    -project SynapseLife.xcodeproj \
+    -scheme SynapseLifeMac \
     -configuration Release \
     -destination 'generic/platform=macOS' \
     -archivePath "$ARCHIVE_PATH" \
@@ -47,8 +47,8 @@ xcodebuild \
     -exportOptionsPlist "$EXPORT_OPTIONS" \
     -exportPath "$EXPORT_PATH"
 
-APP_PATH="${EXPORT_PATH}/SynapseMac.app"
-ZIP_PATH="${EXPORT_PATH}/SynapseMac.app.zip"
+APP_PATH="${EXPORT_PATH}/SynapseLifeMac.app"
+ZIP_PATH="${EXPORT_PATH}/SynapseLifeMac.app.zip"
 
 if [ ! -d "$APP_PATH" ]; then
     echo "expected exported app at $APP_PATH — exiting" >&2

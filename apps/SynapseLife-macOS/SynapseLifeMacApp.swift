@@ -9,7 +9,7 @@ import DesignSystem
 import AppLifecycle
 
 @main
-struct SynapseMacApp: App {
+struct SynapseLifeMacApp: App {
 
     /// Single construction seam shared with the iOS shell. Owns every VM and
     /// the persistence stores; the scene below is just platform glue.

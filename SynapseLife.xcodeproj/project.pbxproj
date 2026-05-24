@@ -1,0 +1,679 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		070D89241AB16EFA3D418955 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 34086C96FA2D7FEB1A7B8546 /* Auth */; };
+		091606C32DEA94A49EB46CBD /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = 5E039E000347A1D7953AA7AE /* Features */; };
+		0A1CAD8E35CB37B0EC87DBC7 /* ExportOptions.plist in Resources */ = {isa = PBXBuildFile; fileRef = 94D41BCE9A0D2F56C0626671 /* ExportOptions.plist */; };
+		1468CF18EC3AFA4E421586FE /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 7D0B5B628817602B39255583 /* DesignSystem */; };
+		14747B7B7A97AA57FE7BCFAA /* Features in Frameworks */ = {isa = PBXBuildFile; productRef = E4B822546ED040EAFDB6AE37 /* Features */; };
+		183C00F910D6E9E777171622 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 3F73C34675556CB15620BB99 /* PrivacyInfo.xcprivacy */; };
+		214213F341D3324D5876F127 /* PositionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E1E06245632D2B3E3529570 /* PositionDetailView.swift */; };
+		252D15AA033F9877EEBEF381 /* DesignSystem in Frameworks */ = {isa = PBXBuildFile; productRef = 0CDFE7655638FC140A8CDB02 /* DesignSystem */; };
+		27C7F6ADB8ECD3E8E9B0C539 /* FinanceShellView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E0EE08F9B8392A3BB2E38E3 /* FinanceShellView.swift */; };
+		2A12BBD4FE71406C81C8B3BE /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = 993F9B5A7D95B3B6071531A9 /* Models */; };
+		2C1A92059546C4AF8F5DE87F /* MoreTab.swift in Sources */ = {isa = PBXBuildFile; fileRef = 287F69851B43F8A9DE818CEF /* MoreTab.swift */; };
+		3401260488361F8E8C41AA0F /* ExportOptions.plist in Resources */ = {isa = PBXBuildFile; fileRef = 20B74AE8ED58D4C875FBFBF2 /* ExportOptions.plist */; };
+		36D024D0BD52B59279733FFA /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 65D73BC3DC6A049812897478 /* PrivacyInfo.xcprivacy */; };
+		3A68A0AF82A8FEF569DDEAFB /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = EA0117C59FFCFB0BC58BA166 /* AppLifecycle */; };
+		460B988F36313111527733E2 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 26068F90A23D2B95F43AA419 /* Networking */; };
+		46E50EFE358BE03461551869 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2136713D475AA0D66D129B4B /* Haptics.swift */; };
+		527B81A77B77D2DD5A8BE403 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 65453C63194AF98E3FEE970D /* Networking */; };
+		8D38839FB8B6034343ECD58B /* CopilotShellMac.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1ED05AEE403E8C93C9A3576 /* CopilotShellMac.swift */; };
+		8E5B9C41A77E656809075919 /* SynapseLifeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB42EE518C67D75FB5564F9 /* SynapseLifeApp.swift */; };
+		8FC94E62DCA6F43942021651 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEAF6B19ACF4D421AF1CAAF /* RootView.swift */; };
+		9B9E8C21F710718AB0AF9DE8 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEAF6B19ACF4D421AF1CAAF /* RootView.swift */; };
+		9FD2F89AC5DCD4C675F994F3 /* FinanceHubView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A82495BE4197064301DE4338 /* FinanceHubView.swift */; };
+		A219B6A2B23548F2DEB5B249 /* Auth in Frameworks */ = {isa = PBXBuildFile; productRef = 8FC464F15AA3E1A1ADC5EDF0 /* Auth */; };
+		AAFD019BBB9F101669D9CF02 /* SynapseLifeMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9EA78D0AF3967C87B9ED9259 /* SynapseLifeMacApp.swift */; };
+		BD292CA379ECEFB992024B09 /* AccountDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADC9C55DBBA8FEBC5503E82A /* AccountDetailView.swift */; };
+		BEEAAE812FB5DA31D542160F /* AppLifecycle in Frameworks */ = {isa = PBXBuildFile; productRef = 13081A9FFDF0845B2E01D23C /* AppLifecycle */; };
+		C7BA68DB998F23C8BAA7009B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 46F3B0405323967618E2E83A /* Assets.xcassets */; };
+		C86970D0337BD86EE341B318 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = EF74AD39550301CC0A385650 /* Persistence */; };
+		CBCA97C3E5A679DA4A819465 /* TransactionDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EE01092669AB935BCB64F235 /* TransactionDetailView.swift */; };
+		D98B480F7F66E79933DEDD7B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E84B8325C93D70919C431D62 /* Assets.xcassets */; };
+		ECDBF5C495DEEE8523115319 /* CopilotSidebarAccounts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3EA019F44DE17D447F3C84A6 /* CopilotSidebarAccounts.swift */; };
+		F1BAD93872B36DE1C589B147 /* Persistence in Frameworks */ = {isa = PBXBuildFile; productRef = B6D915EA13F15AF5FD779D63 /* Persistence */; };
+		F6430B5EBC44C9A64051643D /* Models in Frameworks */ = {isa = PBXBuildFile; productRef = FA8BF25391A320B45AF98C8C /* Models */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		0EEAF6B19ACF4D421AF1CAAF /* RootView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RootView.swift; sourceTree = "<group>"; };
+		19A54FA03EF19A67E9A18025 /* SynapseLifeiOS.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = SynapseLifeiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		20B74AE8ED58D4C875FBFBF2 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
+		2136713D475AA0D66D129B4B /* Haptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Haptics.swift; sourceTree = "<group>"; };
+		287F69851B43F8A9DE818CEF /* MoreTab.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MoreTab.swift; sourceTree = "<group>"; };
+		2EB42EE518C67D75FB5564F9 /* SynapseLifeApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynapseLifeApp.swift; sourceTree = "<group>"; };
+		37BD6AC014501C04AFE347E3 /* SynapseLife-macOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SynapseLife-macOS.entitlements"; sourceTree = "<group>"; };
+		3EA019F44DE17D447F3C84A6 /* CopilotSidebarAccounts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotSidebarAccounts.swift; sourceTree = "<group>"; };
+		3F73C34675556CB15620BB99 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		46F3B0405323967618E2E83A /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		4962F670ACD7D7411739481E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		4B088CC1F59FEEC0FAF1E858 /* SynapseLifeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynapseLifeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E1E06245632D2B3E3529570 /* PositionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionDetailView.swift; sourceTree = "<group>"; };
+		6543B805066079F8DF0D0BB6 /* SynapseLifeKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynapseLifeKit; path = packages/SynapseLifeKit; sourceTree = SOURCE_ROOT; };
+		65D73BC3DC6A049812897478 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
+		8E0EE08F9B8392A3BB2E38E3 /* FinanceShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceShellView.swift; sourceTree = "<group>"; };
+		94D41BCE9A0D2F56C0626671 /* ExportOptions.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = ExportOptions.plist; sourceTree = "<group>"; };
+		9EA78D0AF3967C87B9ED9259 /* SynapseLifeMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SynapseLifeMacApp.swift; sourceTree = "<group>"; };
+		A82495BE4197064301DE4338 /* FinanceHubView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceHubView.swift; sourceTree = "<group>"; };
+		ADC9C55DBBA8FEBC5503E82A /* AccountDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccountDetailView.swift; sourceTree = "<group>"; };
+		C1ED05AEE403E8C93C9A3576 /* CopilotShellMac.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CopilotShellMac.swift; sourceTree = "<group>"; };
+		C7B3CF842F3D7CDB1A722DE6 /* SynapseLife-iOS.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "SynapseLife-iOS.entitlements"; sourceTree = "<group>"; };
+		E84B8325C93D70919C431D62 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		EE01092669AB935BCB64F235 /* TransactionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransactionDetailView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		73AF5AD98112AF0A80B2EB2A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				252D15AA033F9877EEBEF381 /* DesignSystem in Frameworks */,
+				527B81A77B77D2DD5A8BE403 /* Networking in Frameworks */,
+				070D89241AB16EFA3D418955 /* Auth in Frameworks */,
+				F6430B5EBC44C9A64051643D /* Models in Frameworks */,
+				C86970D0337BD86EE341B318 /* Persistence in Frameworks */,
+				14747B7B7A97AA57FE7BCFAA /* Features in Frameworks */,
+				BEEAAE812FB5DA31D542160F /* AppLifecycle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		ABD2B248EC13A31EACE3D555 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				1468CF18EC3AFA4E421586FE /* DesignSystem in Frameworks */,
+				460B988F36313111527733E2 /* Networking in Frameworks */,
+				A219B6A2B23548F2DEB5B249 /* Auth in Frameworks */,
+				2A12BBD4FE71406C81C8B3BE /* Models in Frameworks */,
+				F1BAD93872B36DE1C589B147 /* Persistence in Frameworks */,
+				091606C32DEA94A49EB46CBD /* Features in Frameworks */,
+				3A68A0AF82A8FEF569DDEAFB /* AppLifecycle in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		29C962A16ADF58DF9E45EAC9 /* Shared */ = {
+			isa = PBXGroup;
+			children = (
+				0EEAF6B19ACF4D421AF1CAAF /* RootView.swift */,
+			);
+			path = Shared;
+			sourceTree = "<group>";
+		};
+		3676B813DB707E9C9595F68B /* SynapseLife-iOS */ = {
+			isa = PBXGroup;
+			children = (
+				46F3B0405323967618E2E83A /* Assets.xcassets */,
+				94D41BCE9A0D2F56C0626671 /* ExportOptions.plist */,
+				4962F670ACD7D7411739481E /* Info.plist */,
+				65D73BC3DC6A049812897478 /* PrivacyInfo.xcprivacy */,
+				C7B3CF842F3D7CDB1A722DE6 /* SynapseLife-iOS.entitlements */,
+				2EB42EE518C67D75FB5564F9 /* SynapseLifeApp.swift */,
+				B09D7B084A04317FDC025D76 /* Features */,
+			);
+			path = "SynapseLife-iOS";
+			sourceTree = "<group>";
+		};
+		612010C2AD669048F77A1F0B /* apps */ = {
+			isa = PBXGroup;
+			children = (
+				29C962A16ADF58DF9E45EAC9 /* Shared */,
+				3676B813DB707E9C9595F68B /* SynapseLife-iOS */,
+				C2494F4EBA210730D1A3707B /* SynapseLife-macOS */,
+			);
+			path = apps;
+			sourceTree = "<group>";
+		};
+		9DA331AE9395B38F9B2123B2 = {
+			isa = PBXGroup;
+			children = (
+				612010C2AD669048F77A1F0B /* apps */,
+				BFAFB4A893772AE125EF43FD /* Packages */,
+				BAD2B1DF396EF86B0148C917 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		B09D7B084A04317FDC025D76 /* Features */ = {
+			isa = PBXGroup;
+			children = (
+				ADC9C55DBBA8FEBC5503E82A /* AccountDetailView.swift */,
+				A82495BE4197064301DE4338 /* FinanceHubView.swift */,
+				2136713D475AA0D66D129B4B /* Haptics.swift */,
+				287F69851B43F8A9DE818CEF /* MoreTab.swift */,
+				4E1E06245632D2B3E3529570 /* PositionDetailView.swift */,
+				EE01092669AB935BCB64F235 /* TransactionDetailView.swift */,
+			);
+			path = Features;
+			sourceTree = "<group>";
+		};
+		BAD2B1DF396EF86B0148C917 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				19A54FA03EF19A67E9A18025 /* SynapseLifeiOS.app */,
+				4B088CC1F59FEEC0FAF1E858 /* SynapseLifeMac.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		BFAFB4A893772AE125EF43FD /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				6543B805066079F8DF0D0BB6 /* SynapseLifeKit */,
+			);
+			path = Packages;
+			sourceTree = "<group>";
+		};
+		C2494F4EBA210730D1A3707B /* SynapseLife-macOS */ = {
+			isa = PBXGroup;
+			children = (
+				E84B8325C93D70919C431D62 /* Assets.xcassets */,
+				C1ED05AEE403E8C93C9A3576 /* CopilotShellMac.swift */,
+				3EA019F44DE17D447F3C84A6 /* CopilotSidebarAccounts.swift */,
+				20B74AE8ED58D4C875FBFBF2 /* ExportOptions.plist */,
+				8E0EE08F9B8392A3BB2E38E3 /* FinanceShellView.swift */,
+				3F73C34675556CB15620BB99 /* PrivacyInfo.xcprivacy */,
+				37BD6AC014501C04AFE347E3 /* SynapseLife-macOS.entitlements */,
+				9EA78D0AF3967C87B9ED9259 /* SynapseLifeMacApp.swift */,
+			);
+			path = "SynapseLife-macOS";
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A2AFC372DFC83C63609DA13E /* SynapseLifeiOS */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = EA95F6C41219548B0E7C9306 /* Build configuration list for PBXNativeTarget "SynapseLifeiOS" */;
+			buildPhases = (
+				9533F711D6DE15487ECBB139 /* Sources */,
+				DDC2BF1FE5640ECCE21871C8 /* Resources */,
+				73AF5AD98112AF0A80B2EB2A /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SynapseLifeiOS;
+			packageProductDependencies = (
+				0CDFE7655638FC140A8CDB02 /* DesignSystem */,
+				65453C63194AF98E3FEE970D /* Networking */,
+				34086C96FA2D7FEB1A7B8546 /* Auth */,
+				FA8BF25391A320B45AF98C8C /* Models */,
+				EF74AD39550301CC0A385650 /* Persistence */,
+				E4B822546ED040EAFDB6AE37 /* Features */,
+				13081A9FFDF0845B2E01D23C /* AppLifecycle */,
+			);
+			productName = SynapseLifeiOS;
+			productReference = 19A54FA03EF19A67E9A18025 /* SynapseLifeiOS.app */;
+			productType = "com.apple.product-type.application";
+		};
+		C10F5B75178CDE2EFB9EE61D /* SynapseLifeMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = AE9A220339C9B5B20E6ED918 /* Build configuration list for PBXNativeTarget "SynapseLifeMac" */;
+			buildPhases = (
+				F5512C96FDF6E5BE90654121 /* Sources */,
+				6691E8D487936ADA28CBC007 /* Resources */,
+				ABD2B248EC13A31EACE3D555 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = SynapseLifeMac;
+			packageProductDependencies = (
+				7D0B5B628817602B39255583 /* DesignSystem */,
+				26068F90A23D2B95F43AA419 /* Networking */,
+				8FC464F15AA3E1A1ADC5EDF0 /* Auth */,
+				993F9B5A7D95B3B6071531A9 /* Models */,
+				B6D915EA13F15AF5FD779D63 /* Persistence */,
+				5E039E000347A1D7953AA7AE /* Features */,
+				EA0117C59FFCFB0BC58BA166 /* AppLifecycle */,
+			);
+			productName = SynapseLifeMac;
+			productReference = 4B088CC1F59FEEC0FAF1E858 /* SynapseLifeMac.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		CA398F74BB6358A6F1977AD5 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					A2AFC372DFC83C63609DA13E = {
+						DevelopmentTeam = WCGJPF9TWU;
+						ProvisioningStyle = Automatic;
+					};
+					C10F5B75178CDE2EFB9EE61D = {
+						DevelopmentTeam = WCGJPF9TWU;
+						ProvisioningStyle = Automatic;
+					};
+				};
+			};
+			buildConfigurationList = 42C0E9DDA115B52ED4EAA55A /* Build configuration list for PBXProject "SynapseLife" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 9DA331AE9395B38F9B2123B2;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CC6865CE1533CEDFE572ABDB /* XCLocalSwiftPackageReference "packages/SynapseLifeKit" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = BAD2B1DF396EF86B0148C917 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C10F5B75178CDE2EFB9EE61D /* SynapseLifeMac */,
+				A2AFC372DFC83C63609DA13E /* SynapseLifeiOS */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		6691E8D487936ADA28CBC007 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D98B480F7F66E79933DEDD7B /* Assets.xcassets in Resources */,
+				3401260488361F8E8C41AA0F /* ExportOptions.plist in Resources */,
+				183C00F910D6E9E777171622 /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		DDC2BF1FE5640ECCE21871C8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C7BA68DB998F23C8BAA7009B /* Assets.xcassets in Resources */,
+				0A1CAD8E35CB37B0EC87DBC7 /* ExportOptions.plist in Resources */,
+				36D024D0BD52B59279733FFA /* PrivacyInfo.xcprivacy in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		9533F711D6DE15487ECBB139 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BD292CA379ECEFB992024B09 /* AccountDetailView.swift in Sources */,
+				9FD2F89AC5DCD4C675F994F3 /* FinanceHubView.swift in Sources */,
+				46E50EFE358BE03461551869 /* Haptics.swift in Sources */,
+				2C1A92059546C4AF8F5DE87F /* MoreTab.swift in Sources */,
+				214213F341D3324D5876F127 /* PositionDetailView.swift in Sources */,
+				8FC94E62DCA6F43942021651 /* RootView.swift in Sources */,
+				8E5B9C41A77E656809075919 /* SynapseLifeApp.swift in Sources */,
+				CBCA97C3E5A679DA4A819465 /* TransactionDetailView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		F5512C96FDF6E5BE90654121 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8D38839FB8B6034343ECD58B /* CopilotShellMac.swift in Sources */,
+				ECDBF5C495DEEE8523115319 /* CopilotSidebarAccounts.swift in Sources */,
+				27C7F6ADB8ECD3E8E9B0C539 /* FinanceShellView.swift in Sources */,
+				9B9E8C21F710718AB0AF9DE8 /* RootView.swift in Sources */,
+				AAFD019BBB9F101669D9CF02 /* SynapseLifeMacApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		0A854B93E4EE6B8FC77B6A54 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		22B277559473C636CFDDD75D /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/SynapseLife-macOS/SynapseLife-macOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Synapse Life";
+				INFOPLIST_KEY_CFBundleName = SynapseLife;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Synapse uses Touch ID to unlock your financial data so only you can see it.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.life.mac;
+				PRODUCT_NAME = SynapseLife;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		57F0F381B229028163AA83E2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/SynapseLife-iOS/SynapseLife-iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				INFOPLIST_FILE = "apps/SynapseLife-iOS/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Synapse Life";
+				INFOPLIST_KEY_CFBundleName = SynapseLife;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.life.ios;
+				PRODUCT_NAME = SynapseLife;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		66423386ACE8F1A122E8C7DF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/SynapseLife-macOS/SynapseLife-macOS.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				ENABLE_HARDENED_RUNTIME = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = "Synapse Life";
+				INFOPLIST_KEY_CFBundleName = SynapseLife;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.finance";
+				INFOPLIST_KEY_NSFaceIDUsageDescription = "Synapse uses Touch ID to unlock your financial data so only you can see it.";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.life.mac;
+				PRODUCT_NAME = SynapseLife;
+				SDKROOT = macosx;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		9E0050CA6ED3A9839B417C94 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		DF74087AB053E85B6F7000AB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = "apps/SynapseLife-iOS/SynapseLife-iOS.entitlements";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = WCGJPF9TWU;
+				INFOPLIST_FILE = "apps/SynapseLife-iOS/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Synapse Life";
+				INFOPLIST_KEY_CFBundleName = SynapseLife;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "(c) 2026 Antonio Mastropaolo";
+				INFOPLIST_KEY_UIRequiresFullScreen = NO;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = tech.synapse.life.ios;
+				PRODUCT_NAME = SynapseLife;
+				SDKROOT = iphoneos;
+				SWIFT_STRICT_CONCURRENCY = complete;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		42C0E9DDA115B52ED4EAA55A /* Build configuration list for PBXProject "SynapseLife" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				9E0050CA6ED3A9839B417C94 /* Debug */,
+				0A854B93E4EE6B8FC77B6A54 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		AE9A220339C9B5B20E6ED918 /* Build configuration list for PBXNativeTarget "SynapseLifeMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				66423386ACE8F1A122E8C7DF /* Debug */,
+				22B277559473C636CFDDD75D /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		EA95F6C41219548B0E7C9306 /* Build configuration list for PBXNativeTarget "SynapseLifeiOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				57F0F381B229028163AA83E2 /* Debug */,
+				DF74087AB053E85B6F7000AB /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCLocalSwiftPackageReference section */
+		CC6865CE1533CEDFE572ABDB /* XCLocalSwiftPackageReference "packages/SynapseLifeKit" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = packages/SynapseLifeKit;
+		};
+/* End XCLocalSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		0CDFE7655638FC140A8CDB02 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		13081A9FFDF0845B2E01D23C /* AppLifecycle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppLifecycle;
+		};
+		26068F90A23D2B95F43AA419 /* Networking */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Networking;
+		};
+		34086C96FA2D7FEB1A7B8546 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Auth;
+		};
+		5E039E000347A1D7953AA7AE /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
+		};
+		65453C63194AF98E3FEE970D /* Networking */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Networking;
+		};
+		7D0B5B628817602B39255583 /* DesignSystem */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = DesignSystem;
+		};
+		8FC464F15AA3E1A1ADC5EDF0 /* Auth */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Auth;
+		};
+		993F9B5A7D95B3B6071531A9 /* Models */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Models;
+		};
+		B6D915EA13F15AF5FD779D63 /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		E4B822546ED040EAFDB6AE37 /* Features */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Features;
+		};
+		EA0117C59FFCFB0BC58BA166 /* AppLifecycle */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = AppLifecycle;
+		};
+		EF74AD39550301CC0A385650 /* Persistence */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Persistence;
+		};
+		FA8BF25391A320B45AF98C8C /* Models */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Models;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = CA398F74BB6358A6F1977AD5 /* Project object */;
+}

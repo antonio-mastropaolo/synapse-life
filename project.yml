@@ -1,6 +1,6 @@
-name: Synapse
+name: SynapseLife
 options:
-  bundleIdPrefix: tech.synapse
+  bundleIdPrefix: tech.synapse.life
   createIntermediateGroups: true
   developmentLanguage: en
   deploymentTarget:
@@ -8,50 +8,50 @@ options:
     macOS: "14.0"
 
 packages:
-  SynapseKit:
-    path: packages/SynapseKit
+  SynapseLifeKit:
+    path: packages/SynapseLifeKit
 
 targets:
-  SynapseMac:
+  SynapseLifeMac:
     type: application
     platform: macOS
     deploymentTarget: "14.0"
     sources:
-      - apps/Synapse-macOS
+      - apps/SynapseLife-macOS
       - apps/Shared
     dependencies:
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: DesignSystem
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Networking
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Auth
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Models
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Persistence
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Features
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: AppLifecycle
     settings:
       base:
-        PRODUCT_NAME: Synapse
-        PRODUCT_BUNDLE_IDENTIFIER: tech.synapse.mac
+        PRODUCT_NAME: SynapseLife
+        PRODUCT_BUNDLE_IDENTIFIER: tech.synapse.life.mac
         MACOSX_DEPLOYMENT_TARGET: "14.0"
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
         GENERATE_INFOPLIST_FILE: YES
         CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_ENTITLEMENTS: apps/Synapse-macOS/Synapse-macOS.entitlements
+        CODE_SIGN_ENTITLEMENTS: apps/SynapseLife-macOS/SynapseLife-macOS.entitlements
         DEVELOPMENT_TEAM: WCGJPF9TWU
         ENABLE_HARDENED_RUNTIME: YES
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_LSApplicationCategoryType: public.app-category.finance
         INFOPLIST_KEY_NSHumanReadableCopyright: "(c) 2026 Antonio Mastropaolo"
-        INFOPLIST_KEY_CFBundleDisplayName: Synapse
-        INFOPLIST_KEY_CFBundleName: Synapse
+        INFOPLIST_KEY_CFBundleDisplayName: Synapse Life
+        INFOPLIST_KEY_CFBundleName: SynapseLife
         # Touch ID on Macs that have it unlocks the financial surfaces via
         # the shared BiometricGate. The string is required or the system
         # biometric sheet refuses to present.
@@ -63,27 +63,27 @@ targets:
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
 
-  SynapseiOS:
+  SynapseLifeiOS:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
     sources:
-      - apps/Synapse-iOS
+      - apps/SynapseLife-iOS
       - apps/Shared
     dependencies:
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: DesignSystem
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Networking
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Auth
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Models
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Persistence
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: Features
-      - package: SynapseKit
+      - package: SynapseLifeKit
         product: AppLifecycle
     # Explicit Info.plist so the Phase 4 background-refresh task can declare
     # its permitted identifier (no INFOPLIST_KEY_ build-setting form exists for
@@ -93,10 +93,10 @@ targets:
     # directly — hence the usage string, export-compliance flag, and app
     # category live in this block.
     info:
-      path: apps/Synapse-iOS/Info.plist
+      path: apps/SynapseLife-iOS/Info.plist
       properties:
         UIBackgroundModes: [fetch, processing]
-        BGTaskSchedulerPermittedIdentifiers: [tech.synapse.refresh.proactive]
+        BGTaskSchedulerPermittedIdentifiers: [tech.synapse.life.refresh.proactive]
         # Finance app, not productivity — drives App Store category and the
         # Mac/iOS Launchpad grouping.
         LSApplicationCategoryType: public.app-category.finance
@@ -115,19 +115,19 @@ targets:
         UILaunchScreen: {}
     settings:
       base:
-        PRODUCT_NAME: Synapse
-        PRODUCT_BUNDLE_IDENTIFIER: tech.synapse.ios
+        PRODUCT_NAME: SynapseLife
+        PRODUCT_BUNDLE_IDENTIFIER: tech.synapse.life.ios
         IPHONEOS_DEPLOYMENT_TARGET: "17.0"
         SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
         CODE_SIGN_STYLE: Automatic
-        CODE_SIGN_ENTITLEMENTS: apps/Synapse-iOS/Synapse-iOS.entitlements
+        CODE_SIGN_ENTITLEMENTS: apps/SynapseLife-iOS/SynapseLife-iOS.entitlements
         DEVELOPMENT_TEAM: WCGJPF9TWU
         TARGETED_DEVICE_FAMILY: "1,2"
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
         INFOPLIST_KEY_NSHumanReadableCopyright: "(c) 2026 Antonio Mastropaolo"
-        INFOPLIST_KEY_CFBundleDisplayName: Synapse
-        INFOPLIST_KEY_CFBundleName: Synapse
+        INFOPLIST_KEY_CFBundleDisplayName: Synapse Life
+        INFOPLIST_KEY_CFBundleName: SynapseLife
         INFOPLIST_KEY_UIRequiresFullScreen: NO
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon

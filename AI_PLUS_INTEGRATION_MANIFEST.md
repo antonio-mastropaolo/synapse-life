@@ -1,6 +1,6 @@
 # AI++ wedge integration manifest
 
-This file is the contract between agent 5 (AI++ wedge) and the macOS / iOS app shells. Every surface listed below is built and tested inside `SynapseKit/Features`; the manifest tells the app layer where each surface needs to live in the navigation graph.
+This file is the contract between agent 5 (AI++ wedge) and the macOS / iOS app shells. Every surface listed below is built and tested inside `SynapseLifeKit/Features`; the manifest tells the app layer where each surface needs to live in the navigation graph.
 
 ## 1. Weekly Digest
 

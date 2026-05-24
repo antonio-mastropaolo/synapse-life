@@ -2,7 +2,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "SynapseKit",
+    name: "SynapseLifeKit",
     platforms: [
         .iOS(.v17),
         .macOS(.v14)

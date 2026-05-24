@@ -28,10 +28,10 @@ wins on every surface.
 
 ## Tooling
 
-- `xcodegen generate` regenerates `Synapse.xcodeproj` from `project.yml`. The
+- `xcodegen generate` regenerates `SynapseLife.xcodeproj` from `project.yml`. The
   `.xcodeproj` is checked in for convenience; if you change `project.yml`,
   regenerate and commit both.
-- `swift test --package-path packages/SynapseKit` runs the package tests.
+- `swift test --package-path packages/SynapseLifeKit` runs the package tests.
 - `swiftformat .` and `swiftlint` enforce style; see `.swiftformat` and
   `.swiftlint.yml`.
 

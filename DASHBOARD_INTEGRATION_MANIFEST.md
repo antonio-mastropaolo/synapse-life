@@ -13,7 +13,7 @@ of un-reviewed transactions, plus a reshape of the iOS app to a
 ### Module map
 
 ```
-packages/SynapseKit/Sources/Features/Dashboard/
+packages/SynapseLifeKit/Sources/Features/Dashboard/
 ├── DashboardEntry.swift              value type wrapping Transaction + reviewed flag
 ├── DashboardSection.swift            one date bucket
 ├── DashboardViewModel.swift          @Observable; selection + projection + mark-reviewed

@@ -7,7 +7,7 @@ agents (2-5) follow to wire their feature views into the new shell.
 ## Sidebar destinations (canonical order)
 
 Defined as `RootDestination` cases in
-`packages/SynapseKit/Sources/DesignSystem/RootShellViewModel.swift`.
+`packages/SynapseLifeKit/Sources/DesignSystem/RootShellViewModel.swift`.
 The macOS sidebar paints them in exactly this order. Adding or
 reordering rows is a breaking change — `SidebarSelectionTests.canonicalOrder`
 locks it.
@@ -66,7 +66,7 @@ stays.
 
 ## Copilot chrome tokens
 
-Defined in `packages/SynapseKit/Sources/DesignSystem/CopilotTokens.swift`.
+Defined in `packages/SynapseLifeKit/Sources/DesignSystem/CopilotTokens.swift`.
 Read via `CopilotTokens.shell` — a `Sendable` struct. WCAG AA cleared.
 
 | Token                 | sRGB (R,G,B,a)             | Hex      | Use                                 |
@@ -114,13 +114,13 @@ for legend renderers.
 
 Created:
 - `apps/Synapse-macOS/CopilotShellMac.swift`
-- `packages/SynapseKit/Sources/DesignSystem/CopilotTokens.swift`
-- `packages/SynapseKit/Tests/DesignSystemTests/CopilotTokensTests.swift`
-- `packages/SynapseKit/Tests/DesignSystemTests/SidebarSelectionTests.swift`
+- `packages/SynapseLifeKit/Sources/DesignSystem/CopilotTokens.swift`
+- `packages/SynapseLifeKit/Tests/DesignSystemTests/CopilotTokensTests.swift`
+- `packages/SynapseLifeKit/Tests/DesignSystemTests/SidebarSelectionTests.swift`
 
 Modified:
-- `packages/SynapseKit/Sources/DesignSystem/RootShellViewModel.swift`
-- `packages/SynapseKit/Tests/DesignSystemTests/RootShellSelectionTests.swift`
+- `packages/SynapseLifeKit/Sources/DesignSystem/RootShellViewModel.swift`
+- `packages/SynapseLifeKit/Tests/DesignSystemTests/RootShellSelectionTests.swift`
 - `apps/Synapse-macOS/SynapseMacApp.swift`
 
 Deleted:

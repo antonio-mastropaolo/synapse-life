@@ -20,43 +20,43 @@ Commit: `feat(advisors+octagon+trading-desk): three new surfaces — M8 (test-fi
 
 ### Models (new types only)
 
-- `packages/SynapseKit/Sources/Models/Advisor.swift` — `Advisor`,
+- `packages/SynapseLifeKit/Sources/Models/Advisor.swift` — `Advisor`,
   `AdvisorsResponse`, `ChatMessage`, `MessageRole`
-- `packages/SynapseKit/Sources/Models/OctagonVendor.swift` —
+- `packages/SynapseLifeKit/Sources/Models/OctagonVendor.swift` —
   `OctagonVendor` (with nested `HQ`, `Financing`, `CEO`),
   `OctagonBriefEnvelope`, `MembershipCard` (with `Cadence`, `Status`),
   `MembershipsResponse`
 
 ### Networking
 
-- `packages/SynapseKit/Sources/Networking/AdvisorsAPI.swift` — protocol
+- `packages/SynapseLifeKit/Sources/Networking/AdvisorsAPI.swift` — protocol
   + `LiveAdvisorsAPI` + `MockAdvisorsAPI` + `SSEParser` + `ChatDelta`
-- `packages/SynapseKit/Sources/Networking/OctagonAPI.swift` — protocol
+- `packages/SynapseLifeKit/Sources/Networking/OctagonAPI.swift` — protocol
   + `LiveOctagonAPI` + `MockOctagonAPI`
 
 ### Features
 
-- `packages/SynapseKit/Sources/Features/Advisors/AdvisorsListViewModel.swift`
-- `packages/SynapseKit/Sources/Features/Advisors/StreamingChatViewModel.swift`
-- `packages/SynapseKit/Sources/Features/Advisors/AdvisorsView.swift`
-- `packages/SynapseKit/Sources/Features/Octagon/OctagonViewModel.swift`
-- `packages/SynapseKit/Sources/Features/Octagon/OctagonView.swift`
-- `packages/SynapseKit/Sources/Features/Finance/TradingDeskViewModel.swift`
+- `packages/SynapseLifeKit/Sources/Features/Advisors/AdvisorsListViewModel.swift`
+- `packages/SynapseLifeKit/Sources/Features/Advisors/StreamingChatViewModel.swift`
+- `packages/SynapseLifeKit/Sources/Features/Advisors/AdvisorsView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Octagon/OctagonViewModel.swift`
+- `packages/SynapseLifeKit/Sources/Features/Octagon/OctagonView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Finance/TradingDeskViewModel.swift`
   (NEW file — does NOT touch any existing M5 Finance files)
-- `packages/SynapseKit/Sources/Features/Finance/TradingDeskView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Finance/TradingDeskView.swift`
 
 ### Tests
 
-- `packages/SynapseKit/Tests/ModelsTests/AdvisorTests.swift`
-- `packages/SynapseKit/Tests/ModelsTests/OctagonVendorTests.swift`
-- `packages/SynapseKit/Tests/NetworkingTests/AdvisorsRepositoryTests.swift`
-- `packages/SynapseKit/Tests/NetworkingTests/OctagonRepositoryTests.swift`
-- `packages/SynapseKit/Tests/FeaturesTests/Advisors/StreamingChatViewModelTests.swift`
-- `packages/SynapseKit/Tests/FeaturesTests/Octagon/OctagonViewModelTests.swift`
-- `packages/SynapseKit/Tests/FeaturesTests/Finance/TradingDeskViewModelTests.swift`
-- `packages/SynapseKit/Tests/SnapshotTests/AdvisorsScreenSnapshotTests.swift`
-- `packages/SynapseKit/Tests/SnapshotTests/OctagonScreenSnapshotTests.swift`
-- `packages/SynapseKit/Tests/SnapshotTests/TradingDeskScreenSnapshotTests.swift`
+- `packages/SynapseLifeKit/Tests/ModelsTests/AdvisorTests.swift`
+- `packages/SynapseLifeKit/Tests/ModelsTests/OctagonVendorTests.swift`
+- `packages/SynapseLifeKit/Tests/NetworkingTests/AdvisorsRepositoryTests.swift`
+- `packages/SynapseLifeKit/Tests/NetworkingTests/OctagonRepositoryTests.swift`
+- `packages/SynapseLifeKit/Tests/FeaturesTests/Advisors/StreamingChatViewModelTests.swift`
+- `packages/SynapseLifeKit/Tests/FeaturesTests/Octagon/OctagonViewModelTests.swift`
+- `packages/SynapseLifeKit/Tests/FeaturesTests/Finance/TradingDeskViewModelTests.swift`
+- `packages/SynapseLifeKit/Tests/SnapshotTests/AdvisorsScreenSnapshotTests.swift`
+- `packages/SynapseLifeKit/Tests/SnapshotTests/OctagonScreenSnapshotTests.swift`
+- `packages/SynapseLifeKit/Tests/SnapshotTests/TradingDeskScreenSnapshotTests.swift`
 
 ### Snapshot reference PNGs (24 total)
 
@@ -158,12 +158,12 @@ None of substance. Two implementation notes worth surfacing:
 
 ```bash
 # Full macOS suite via SPM:
-swift test --package-path packages/SynapseKit
+swift test --package-path packages/SynapseLifeKit
 
 # iOS snapshot suite (against an iPhone-class sim — viewport is locked
 # by snapshot config to 1170×2532 regardless of the actual simulator):
 xcodebuild test \
-  -workspace Synapse.xcworkspace \
+  -workspace SynapseLife.xcworkspace \
   -scheme SnapshotTests \
   -destination "platform=iOS Simulator,name=iPhone 17 Pro"
 ```

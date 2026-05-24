@@ -60,7 +60,7 @@ If the integrator wants the Accessibility module to live independently (the
 spec hinted at this), apply this diff after merge:
 
 ```swift
-// In packages/SynapseKit/Package.swift:
+// In packages/SynapseLifeKit/Package.swift:
 
 products: [
     // ...existing...
@@ -256,7 +256,7 @@ integrator can either:
 ### Diff 1 — Default identity gainAccent (light mode)
 
 ```swift
-// packages/SynapseKit/Sources/DesignSystem/Tokens.swift
+// packages/SynapseLifeKit/Sources/DesignSystem/Tokens.swift
 // In TokenSet.init defaults, gainAccent:
 gainAccent ?? ColorToken(0.20, 0.78, 0.50)   // before — 2.14:1 against #FCFCFC
 gainAccent ?? ColorToken(0.05, 0.55, 0.30)   // after  — clears WCAG AA 3.0:1
@@ -273,7 +273,7 @@ the `TokenSet.init` fallback. One diff resolves both findings.
 ### Diff 2 — Terminal Amber phosphorDim
 
 ```swift
-// packages/SynapseKit/Sources/DesignSystem/Tokens.swift
+// packages/SynapseLifeKit/Sources/DesignSystem/Tokens.swift
 private static let phosDim = ColorToken(0.700, 0.329, 0.000)    // before — 4.01:1
 private static let phosDim = ColorToken(0.770, 0.392, 0.000)    // after  — 4.55:1
 ```
@@ -326,7 +326,7 @@ clears AA + 44pt + Dynamic Type.
 ## Verified against entering state
 
 ```
-$ swift test --package-path packages/SynapseKit
+$ swift test --package-path packages/SynapseLifeKit
 ✔ Test run with 241 tests in 52 suites passed
 ```
 

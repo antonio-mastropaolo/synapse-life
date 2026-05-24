@@ -19,12 +19,12 @@ The new test files live under existing test target paths
 recursively. The `Package.swift` declares these targets with `path:` only,
 no `sources:` filter, so the additions are automatic.
 
-Confirm with `swift test --package-path packages/SynapseKit` after pulling
+Confirm with `swift test --package-path packages/SynapseLifeKit` after pulling
 this worktree in — it should report 249 tests / 50 suites green.
 
-## 2. Xcode project — Synapse.xcodeproj
+## 2. Xcode project — SynapseLife.xcodeproj
 
-The new SwiftPM files are inside the `SynapseKit` package, so the Xcode
+The new SwiftPM files are inside the `SynapseLifeKit` package, so the Xcode
 project picks them up via the existing package reference. **No project
 file changes required for the package layer.**
 

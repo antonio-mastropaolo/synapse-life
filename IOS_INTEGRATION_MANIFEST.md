@@ -64,7 +64,7 @@ layouts. macOS PNGs are untouched and continue to pass.
   drill-down with market-value hero, signed P/L, and metadata.
 - `apps/Synapse-iOS/Features/Haptics.swift` — UIKit feedback wrapper:
   `tabSwitch`, `refreshComplete`, `drillDown`, `swipeAction`.
-- `packages/SynapseKit/Tests/FeaturesTests/Finance/LedgerStatusScopeTests.swift` —
+- `packages/SynapseLifeKit/Tests/FeaturesTests/Finance/LedgerStatusScopeTests.swift` —
   6 Swift Testing cases for the new reducers.
 
 ### Modified
@@ -74,21 +74,21 @@ layouts. macOS PNGs are untouched and continue to pass.
   on change; new `FinanceTab` rooted at `FinanceHubView`; `LifeTab` is
   full-bleed (`.navigationBarHidden(true)` + `.ignoresSafeArea`);
   Settings is now a tab, not buried under "More".
-- `packages/SynapseKit/Sources/Features/Finance/FinancePersonalView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Finance/FinancePersonalView.swift`
   iOS only — large-title nav, accounts rows now drill via
   `NavigationLink(value: account)`, keyboard-dismissing scroll.
-- `packages/SynapseKit/Sources/Features/Finance/FinanceAccountsView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Finance/FinanceAccountsView.swift`
   iOS only — grouping switched from `AccountKind` to institution (the
   phone mental model); `.swipeActions` for Hide / Sync; large title.
-- `packages/SynapseKit/Sources/Features/Finance/FinanceTransactionsView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Finance/FinanceTransactionsView.swift`
   iOS only — segmented scope picker (All / Pending / Posted), grouped
   by card with collapsible section headers, phone-tuned row (no
   fixed-width column overflow), large title, drill-down to detail.
-- `packages/SynapseKit/Sources/Features/Finance/FinanceInvestmentsView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Finance/FinanceInvestmentsView.swift`
   split into `#if os(macOS)` / `#if os(iOS)` branches. iOS gets a
   grouped `List` keyed by `SecurityKind`, drill-down to detail, hero
   row inside the list.
-- `packages/SynapseKit/Sources/Features/Advisors/AdvisorsView.swift`
+- `packages/SynapseLifeKit/Sources/Features/Advisors/AdvisorsView.swift`
   iOS only — removed the inner `NavigationStack` (the tab shell owns
   it now); added `.scrollDismissesKeyboard(.interactively)` to the chat
   transcript.
@@ -106,14 +106,14 @@ layouts. macOS PNGs are untouched and continue to pass.
 ## Verification
 
 ```
-swift test --package-path packages/SynapseKit
+swift test --package-path packages/SynapseLifeKit
 # 218 tests in 50 suites pass (was 212; +6 new LedgerStatusScopeTests)
 
-xcodebuild -project Synapse.xcodeproj -scheme SynapseiOS \
+xcodebuild -project SynapseLife.xcodeproj -scheme SynapseLifeiOS \
   -destination 'generic/platform=iOS Simulator' -configuration Debug build
 # BUILD SUCCEEDED
 
-xcodebuild -project Synapse.xcodeproj -scheme SynapseMac \
+xcodebuild -project SynapseLife.xcodeproj -scheme SynapseLifeMac \
   -destination 'generic/platform=macOS' \
   -configuration Debug CODE_SIGNING_ALLOWED=NO build
 # BUILD SUCCEEDED (regression check — macOS shell still compiles)

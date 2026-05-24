@@ -20,8 +20,8 @@ jobs:
       - name: Swift version
         run: swift --version
 
-      - name: Build & test SynapseKit
-        run: swift test --package-path packages/SynapseKit -v
+      - name: Build & test SynapseLifeKit
+        run: swift test --package-path packages/SynapseLifeKit -v
 
   app-builds:
     name: xcodebuild — macOS + iOS Simulator
@@ -38,21 +38,21 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build SynapseMac
+      - name: Build SynapseLifeMac
         run: |
           xcodebuild \
-            -project Synapse.xcodeproj \
-            -scheme SynapseMac \
+            -project SynapseLife.xcodeproj \
+            -scheme SynapseLifeMac \
             -configuration Debug \
             -destination 'platform=macOS' \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Build SynapseiOS for simulator
+      - name: Build SynapseLifeiOS for simulator
         run: |
           xcodebuild \
-            -project Synapse.xcodeproj \
-            -scheme SynapseiOS \
+            -project SynapseLife.xcodeproj \
+            -scheme SynapseLifeiOS \
             -configuration Debug \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO \

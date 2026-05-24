@@ -20,7 +20,7 @@ excluded:
   - .build
   - DerivedData
   - Packages
-  - Synapse.xcodeproj
+  - SynapseLife.xcodeproj
 
 line_length:
   warning: 110

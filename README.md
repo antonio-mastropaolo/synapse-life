@@ -25,7 +25,7 @@ Four surviving surfaces:
 
 ## Layout
 
-- `packages/SynapseKit/` — shared Swift package. Modules:
+- `packages/SynapseLifeKit/` — shared Swift package. Modules:
   - `Models` — Sendable domain types, money primitives, shared JSON decoders.
   - `Networking` — `APIClient`, `Endpoint`, typed live API clients.
   - `Auth` — `KeychainStore`, `SessionStore`, Sign in with Apple bridge.
@@ -46,20 +46,20 @@ Four surviving surfaces:
 ```
 brew install xcodegen
 xcodegen generate
-open Synapse.xcworkspace
+open SynapseLife.xcworkspace
 ```
 
-Pick the `SynapseMac` or `SynapseiOS` scheme. The default base URL
+Pick the `SynapseLifeMac` or `SynapseLifeiOS` scheme. The default base URL
 is `http://localhost:3000/`; override with the `SYNAPSE_API_BASE`
 environment variable on the scheme.
 
 ## Test
 
 ```
-swift test --package-path packages/SynapseKit
+swift test --package-path packages/SynapseLifeKit
 ```
 
-Snapshot references live under `packages/SynapseKit/Tests/SnapshotTests/__Snapshots__/`.
+Snapshot references live under `packages/SynapseLifeKit/Tests/SnapshotTests/__Snapshots__/`.
 Per-surface snapshots are split into mac and iOS variants; the test
 runner records new references when missing rather than failing, so
 the first run on a new platform produces baseline images.
@@ -75,7 +75,7 @@ the operator because it requires Apple Developer credentials.
   app to TestFlight via `xcrun altool`.
 - `./scripts/make-icons.swift` — re-renders the Cockpit-amber app
   icon set from source. Run after editing the renderer at
-  `packages/SynapseKit/Sources/Tools/IconRenderer.swift`.
+  `packages/SynapseLifeKit/Sources/Tools/IconRenderer.swift`.
 
 See `scripts/README.md` for the one-time credential setup (notarytool
 keychain profile, App Store Connect API key) and a list of env vars

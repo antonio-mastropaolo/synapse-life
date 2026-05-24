@@ -23,7 +23,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
 BUILD_DIR="${REPO_ROOT}/build"
-ARCHIVE_PATH="${BUILD_DIR}/SynapseiOS.xcarchive"
+ARCHIVE_PATH="${BUILD_DIR}/SynapseLifeiOS.xcarchive"
 EXPORT_PATH="${BUILD_DIR}/iOS-export"
 EXPORT_OPTIONS="${REPO_ROOT}/apps/Synapse-iOS/ExportOptions.plist"
 
@@ -32,10 +32,10 @@ EXPORT_OPTIONS="${REPO_ROOT}/apps/Synapse-iOS/ExportOptions.plist"
 
 mkdir -p "$BUILD_DIR"
 
-echo "[1/3] xcodebuild archive — SynapseiOS"
+echo "[1/3] xcodebuild archive — SynapseLifeiOS"
 xcodebuild \
-    -project Synapse.xcodeproj \
-    -scheme SynapseiOS \
+    -project SynapseLife.xcodeproj \
+    -scheme SynapseLifeiOS \
     -configuration Release \
     -destination 'generic/platform=iOS' \
     -archivePath "$ARCHIVE_PATH" \
