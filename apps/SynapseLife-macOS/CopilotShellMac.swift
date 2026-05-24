@@ -64,6 +64,13 @@ struct CopilotShellMac: View {
     /// check-in toast overlay attached to the shell root.
     let goals: GoalsStore
 
+    /// Whether the sidebar is visible. Driven by the menu-bar
+    /// "Hide / Show Sidebar" command (⌃⌘S) — persisted across launches
+    /// via `@SceneStorage` on the @main scene. When `false`, the
+    /// sidebar column collapses and the detail pane occupies the full
+    /// window width.
+    var sidebarVisible: Bool = true
+
     /// Surfaced when DEBUG/demo mode is on so the user knows the
     /// figures are fixtures rather than live data.
     var showsDemoDataFooter: Bool = false
@@ -76,22 +83,25 @@ struct CopilotShellMac: View {
         let chrome = CopilotTokens.shell
 
         HStack(spacing: 0) {
-            CopilotSidebar(
-                routing: routing,
-                chrome: chrome,
-                showsDemoFooter: showsDemoDataFooter,
-                // Live unreviewed count from the Dashboard VM —
-                // mirrors agent 2's `entries.filter { !$0.reviewed }`
-                // path; the badge clears once the queue is empty.
-                unreviewedCount: dashboard.entries.filter { !$0.reviewed }.count,
-                accounts: accounts
-            )
-            .frame(width: 248)
-            .background(chrome.sidebarBackground.color)
+            if sidebarVisible {
+                CopilotSidebar(
+                    routing: routing,
+                    chrome: chrome,
+                    showsDemoFooter: showsDemoDataFooter,
+                    // Live unreviewed count from the Dashboard VM —
+                    // mirrors agent 2's `entries.filter { !$0.reviewed }`
+                    // path; the badge clears once the queue is empty.
+                    unreviewedCount: dashboard.entries.filter { !$0.reviewed }.count,
+                    accounts: accounts
+                )
+                .frame(width: 248)
+                .background(chrome.sidebarBackground.color)
+                .transition(.move(edge: .leading).combined(with: .opacity))
 
-            Rectangle()
-                .fill(chrome.separator.color)
-                .frame(width: 1)
+                Rectangle()
+                    .fill(chrome.separator.color)
+                    .frame(width: 1)
+            }
 
             CopilotDetailPane(
                 routing: routing,
@@ -127,6 +137,7 @@ struct CopilotShellMac: View {
         }
         .foregroundStyle(chrome.foregroundPrimary.color)
         .preferredColorScheme(.dark)
+        .animation(DS.Motion.smooth, value: sidebarVisible)
     }
 }
 

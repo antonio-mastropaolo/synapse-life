@@ -24,6 +24,7 @@
 		460B988F36313111527733E2 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 26068F90A23D2B95F43AA419 /* Networking */; };
 		46E50EFE358BE03461551869 /* Haptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2136713D475AA0D66D129B4B /* Haptics.swift */; };
 		527B81A77B77D2DD5A8BE403 /* Networking in Frameworks */ = {isa = PBXBuildFile; productRef = 65453C63194AF98E3FEE970D /* Networking */; };
+		54570ADB08ED5C7A837FD928 /* MacCommands.swift in Sources */ = {isa = PBXBuildFile; fileRef = 503BB94EA3DF8B72650693FC /* MacCommands.swift */; };
 		8D38839FB8B6034343ECD58B /* CopilotShellMac.swift in Sources */ = {isa = PBXBuildFile; fileRef = C1ED05AEE403E8C93C9A3576 /* CopilotShellMac.swift */; };
 		8E5B9C41A77E656809075919 /* SynapseLifeApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2EB42EE518C67D75FB5564F9 /* SynapseLifeApp.swift */; };
 		8FC94E62DCA6F43942021651 /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0EEAF6B19ACF4D421AF1CAAF /* RootView.swift */; };
@@ -56,6 +57,7 @@
 		4962F670ACD7D7411739481E /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		4B088CC1F59FEEC0FAF1E858 /* SynapseLifeMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SynapseLifeMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		4E1E06245632D2B3E3529570 /* PositionDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PositionDetailView.swift; sourceTree = "<group>"; };
+		503BB94EA3DF8B72650693FC /* MacCommands.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCommands.swift; sourceTree = "<group>"; };
 		6543B805066079F8DF0D0BB6 /* SynapseLifeKit */ = {isa = PBXFileReference; lastKnownFileType = folder; name = SynapseLifeKit; path = packages/SynapseLifeKit; sourceTree = SOURCE_ROOT; };
 		65D73BC3DC6A049812897478 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8E0EE08F9B8392A3BB2E38E3 /* FinanceShellView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FinanceShellView.swift; sourceTree = "<group>"; };
@@ -180,6 +182,7 @@
 				3EA019F44DE17D447F3C84A6 /* CopilotSidebarAccounts.swift */,
 				20B74AE8ED58D4C875FBFBF2 /* ExportOptions.plist */,
 				8E0EE08F9B8392A3BB2E38E3 /* FinanceShellView.swift */,
+				503BB94EA3DF8B72650693FC /* MacCommands.swift */,
 				3F73C34675556CB15620BB99 /* PrivacyInfo.xcprivacy */,
 				37BD6AC014501C04AFE347E3 /* SynapseLife-macOS.entitlements */,
 				9EA78D0AF3967C87B9ED9259 /* SynapseLifeMacApp.swift */,
@@ -330,6 +333,7 @@
 				8D38839FB8B6034343ECD58B /* CopilotShellMac.swift in Sources */,
 				ECDBF5C495DEEE8523115319 /* CopilotSidebarAccounts.swift in Sources */,
 				27C7F6ADB8ECD3E8E9B0C539 /* FinanceShellView.swift in Sources */,
+				54570ADB08ED5C7A837FD928 /* MacCommands.swift in Sources */,
 				9B9E8C21F710718AB0AF9DE8 /* RootView.swift in Sources */,
 				AAFD019BBB9F101669D9CF02 /* SynapseLifeMacApp.swift in Sources */,
 			);

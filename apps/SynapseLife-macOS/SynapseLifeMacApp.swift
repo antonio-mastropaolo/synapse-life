@@ -25,6 +25,18 @@ struct SynapseLifeMacApp: App {
     /// `IntelligenceAskView` answer surface.
     @State private var isAskPresented: Bool = false
 
+    /// Sidebar visibility — bound to the menu-bar "Hide / Show Sidebar"
+    /// command (⌃⌘S). Stored in `SceneStorage` so a window restored from
+    /// last launch reopens with the same chrome the operator left it.
+    @SceneStorage("mac.shell.sidebarVisible") private var sidebarVisible: Bool = true
+
+    /// Persisted top-level sidebar selection. The default is
+    /// `.dashboard`; a stored value is replayed into the routing VM
+    /// on appear so the next window restoration lands on the surface
+    /// the operator was last using. Stored as the destination's
+    /// `String` id so SceneStorage's narrow Codable surface accepts it.
+    @SceneStorage("mac.shell.selectedSurface") private var storedSelection: String = "dashboard"
+
     var body: some Scene {
         WindowGroup("Synapse") {
             ZStack(alignment: .top) {
@@ -45,6 +57,7 @@ struct SynapseLifeMacApp: App {
                     recurrings: core.recurrings,
                     memberships: core.memberships,
                     goals: core.goals,
+                    sidebarVisible: sidebarVisible,
                     showsDemoDataFooter: core.usesDemoData,
                     onProactiveDismiss: { signal in
                         Task { await core.dismissSignal(id: signal.id) }
@@ -78,6 +91,15 @@ struct SynapseLifeMacApp: App {
                 core.registerBackgroundRefresh()
                 await core.bootstrap()
             }
+            .onAppear {
+                // Replay the persisted top-level destination so a
+                // window restored from last launch lands on the same
+                // surface. Unknown ids degrade to `.dashboard`.
+                routing.select(restoredDestination())
+            }
+            .onChange(of: routing.selection) { _, newValue in
+                storedSelection = sceneStorageId(for: newValue)
+            }
             .onOpenURL { url in
                 core.lifecycle.handle(url: url)
             }
@@ -87,36 +109,15 @@ struct SynapseLifeMacApp: App {
             .modelContainer(core.modelContainer)
         }
         .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
         .defaultSize(width: 1280, height: 800)
         .commands {
-            // Sidebar keyboard shortcuts. Each command targets the
-            // routing VM so the main window updates in place — no
-            // secondary windows.
-            CommandGroup(after: .toolbar) {
-                Button("Ask Synapse") { openAsk() }
-                    .keyboardShortcut("k", modifiers: [.command])
-                Button("Dashboard") { routing.select(.dashboard) }
-                    .keyboardShortcut("1", modifiers: [.command])
-                Button("Transactions") { routing.select(.transactions) }
-                    .keyboardShortcut("2", modifiers: [.command])
-                Button("Accounts") { routing.select(.accounts) }
-                    .keyboardShortcut("3", modifiers: [.command])
-                Button("Investments") { routing.select(.investments) }
-                    .keyboardShortcut("4", modifiers: [.command])
-                Button("Activity") { routing.select(.activity) }
-                    .keyboardShortcut("5", modifiers: [.command])
-                Button("Advisors") { routing.select(.advisors) }
-                    .keyboardShortcut("7", modifiers: [.command])
-                Button("Categories") { routing.select(.categories) }
-                    .keyboardShortcut("8", modifiers: [.command])
-                // INTELLIGENCE section
-                Button("Weekly Digest") { routing.select(.digest) }
-                    .keyboardShortcut("9", modifiers: [.command])
-                Button("Forecast") { routing.select(.forecast) }
-                    .keyboardShortcut("0", modifiers: [.command])
-                Button("Smart Alerts") { routing.select(.smartAlerts) }
-                    .keyboardShortcut("a", modifiers: [.command, .shift])
-            }
+            MacCommands(
+                routing: routing,
+                isAskPresented: $isAskPresented,
+                sidebarVisible: $sidebarVisible,
+                auth: core.auth
+            )
         }
 
         Settings {
@@ -136,6 +137,59 @@ struct SynapseLifeMacApp: App {
     private func closeAsk() {
         core.intelligenceAsk.cancel()
         isAskPresented = false
+    }
+
+    // MARK: - Scene-storage routing
+
+    /// Restore a `RootDestination` from the persisted scene-storage id.
+    /// Only the well-known top-level sidebar destinations are valid
+    /// restoration targets — parameterized leaves (`.accountDetail`,
+    /// `.finance(_)`) deliberately fall back to `.dashboard` so a
+    /// stale id from a previous build never crashes the window.
+    private func restoredDestination() -> RootDestination {
+        switch storedSelection {
+        case "dashboard":      return .dashboard
+        case "transactions":   return .transactions
+        case "goals":          return .goals
+        case "cashFlow":       return .cashFlow
+        case "accounts":       return .accounts
+        case "investments":    return .investments
+        case "categories":     return .categories
+        case "recurrings":     return .recurrings
+        case "memberships":    return .memberships
+        case "activity":       return .activity
+        case "advisors":       return .advisors
+        case "digest":         return .digest
+        case "forecast":       return .forecast
+        case "smartAlerts":    return .smartAlerts
+        default:               return .dashboard
+        }
+    }
+
+    /// Compact id for SceneStorage. Returns `nil`-safe strings for
+    /// parameterized destinations so the store value never carries
+    /// associated data (SceneStorage is `String`-typed).
+    private func sceneStorageId(for destination: RootDestination) -> String {
+        switch destination {
+        case .dashboard:         return "dashboard"
+        case .transactions:      return "transactions"
+        case .goals:             return "goals"
+        case .cashFlow:          return "cashFlow"
+        case .accounts:          return "accounts"
+        case .investments:       return "investments"
+        case .categories:        return "categories"
+        case .recurrings:        return "recurrings"
+        case .memberships:       return "memberships"
+        case .activity:          return "activity"
+        case .advisors:          return "advisors"
+        case .digest:            return "digest"
+        case .forecast:          return "forecast"
+        case .smartAlerts:       return "smartAlerts"
+        case .ask:               return "dashboard"
+        case .anomalyExplainer:  return "dashboard"
+        case .finance:           return "transactions"
+        case .accountDetail:     return "accounts"
+        }
     }
 
     /// Route an Ask citation chip tap to the matching sidebar
